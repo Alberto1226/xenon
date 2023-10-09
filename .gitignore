@@ -1,0 +1,11 @@
+.DS_Store
+/node_modules/
+/src/node_modules/@sapper/
+yarn-error.log
+/cypress/screenshots/
+/__sapper__/
+src/routes/_importaciones
+src/routes/_importaciones_clientes
+log-especifico.txt
+static/productos
+/nbproject/private/

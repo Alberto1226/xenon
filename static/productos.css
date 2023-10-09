@@ -1,0 +1,80 @@
+.row {
+    height: 76px;
+    overflow: hidden;
+    padding: 8px;
+    border-bottom: 1px solid #e1e1e1;
+  }
+  .row:hover {
+    background-color: rgb(235, 235, 235);
+  }
+  .grid-container {
+    font-weight: 200;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: "uno dos tres cuatro cinco seis siete ocho nueve  once";
+  }
+
+  .uno {
+    grid-area: uno;
+  }
+
+  .dos {
+    grid-area: dos;
+    margin: auto 0;
+  }
+
+  .tres {
+    grid-area: tres;
+    margin: auto 0;
+  }
+
+  .cuatro {
+    grid-area: cuatro;
+    margin: auto 0;
+  }
+
+  .cinco {
+    grid-area: cinco;
+    margin: auto 0;
+  }
+
+  .seis {
+    grid-area: seis;
+    margin: auto 0;
+  }
+
+  .siete {
+    grid-area: siete;
+    margin: auto 0;
+  }
+
+  .ocho {
+    grid-area: ocho;
+    margin: auto 0;
+  }
+
+  .nueve {
+    grid-area: nueve;
+    margin: auto 0;
+  }
+
+  .once {
+    grid-area: once;
+  }
+  .precio {
+    color: gray;
+    font-size: 0.8em;
+  }
+  .reactivo:hover {
+    font-weight: 500;
+  }
+  .letra_chica{
+    font-size: .8em;
+    margin:0 auto;
+  }
+
+  .contenedor_lista{
+    height: 250px;
+    overflow-y: auto;
+  }

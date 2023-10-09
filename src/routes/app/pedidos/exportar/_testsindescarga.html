@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>HTML to PDF Eample</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="/js/html2pdf.bundle.min.js"></script>
+
+
+  <style>
+    .page {
+      break-before: page;
+    }
+
+    body {
+      font-family: monospace;
+    }
+
+    .folios {
+      color: gray;
+      font-size: .8em;
+      overflow-wrap: break-word;
+    }
+
+    .espacio {
+      height: 100px;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: 0.2fr 1.8fr 1.8fr 0.2fr;
+      grid-template-rows: 150px 2.2fr;
+      grid-template-areas: "margen_izq head head margen_derecha""margen_izq contenido contenido margen_derecha";
+    }
+
+    .margen_izq {
+      grid-area: margen_izq;
+    }
+
+    .head {
+      grid-area: head;
+    }
+
+    .contenido {
+      grid-area: contenido;
+      margin-top: 150px;
+      font-size: 0.9em;
+    }
+
+    .foot {
+      grid-area: foot;
+    }
+
+    .margen_derecha {
+      grid-area: margen_derecha;
+    }
+
+    .grid-container-row {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: 30px 32px 70px 110px 1fr 1fr 1fr 1fr;
+      grid-template-rows: 1fr;
+      grid-template-areas: "index cantidad unidad marca codigo descripcion precio importe";
+    }
+
+    .index {
+      grid-area: index;
+    }
+
+    .cantidad {
+      grid-area: cantidad;
+    }
+
+    .unidad {
+      grid-area: unidad;
+    }
+
+    .marca {
+      grid-area: marca;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      width: 160px;
+      height: 1.2em;
+      white-space: nowrap;
+    }
+
+    .codigo {
+      grid-area: codigo;
+    }
+
+    .descripcion {
+      grid-area: descripcion;
+      text-overflow: ellipsis;
+      /* overflow: hidden; */
+      width: 160px;
+      height: 1.2em;
+      white-space: nowrap;
+    }
+
+    .precio {
+      grid-area: precio;
+      text-align: right;
+    }
+
+    .importe {
+      grid-area: importe;
+      text-align: right;
+    }
+
+    .grid-container-header {
+      color: gray;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+      grid-template-rows: 75px 75px;
+      grid-template-areas: "xenon xenon xenon cliente cliente cliente""hsbc hsbc bajio bajio banamex banamex";
+      border: solid 1px gray;
+      border-radius: 5px;
+      padding: 5px;
+    }
+
+    .xenon {
+      grid-area: xenon;
+    }
+
+    .cliente {
+      grid-area: cliente;
+      font-size: 0.9em;
+    }
+
+    .hsbc {
+      grid-area: hsbc;
+      font-size: 0.8em;
+      padding-top: 30px;
+    }
+
+    .bajio {
+      grid-area: bajio;
+      font-size: 0.8em;
+      padding-top: 30px;
+    }
+
+    .banamex {
+      grid-area: banamex;
+      font-size: 0.8em;
+      padding-top: 30px;
+    }
+
+    .logo {
+      height: 120px;
+    }
+
+    .padding-especial {
+      padding-top: 50px;
+    }
+
+    .padding-borde {
+      border-bottom: solid 1px gray;
+      margin-bottom: 3px;
+      padding-bottom: 3px;
+    }
+
+    .indice_row {
+      color: gray;
+      font-size: 0.9em;
+    }
+
+    .grid-container-footer {
+      margin-top: 20px;
+      border: solid 1px gray;
+      border-radius: 5px;
+      padding: 5px;
+      display: grid;
+      grid-template-columns: 2fr 0.4fr 1fr;
+      grid-template-rows: 0.8fr 0.8fr 1.4fr;
+      grid-template-areas: "descuento margen2 total""letras margen2 moneda""Texto_inferior Texto_inferior Texto_inferior";
+    }
+
+    .descuento {
+      grid-area: descuento;
+    }
+
+    .letras {
+      grid-area: letras;
+    }
+
+    .Texto_inferior {
+      grid-area: Texto_inferior;
+    }
+
+    .total {
+      grid-area: total;
+    }
+
+    .moneda {
+      grid-area: moneda;
+    }
+
+    .margen2 {
+      grid-area: margen2;
+    }
+
+    .pagina-despues {
+      break-after: always;
+    }
+
+    .texto-derecha {
+      text-align: right;
+    }
+
+    .texto-centrado {
+      text-align: center;
+    }
+
+    .folio {
+      color: red;
+      font-size: 1.5em;
+    }
+
+    .fecha {
+      color: #2196F3;
+    }
+
+    .boton {
+      cursor: pointer;
+      height: 50px;
+      background-color: cornsilk;
+      border: solid 1px gray;
+      border-radius: 4px;
+      color: blueviolet;
+      padding: 13px;
+    }
+
+    .a4 {
+      width: 200mm;
+      height: 263mm;
+    }
+  </style>
+</head>
+
+<body id="body">
+  <div class="texto-centrado">
+    <button class="boton" onclick="generatePDF()"> Descargar pdf </button>
+  </div>
+  <div id="invoice">
+    <div class="grid-container">
+      <div class="margen_izq"></div>
+      <div class="head">
+        <div>
+          <table style="width: 100%;">
+            <tr>
+              <td>
+                <img src="/imagenes/logo-xenon.png" class="logo" alt="logotipo" />
+              </td>
+              <td>_folio_fecha</td>
+            </tr>
+          </table>
+        </div>
+        <div>
+          <div class="grid-container-header">
+            <div class="xenon">_xenon</div>
+            <div class="cliente">
+              _cliente_nombre _cliente_domicilio _cliente_correo
+            </div>
+            <div class="hsbc">_hsbc</div>
+            <div class="bajio">_bajio</div>
+            <div class="banamex">_banamex</div>
+          </div>
+        </div>
+      </div>
+      <div class="contenido">_contenido</div>
+      <div class="foot"></div>
+      <div class="margen_derecha"></div>
+    </div>
+  </div>
+  <script>
+
+    function generatePDF() {
+      // Choose the element that our invoice is rendered in.
+      const element = document.getElementById("invoice");
+      // Choose the element and save the PDF for our user.
+      html2pdf().from(element).save();
+      let body = document.getElementById('body');
+      // body.innerHTML = '<div class="texto-centrado"><h2>Pdf descargado </h2></div>';
+    }
+     // generatePDF();
+  </script>
+</body>
+
+</html>

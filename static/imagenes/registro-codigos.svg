@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="21.163559mm"
+   height="25.326796mm"
+   viewBox="0 0 21.163559 25.326796"
+   version="1.1"
+   id="svg8257"
+   inkscape:version="1.1 (c4e8f9e, 2021-05-24)"
+   sodipodi:docname="registro-codigos.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview8259"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="3.0253367"
+     inkscape:cx="34.872152"
+     inkscape:cy="110.07039"
+     inkscape:window-width="1920"
+     inkscape:window-height="1015"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <defs
+     id="defs8254">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient8872">
+      <stop
+         style="stop-color:#ff0000;stop-opacity:1;"
+         offset="0"
+         id="stop8868" />
+      <stop
+         style="stop-color:#ff0000;stop-opacity:0;"
+         offset="1"
+         id="stop8870" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient8872"
+       id="linearGradient8874"
+       x1="153.18126"
+       y1="97.691383"
+       x2="153.10751"
+       y2="95.10408"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.8112356,0,0,0.8112356,29.535847,18.509577)" />
+    <filter
+       inkscape:collect="always"
+       style="color-interpolation-filters:sRGB"
+       id="filter10879"
+       x="-0.038910945"
+       y="-0.033738186"
+       width="1.0778219"
+       height="1.0674764">
+      <feGaussianBlur
+         inkscape:collect="always"
+         stdDeviation="0.29905072"
+         id="feGaussianBlur10881" />
+    </filter>
+    <filter
+       inkscape:collect="always"
+       style="color-interpolation-filters:sRGB"
+       id="filter11553"
+       x="-0.069441573"
+       y="-0.40526206"
+       width="1.1388831"
+       height="1.8105241">
+      <feGaussianBlur
+         inkscape:collect="always"
+         stdDeviation="0.28304191"
+         id="feGaussianBlur11555" />
+    </filter>
+  </defs>
+  <g
+     inkscape:label="Capa 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-145.23637,-89.797432)">
+    <rect
+       style="opacity:1;fill:#2b1100;stroke-width:0.264583"
+       id="rect9042"
+       width="21.163559"
+       height="24.408369"
+       x="145.23637"
+       y="90.715858"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <rect
+       style="opacity:1;fill:#ffffff;stroke:#cccccc;stroke-width:0.131;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect10804"
+       width="18.44524"
+       height="21.273275"
+       x="145.93074"
+       y="93.010353"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <rect
+       style="opacity:1;fill:#000000;stroke:none;stroke-width:0.131;stroke-miterlimit:4;stroke-dasharray:none;filter:url(#filter10879)"
+       id="rect10841"
+       width="18.44524"
+       height="21.273275"
+       x="146.2825"
+       y="92.481186"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <rect
+       style="opacity:1;fill:#ffffff;stroke:#cccccc;stroke-width:0.131;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect10802"
+       width="18.44524"
+       height="21.273275"
+       x="146.2825"
+       y="92.481186"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <rect
+       style="opacity:1;fill:#ffffff;stroke-width:0.131;stroke:#cccccc;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect9674"
+       width="18.44524"
+       height="21.273275"
+       x="146.59554"
+       y="92.283401"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <g
+       id="g11895"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401">
+      <g
+         id="g9952"
+         transform="matrix(0.55768508,0,0,0.50561999,68.442984,50.115256)">
+        <path
+           id="rect45"
+           style="fill:#000000;stroke-width:0.264583"
+           d="m 149.25311,94.015913 v 7.169587 h 1.4702 v -7.169587 z m 3.25407,0 v 7.169587 h 0.59428 v -7.169587 z m 1.70274,0 v 7.169587 h 0.66507 v -7.169587 z m 1.17977,0 v 7.169587 h 0.82579 v -7.169587 z m 1.24023,0 v 7.169587 h 0.42892 v -7.169587 z m 1.61179,0 v 7.169587 h 0.93483 v -7.169587 z m 1.14308,0 v 7.169587 h 0.90641 v -7.169587 z m 2.15439,0 v 7.169587 h 0.38396 v -7.169587 z m 0.70849,0 v 7.169587 h 1.24126 v -7.169587 z" />
+        <rect
+           style="opacity:0.81;fill:#ff0000;stroke-width:0.264583"
+           id="rect8296"
+           width="17.075928"
+           height="0.40669972"
+           x="147.93141"
+           y="97.117233" />
+        <rect
+           style="opacity:0.81;fill:url(#linearGradient8874);fill-opacity:1;stroke-width:0.431637"
+           id="rect8836"
+           width="17.124451"
+           height="3.6791382"
+           x="147.88289"
+           y="93.844795" />
+      </g>
+    </g>
+    <rect
+       style="opacity:1;mix-blend-mode:normal;fill:#000000;stroke-width:0.264583;filter:url(#filter11553)"
+       id="rect11533"
+       width="9.7823334"
+       height="1.6762009"
+       x="150.50887"
+       y="92.128769"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <rect
+       style="opacity:1;fill:#666666;stroke-width:0.264583"
+       id="rect9716"
+       width="9.7823334"
+       height="3.144588"
+       x="150.50887"
+       y="90.394577"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <circle
+       style="opacity:1;fill:#ffffff;stroke:none;stroke-width:0.131;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path10925"
+       cx="155.14035"
+       cy="91.441589"
+       r="0.32619721"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <rect
+       style="opacity:1;fill:#666666;stroke:none;stroke-width:0.118594;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect11047"
+       width="10.842008"
+       height="1.2749357"
+       x="151.30579"
+       y="104.90234"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <rect
+       style="opacity:1;fill:#666666;stroke:none;stroke-width:0.118594;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect11250"
+       width="10.842008"
+       height="1.2749357"
+       x="151.30579"
+       y="107.15734"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <rect
+       style="opacity:1;fill:#666666;stroke:none;stroke-width:0.118594;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect11252"
+       width="10.842008"
+       height="1.2749357"
+       x="151.30579"
+       y="109.37527"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <rect
+       style="opacity:1;fill:#666666;stroke:none;stroke-width:0.131;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect11300"
+       width="1.589403"
+       height="5.7684689"
+       x="148.89873"
+       y="104.91065"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+    <path
+       id="rect11926"
+       style="opacity:0.166771;fill:#ffffff;stroke-width:0.209878"
+       d="m 150.50887,91.371711 c 3.16038,2.215562 6.73238,0.443182 9.78233,0 v 1.978678 h -9.78233 z"
+       sodipodi:nodetypes="ccccc"
+       inkscape:export-filename="/home/fer/Desarrollo/isotech/Xenon y mas/sapper/my-app/static/imagenes/registro folios.png"
+       inkscape:export-xdpi="28.555401"
+       inkscape:export-ydpi="28.555401" />
+  </g>
+</svg>

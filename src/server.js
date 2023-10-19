@@ -60,7 +60,7 @@ if (process.env.DB != "xenon-y-mas-app") {
 	}
 }
 
-mongoose.connect(`mongodb+srv://root:1111@xenon.02uz8yx.mongodb.net/xenon-y-mas-app`, {
+mongoose.connect(`mongodb+srv://root:11111@xenon.02uz8yx.mongodb.net/xenon-y-mas-app`, {
 	useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false
 })
 	.then(() => {

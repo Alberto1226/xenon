@@ -79,7 +79,8 @@
 
 <style>
   .flotante {
-    position: absolute;
+    position: relative;
+    /* se modifico la posision a relativa para correjir el bug del div que se posicionaba fuera de pantalla */
     margin: -47px 0px 0px -259px;
     background-color: white;
     box-shadow: 0px 0px 20px #b3b3b3;

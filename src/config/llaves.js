@@ -1,7 +1,7 @@
 export let llaves = {
   mongodb: {
     user: 'adminBeto',
-    password: '1111',
+    password: '11111',
     server: 'localhost',
     database: 'xenon-y-mas-app',
     puerto: 27017,
@@ -46,7 +46,7 @@ export function devolver_db() {
         llaves: {
           mongodb: {
             user: 'adminBeto',
-            password: '1111',
+            password: '11111',
             server: 'localhost',
             database: 'xenon-y-mas-app',
             puerto: 27017,

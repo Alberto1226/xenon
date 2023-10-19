@@ -12,10 +12,11 @@ export function post(req, res, next) {
     if(!buscando)buscando='';
     const pagina_actual= req.body.pagina_actual-1;
     
-    //console.log("id usuairo = ",usuario._id);    //  usuario:{$ne: req.user.usuario},  que no sea el mismo
+    //console.log("id usuairo = ",usuario._id);    
+    //usuario:{$ne: req.user.usuario},  que no sea el mismo
     //var query = buscando.length==0?{}:{$text:{$search:buscando}};
-//let query = buscando===''? {} :{nombre:{$regex : buscando,$options:"gmi" }};
-let query = {nombre:{ '$regex':buscando,'$options':"gi"}};
+    //let query = buscando===''? {} :{nombre:{$regex : buscando,$options:"gmi" }};
+    let query = {nombre:{ '$regex':buscando,'$options':"gi"}};
 
     Usuario.countDocuments({})
     .then((numero_total) => {

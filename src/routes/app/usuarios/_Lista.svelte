@@ -35,7 +35,8 @@ function obtener_usuarios() {
         $usuarios.lista_actualizada = new Date(); //  cuando se actualizo la lista completa por ultima vez
         $usuarios = $usuarios;
         lista= $usuarios.lista;
-        total_paginas= Math.ceil($usuarios.lista.length/limite_lista)  
+        total_paginas= Math.ceil($usuarios.lista.length/limite_lista);
+        console.log("ar");
       }
     })
     .catch((err)=>{

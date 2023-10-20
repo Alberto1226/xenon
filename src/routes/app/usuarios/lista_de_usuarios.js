@@ -17,10 +17,14 @@ export function post(req, res, next) {
     //var query = buscando.length==0?{}:{$text:{$search:buscando}};
     //let query = buscando===''? {} :{nombre:{$regex : buscando,$options:"gmi" }};
     let query = {nombre:{ '$regex':buscando,'$options':"gi"}};
+    let filtro ={activo:true};
+    console.log(query);
+
+    //se resolvio el bug de los usuarios que no se mostraban
 
     Usuario.countDocuments({})
     .then((numero_total) => {
-        Usuario.find(query)
+        Usuario.find(filtro)
         .sort({ nombre: 1 })
         .skip(pagina_actual*10)
         .exec()

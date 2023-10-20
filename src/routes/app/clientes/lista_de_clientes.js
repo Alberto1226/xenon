@@ -85,7 +85,7 @@ const arreglo_de_buscando_separado_por_comas = (buscando,usuario) => {
 
 
 
-
+//se crashea el server al buscar clientes por nombre
             console.log(query);
 
             // console.log(JSON.stringify(array_resultado))
@@ -150,6 +150,7 @@ function consulta(pagina_actual, usuario) {
             }
             Cliente.countDocuments(query)
                 .then((numero_total) => {
+                    console.log(query);
                     Cliente.find(query)
                         .sort({ nombre: 1 })
                         .limit(10)

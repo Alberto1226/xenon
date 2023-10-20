@@ -16,7 +16,7 @@ export async function post(req, res, next) {
     }
 
     //console.log(req.body);
-    if (accesos.tiene_permisos_gerenciales(req) === false && accesos.tiene_permisos_administrativos(req) === false) {
+    if (accesos.tiene_permisos_gerenciales(req) === false && accesos.tiene_permisos_administrativos(req) === false && accesos.tiene_permisos_vendedor(req) === false) {
         res.send({ ok: false, mensaje: "permisos insuficientes" })
         return;
     }

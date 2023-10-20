@@ -20,6 +20,7 @@
     if (descuento_nuevo > 99 || descuento_nuevo < 0) return;
   
     http_ocupado = true;
+    console.log(pedido);
     postData("/app/pedidos/cambiar_descuento_de_pedido", {
       id: pedido._id,
       descuento_nuevo

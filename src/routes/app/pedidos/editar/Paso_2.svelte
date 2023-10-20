@@ -1,4 +1,7 @@
 <script>
+  import Cambiar_descuento from "./../_listas/Nuevo_Descuento.svelte";
+  import { blur } from "svelte/transition";
+
   import SolicitarResumenDeFolios from "./Solicitar_resumen_de_folios.svelte";
   import { Button, Textfield, Dialog } from "svelte-mui/src";
   import { onMount, createEventDispatcher } from "svelte";
@@ -54,6 +57,12 @@
   let busqueda_coincidencias = 0;
   var total_unidades = 0;
   let tenia_ficha = false;
+
+  let visible = false;
+  let descuento_nuevo = 1;
+  let input;
+  
+
   var recargar_txt =
     "Recargar lista de productos en pedido " + $editar_store.pedido
       ? $editar_store.pedido.folio
@@ -62,14 +71,18 @@
   var visible_promos_analisis = false;
   var analisis = null;
   var mandar_solicitud_checado_de_folios = false;
+  var cambio_descuento_gral = false;
   var sugerencia_visible = false;
 
   onMount(() => {
     buscar = $buscadores.productos;
-    //console.log($buscadores);
+    console.log($editar_store.pedido.descuento);
     $lista_productos_en_pedido_en_edicion = lista_productos;
     // pedido_selecto.descuento = cliente.perfil.porcentaje;
     descuento_a_usar = $editar_store.pedido.descuento;
+
+    descuento_nuevo = descuento_a_usar;
+
     tenia_ficha = $editar_store.pedido.tenia_ficha;
     total_pedido = formato_precio(total); /// info para el footer title
 
@@ -289,6 +302,66 @@
     mandar_solicitud_checado_de_folios = true;
   }
 
+  function cambiar_descuento() {
+    if (http_ocupado ) return;
+    if (descuento_nuevo > 99 || descuento_nuevo < 0) return;
+  
+    http_ocupado = true;
+    console.log($editar_store.pedido);
+    postData("/app/pedidos/cambiar_descuento_de_pedido", {
+      id: $editar_store.pedido._id,
+      descuento_nuevo
+    })
+      .then(respuesta => {
+        //console.log(respuesta);
+        http_ocupado = false;
+        if (respuesta.ok) {
+          $mensajes_app.push({
+            tipo: "exito",
+            mensaje:
+              "Pedido " + $editar_store.pedido.folio + " ha cambiado el descuento " + status
+          });
+          $mensajes_app = $mensajes_app;
+          const { nueva_lista, total_pedido, descuento_nuevo } = respuesta;
+          $editar_store.pedido.lista = nueva_lista;
+          $editar_store.pedido.total_pedido = total_pedido;
+          $editar_store.pedido.lista = descuento_nuevo;
+
+          dispatch("descuento_cambiado", respuesta);
+          visible =false;
+          actualizar_pedido();
+          descuento_a_usar = descuento_nuevo;
+          // console.log(descuento_a_usar);
+        }
+        else{
+
+          $mensajes_app.push({
+            tipo: "error",
+            mensaje:
+              "Pedido " + $editar_store.pedido.folio + " no pudo cambiar el descuento " 
+          });
+          $mensajes_app = $mensajes_app;
+        }
+      })
+      .catch(err => {
+        http_ocupado = false;
+        console.log(err);
+        $mensajes_app.push({
+          tipo: "error",
+          mensaje: "Ups, no se pudo hacer el cambio de descuento, intalo de nuevo."
+        });
+        $mensajes_app = $mensajes_app;
+        procesando = false;
+      });
+  }
+
+  function handleKeyup(event) {
+    //console.log(event.key == "Enter");
+    if (event.key === "Enter") {
+      cambiar_descuento();
+    }
+  }
+
   function procesar_termino_consulta_de_folios(evt) {
     console.log(evt.detail);
     var respuesta = evt.detail;
@@ -309,6 +382,11 @@
   function cerrar_dialogo_de_Folios() {
     $visible_ventana_de_detalles = false;
   }
+
+  const mover_a_mouse = (event) => {
+    // console.log($editar_store.pedido.descuento);
+    visible = true;
+  };
 </script>
 
 {#if mandar_solicitud_checado_de_folios == true}
@@ -329,7 +407,89 @@
   <div class="titulo_2 titulo_formulario subtitulo_">
     Lista de pedido {$editar_store.pedido ? $editar_store.pedido.folio : ""}
     <i class="vertical-align material-icons">create</i>
+
     <div class="tools-folio">
+      {#if visible === false}
+        <!-- content here -->
+        <Button
+          icon
+          dense
+          color="white"
+          on:click={mover_a_mouse}
+          title="Cambiar descuento de un pedido"
+        >
+          <i class="material-icons">local_atm</i>
+        </Button>
+      {:else}
+        <!-- else content here -->
+
+        <div
+          id={$editar_store.pedido._id}
+          class="flotante" in:blur={{ amount: 3, duration: 450 }} out:blur={{ amount: 3, duration: 450, delay: 500 }}
+        >
+          <table style="width:100%" class="no_select">
+            <tr>
+              <td style="width:50px;font-weight:900;">
+                <table>
+                  <tr>
+                    <td style="width:150px;font-weight:900;">
+                      folio: {$editar_store.pedido.folio}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="width:50px;font-weight:900;"
+                      title="descuento aplicado"
+                    >
+                      {$editar_store.pedido.descuento} %
+                    </td>
+                  </tr>
+                </table>
+              </td>
+
+              <td style="width:250px">
+                <Textfield
+                  style="text-align:center"
+                  min="0"
+                  max="99"
+                  bind:this={input}
+                  outlined
+                  type="number"
+                  bind:value={descuento_nuevo}
+                  message="Nuevo descuento"
+                  autofocus
+                  on:keyup={handleKeyup}
+                  placeholder="Aplicar un descuento distinto"
+                />
+              </td>
+              <td style="width: 50px;">%</td>
+              <td style="width:50px">
+                <Button
+                  style="border-radius:25px"
+                  raised
+                  color="primary"
+                  title="Cambiar el descuento actual"
+                  on:click={cambiar_descuento}
+                >
+                  <i class="material-icons">save</i>
+                </Button>
+              </td>
+              <td style="width:50px" title="Cerrar dialogo">
+                <Button
+                  icon
+                  on:click={() => {
+                    visible = false;
+                  }}
+                  color="red"
+                >
+                  <i class="material-icons">cancel</i>
+                </Button>
+              </td>
+            </tr>
+          </table>
+        </div>
+      {/if}
+
       <Button on:click={solicitar_resumen_folios}
         ><img
           src="imagenes/icono_mas_info_de_folios.svg"
@@ -386,7 +546,7 @@
             }}
             icon
           >
-            <i class="material-icons ">cancel</i>
+            <i class="material-icons">cancel</i>
           </Button>
         </td>
       </tr>
@@ -517,7 +677,7 @@
               <br />
 
               <span class="porcentaje_pedido">
-                descuento {formato_precio($editar_store.pedido.descuento)} %
+                descuento {descuento_a_usar} %
               </span>
             </td>
             <td>
@@ -537,7 +697,7 @@
               $ {formato_precio(total)}
               <br />
               <span style="color:white;font-size:0.9em;">
-                descuento en ficha {descuento_a_usar} %
+                descuento en ficha {(descuento_nuevo)} %
               </span>
             </td>
           {/if}
@@ -702,5 +862,40 @@
     margin: 32vh auto;
     width: fit-content;
     color: gray;
+  }
+
+  .flotante {
+    position: relative;
+    /* se modifico la posision a relativa para correjir el bug del div que se posicionaba fuera de pantalla */
+    /* margin: -47px 0px 0px -259px; */
+    background-color: white;
+    color: #222d32;
+    box-shadow: 0px 0px 20px #b3b3b3;
+    z-index: 2;
+    border-radius: 19px;
+    padding: 4px 17px;
+    width: 300px;
+
+    animation-name: borde_animado;
+    animation-duration: 450ms;
+  }
+
+  .fondo {
+    top: 0px;
+    left: 0px;
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 255, 255, 0.301);
+    z-index: 1;
+  }
+
+  @keyframes borde_animado {
+    from {
+      border-radius: 14px;
+    }
+    to {
+      border-radius: 19px;
+    }
   }
 </style>

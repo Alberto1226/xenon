@@ -20,6 +20,12 @@ export function tiene_permisos_administrativos(req) {
     return usuario.rol == "administrador";
 }
 
+export function tiene_permisos_vendedor(req) {
+    var usuario = req.user;
+    if (usuario == undefined) return false;
+    return usuario.rol == "vendedor";
+}
+
 
 
 export function tiene_permisos_gerenciales(req) {

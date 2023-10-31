@@ -38,6 +38,7 @@
 
   var moneda = "Pesos Mexicanos";
   var direccion = "";
+  var obs = "Sin Observaciones";
   var cliente_tiene_carrito = true; //  false es lo que se busca para poder hacer el pedido
   var cliente_tiene_ficha_de_descuento = false;
   let cargando = false;
@@ -422,6 +423,10 @@ function crear_ficha_descuento_temporal() {
     font-weight: 500;
   }
 
+  .observaciones {
+    word-wrap: break-word;
+  }
+
   .color_azul {
     color: dodgerblue;
     font-weight: 500;
@@ -523,6 +528,8 @@ function crear_ficha_descuento_temporal() {
       <br />
       {cliente.agente == '' ? '--' : ' Agente : ' + cliente.agente.nombre}
       <br />
+      <b class="observaciones">Observaciones: {cliente.observaciones}</b>
+      <br/>
       {#if cliente_tiene_ficha_de_descuento}
         <!-- content here -->
         <div class="existe_ficha">

@@ -142,6 +142,15 @@
       {/if}
 
     </div>
+    <div class="ocho espacio">
+      <Textfield
+        bind:value={nuevo_cliente.observaciones}
+        placeholder="Observaciones"
+        label="Observaciones*"
+        message="Observaciones"
+        type="text"
+      />
+    </div>
   </div>
 
 </div>

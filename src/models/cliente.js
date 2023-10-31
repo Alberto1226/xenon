@@ -43,6 +43,7 @@ var schema = new Schema({
     telefono:{type:String ,default :""},
     uid:{type:String ,default :""},
     password:{type:String ,default :""},   
+    observaciones:{type:String, default:""},
 },{ timestamps: true });
 
 schema.methods.encryptPassword = function(password){

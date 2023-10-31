@@ -25,6 +25,7 @@
   let moneda_original;
   var tipo_de_cambio_original;
   var notas;
+  var obs = "";
   var tipo_de_cambio ;
   onMount(() => {
 
@@ -90,7 +91,11 @@
           $clientes.lista.push(respuesta.cliente);
           $clientes = $clientes;
           cliente_completo = respuesta.cliente;
-          //console.log(cliente_completo);
+          console.log(cliente_completo.observaciones);
+          obs = cliente_completo.observaciones;
+          if(cliente_completo.observaciones == ""){
+            obs = "Sin observaciones";
+          }
         } else {
           //console.log("No se encontro al cliente ");
         }
@@ -207,6 +212,17 @@
 
   .cliente {
     grid-area: cliente;
+
+    margin: 18px;
+    overflow-x: auto;
+    text-align: center;
+    padding: 4% 7% 10% 10%;
+    border-radius: 2px;
+  }
+
+  .observaciones {
+    word-wrap: break-word;
+    
   }
 
   .direccion_de_envio {
@@ -308,8 +324,12 @@
       {/if}
       {direccion == '' ? '--' : 'Perfil de cliente: ' + cliente.perfil.perfil + ' ' } <b>{formato_precio(cliente.perfil.porcentaje)}</b>
       <br />
-      {$editar_store.pedido.agente.nombre == '' ? '--' : ' Agente : ' } <b>{cliente.agente}</b>
+      {$editar_store.pedido.agente.nombre == '' ? '--' : ' Agente: ' } <b>{cliente.agente}</b>
       <br />
+      {#if obs == ""}
+        {obtener_cliente()}
+      {/if}
+      <p class="observaciones">{obs == '' ? 'Sin Observaciones' : 'Observaciones: ' } <b>{obs}</b></p>
 
       {#if $editar_store.pedido.tenia_ficha}
         <!-- content here -->
@@ -349,7 +369,7 @@
             style="width: 468px;max-width: 30vw;"
             class="direccion-box"
             cols="30"
-            rows="10"
+            rows="3"
             bind:value={direccion} />
         </td>
       </tr>

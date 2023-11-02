@@ -381,6 +381,7 @@
             style="width: 468px;max-width: 30vw;"
             class="direccion-box"
             cols="30"
+            maxlength="480"
             rows="10"
             bind:value={notas} />
         </td>

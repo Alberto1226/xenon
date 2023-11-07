@@ -345,7 +345,7 @@
               style="font-size:3.9333px;text-align:center;text-anchor:middle;stroke-width:0.264583"
               x="48.604042"
               y="13.318976"
-              id="tspan94684">subir por Master-box</tspan
+              id="tspan94684">Subir por Master-box</tspan
             ></text
           >
           <text

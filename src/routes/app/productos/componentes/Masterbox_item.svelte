@@ -20,15 +20,15 @@
         console.log(primer_registro);
 
         console.log(ultimo_registro);
-        if (primer_registro.length > 4)
+        if (primer_registro.length > 7)
             terminacion_1 = primer_registro.substr(
-                primer_registro.length - 4,
-                4
+                primer_registro.length - 7,
+                7
             );
-        if (ultimo_registro.length > 4)
+        if (ultimo_registro.length > 7)
             terminacion_2 = ultimo_registro.substr(
-                ultimo_registro.length - 4,
-                4
+                ultimo_registro.length - 7,
+                7
             );
     }
     $: if (editando == false) {
@@ -127,7 +127,7 @@
                 id="rect94710"
                 style="fill:rgb(255 255 255 / 20%);stroke-width:0.264583"
             />
-            <circle
+            <!-- <circle
                 style="    fill: rgb(255 255 255 / 40%);stroke-width:0.0987645"
                 id="circle94714"
                 cx="61.152485"
@@ -147,7 +147,7 @@
                 cx="66.664742"
                 cy="167.7627"
                 r="0.78020346"
-            />
+            /> -->
             <text
                 xml:space="preserve"
                 style="font-style:normal;font-weight:normal;font-size:4.71181px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.117795"
@@ -232,7 +232,7 @@
                         : terminacion_2}</tspan
                 ></text
             >
-            <circle
+            <!-- <circle
                 style="    fill: rgb(255 255 255 / 40%);stroke-width:0.0987645"
                 id="circle94734"
                 cx="60.901352"
@@ -252,7 +252,7 @@
                 cx="66.413612"
                 cy="174.47832"
                 r="0.78020346"
-            />
+            /> -->
         </g>
     </svg>
     {#if editando == true}

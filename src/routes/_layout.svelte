@@ -4,14 +4,124 @@
   import Side_panel from "./_layouts/side_panel.svelte";
   import WTFAI from "./_layouts/wtfai.svelte";
   import Mensajes_app from "./_layouts/mensajes_app.svelte";
-  import { usuario_db, cargando_mensajes_app, ui, version } from "./stores";
+  import {
+    usuario_db,
+    cargando_mensajes_app,
+    postData,
+    ui,
+    version,
+  } from "./stores";
   import { goto } from "@sapper/app";
   import Login from "./login/index.svelte";
+  import { onMount, tick, afterUpdate } from "svelte";
   //export let segment;
   var logueado = false;
   var ancho_side_panel = 185;
 
+  var noti = false;
+  var meses = 3;
+  let esVisible = false;
+  var dir = "";
+
   $: $ui.side_panel_minimizado = ancho_side_panel === 100;
+
+  onMount(() => {
+    //console.log($usuario_db, "usuario al montar");
+    tick().then(() => {
+      // Ahora el componente está en el DOM, puedes ejecutar código relacionado con su visualización
+      esVisible = true;
+      //console.log("Componente visible");
+    });
+  });
+
+  function filtrarArregloClientes(arr1, arr2) {
+    // Filtrar arr2: eliminar registros con el mismo id que en arr1
+    const arr2Final = arr2.filter((item2) => !arr1.includes(item2._id));
+
+    return arr2Final;
+  }
+
+  $: if ($usuario_db.rol != undefined) {
+    //console.log($usuario_db, "usuario al montar ifififififfiif");
+    postData("app/notificacion/activar_notis", {
+      m: meses,
+      us: $usuario_db,
+    })
+      .then((res) => {
+        if (res.ok) {
+          if (res.rol === "administrador") {
+            noti = res.notis;
+            dir = res.rol;
+            console.log(res.rol, "else");
+          }
+          if (res.rol === "vendedor") {
+            const clientesSinCompra = filtrarArregloClientes(
+              res.ids,
+              res.clientes.lista
+            );
+            //console.log(clientesSinCompra, "rrrrrrrrrrrrrrrrrrrrrr");
+            if (clientesSinCompra.length) {
+              noti = true;
+              dir = res.rol;
+            }
+          }
+        } else {
+          console.log(res, "else");
+        }
+        return "hecho";
+      })
+      .catch((err) => {
+        console.log(err);
+        return "error";
+      });
+  }
+
+  // Define la función que toma dos arreglos y retorna los IDs de los clientes sin repetir
+  function obtenerIdsClientes(pedido, carrito) {
+    // Obtén los IDs de clientes del carrito
+    const idsClientesCarrito = carrito.map((item) => item.cliente.id);
+
+    // Obtén los IDs de clientes del pedido
+    const idsClientesPedido = pedido.map((item) => item.cliente.id);
+
+    // Combina los dos conjuntos y elimina duplicados
+    const idsClientesUnicos = [
+      ...new Set([...idsClientesCarrito, ...idsClientesPedido]),
+    ];
+
+    return idsClientesUnicos;
+  }
+
+  // function obtenerIdsUnicos(arreglo1, arreglo2) {
+  //   // Función auxiliar para obtener los IDs de un arreglo
+  //   function obtenerIds(arreglo) {
+  //     return arreglo.map((item) => item.cliente.id);
+  //   }
+
+  //   // Combina los IDs de ambos arreglos y elimina duplicados
+  //   const todosLosIds = [
+  //     ...new Set([...obtenerIds(arreglo1), ...obtenerIds(arreglo2)]),
+  //   ];
+
+  //   return todosLosIds;
+  // }
+
+  function filtrarClientesPorIds(ids, arregloClientes) {
+    // Filtra los clientes que no tienen un ID coincidente en el array de IDs
+    // const clientesFiltrados = arregloClientes.filter(
+    //     (cliente) => !ids.includes(cliente.id)
+    // );
+
+    const clientesFiltrados = arregloClientes.filter(
+      (cliente) => !ids.some((item1) => item1 === cliente._id)
+    );
+
+    // const arr2Final = arr2.filter(
+    //     (item2) => !arr1Filtrado.some((item1) => item1 === item2._id)
+    // );
+
+    return clientesFiltrados;
+  }
 </script>
 
 <main class:admin_background={$usuario_db.usuario == undefined}>
@@ -76,6 +186,23 @@
               <td>
                 {location.hostname}
               </td>
+              {#if noti == true && ($usuario_db.rol == "administrador" || $usuario_db.rol == "vendedor")}
+                <td>
+                  <Button
+                    on:click={() => {
+                      if (dir == "vendedor") {
+                        goto("app/notificacion/clientes");
+                      }
+                      if (dir == "administrador") {
+                        goto("app/notificacion/productos");
+                      }
+                    }}
+                  >
+                    <i class="material-icons" id="notis">notifications_active</i
+                    >
+                  </Button>
+                </td>
+              {/if}
               <td>
                 <Button
                   on:click={() => {
@@ -110,6 +237,14 @@
 <Mensajes_app />
 
 <style>
+  #notis {
+    color: rgb(247, 0, 0);
+  }
+
+  #notis:hover {
+    color: rgb(255, 136, 0);
+  }
+
   main {
     position: relative;
     height: 100vh;

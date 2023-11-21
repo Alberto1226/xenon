@@ -123,7 +123,7 @@
 </script>
 
 <svelte:head>
-    <title>Productos Sin Vender</title>
+    <title>Clientes Sin Compras</title>
 </svelte:head>
 
 <div class="contenedor">
@@ -148,15 +148,6 @@
                     <Row indice={i} {cliente} />
                 {/each}
             </div>
-            <div class="centrado" style="width: fit-content;margin: 0 auto;">
-                <!--- FLECHAS -->
-
-                <Paginacion
-                    bind:total_paginas={total_paginas2}
-                    bind:ha_cambiado_pagina_actual
-                    bind:pagina_actual
-                />
-            </div>
         </div>
     {/if}
 
@@ -168,26 +159,33 @@
         {/each}
     </div> -->
 </div>
+<div>
+    <div class="centrado paginacion">
+        <!--- FLECHAS -->
+
+        <Paginacion
+            bind:total_paginas={total_paginas2}
+            bind:ha_cambiado_pagina_actual
+            bind:pagina_actual
+        />
+    </div>
+</div>
 
 <style>
-    .contenedor {
-        padding: 1%;
+    .paginacion {
+        width: 100%;
+        position: absolute;
+        bottom: 30px;
     }
 
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 10px;
-        font-weight: bold;
-
-        border-bottom: 1px solid #c1b9b9;
-        padding-bottom: 7px;
-        font-weight: 600;
-        color: #8a8a8a;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
-        grid-template-rows: 1fr;
-        grid-template-areas: "uno dos tres cuatro cinco seis siete once";
+    .contenedor {
+        background: rgba(255, 255, 255, 0.349);
+        margin: 15px 15px;
+        padding: 15px;
+        border-radius: 5px;
+        border: 1px solid #d8d8d8;
+        max-height: calc(110vh - 230px);
+        overflow-y: auto;
     }
 
     .grid-container-head {
@@ -196,18 +194,11 @@
         font-weight: 600;
         color: #8a8a8a;
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
         grid-template-rows: 1fr;
-        grid-template-areas: "uno dos tres cuatro cinco seis siete ocho   ";
+        grid-template-areas: "uno dos tres cinco seis";
     }
 
-    .pagination {
-        margin-top: 10px;
-    }
-
-    button {
-        margin: 5px;
-    }
     .uno {
         grid-area: uno;
     }
@@ -222,23 +213,11 @@
         grid-area: tres;
     }
 
-    .cuatro {
-        grid-area: cuatro;
-    }
-
     .cinco {
         grid-area: cinco;
     }
 
     .seis {
         grid-area: seis;
-    }
-
-    .siete {
-        grid-area: siete;
-    }
-
-    .ocho {
-        grid-area: ocho;
     }
 </style>

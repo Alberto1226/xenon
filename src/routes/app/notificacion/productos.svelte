@@ -162,15 +162,6 @@
                     <Row indice={i} {producto} />
                 {/each}
             </div>
-            <div class="centrado" style="width: fit-content;margin: 0 auto;">
-                <!--- FLECHAS -->
-
-                <Paginacion
-                    bind:total_paginas={total_paginas2}
-                    bind:ha_cambiado_pagina_actual
-                    bind:pagina_actual
-                />
-            </div>
         </div>
     {/if}
 
@@ -182,15 +173,38 @@
         {/each}
     </div> -->
 </div>
+<div>
+    <div class="centrado paginacion">
+        <!--- FLECHAS -->
+
+        <Paginacion
+            bind:total_paginas={total_paginas2}
+            bind:ha_cambiado_pagina_actual
+            bind:pagina_actual
+        />
+    </div>
+</div>
 
 <style>
+    .paginacion {
+        width: 100%;
+        position: absolute;
+        bottom: 30px;
+    }
+
     .contenedor {
-        padding: 1%;
+        background: rgba(255, 255, 255, 0.349);
+        margin: 15px 15px;
+        padding: 15px;
+        border-radius: 5px;
+        border: 1px solid #d8d8d8;
+        max-height: calc(110vh - 230px);
+        overflow-y: auto;
     }
 
     .grid-container {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(7, 1fr);
         gap: 10px;
         font-weight: bold;
 
@@ -198,19 +212,10 @@
         padding-bottom: 7px;
         font-weight: 600;
         color: #8a8a8a;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
         grid-template-rows: 1fr;
-        grid-template-areas: "uno dos tres cuatro cinco seis siete once";
+        grid-template-areas: "uno dos tres cuatro cinco seis siete";
     }
 
-    .pagination {
-        margin-top: 10px;
-    }
-
-    button {
-        margin: 5px;
-    }
     .uno {
         grid-area: uno;
     }
@@ -239,9 +244,5 @@
 
     .siete {
         grid-area: siete;
-    }
-
-    .ocho {
-        grid-area: ocho;
     }
 </style>

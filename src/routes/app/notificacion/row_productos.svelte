@@ -361,7 +361,7 @@
     {producto.subcategoria.nombre ? producto.subcategoria.nombre : "--"}
   </div>
 
-  <div>
+  <div class="siete">
     <div class="display-flex">
       <div class="pointer reactivo centrado-margen">
         {producto.existencia.actual}
@@ -417,9 +417,9 @@
     /* font-weight: 200; */
     padding: 1px 0px;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
     grid-template-rows: 1fr;
-    grid-template-areas: "uno dos tres cuatro cinco seis siete ocho  once";
+    grid-template-areas: "uno dos tres cuatro cinco seis siete";
   }
 
   .uno {
@@ -458,34 +458,12 @@
     margin: auto 0;
   }
 
-  .ocho {
-    grid-area: ocho;
-    margin: auto 0;
-  }
-
-  .nueve {
-    grid-area: nueve;
-    margin: auto 0;
-  }
-
-  .once {
-    grid-area: once;
-  }
   .precio {
     color: gray;
     font-size: 0.8em;
   }
   .reactivo:hover {
     font-weight: 500;
-  }
-  .letra_chica {
-    font-size: 0.8em;
-    margin: 0 auto;
-  }
-
-  .contenedor_lista {
-    height: 250px;
-    overflow-y: auto;
   }
 
   .icono_bloqueado {

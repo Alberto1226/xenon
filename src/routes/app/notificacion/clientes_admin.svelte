@@ -2,7 +2,7 @@
     import { Button } from "svelte-mui/src";
     import Lista from "../productos/_Lista.svelte";
     import { fade } from "svelte/transition";
-    import Row from "./row_clientes.svelte";
+    import Row from "./row_clientes_admin.svelte";
     import Paginacion from "./pagina.svelte";
     import {
         formato_precio,
@@ -41,12 +41,11 @@
         postData("app/notificacion/activar_notis", {
             us: $usuario_db,
             m: meses,
-            donde: "clientes",
+            donde: "clientesAdmin",
         })
             .then((res) => {
-                if (res.rol === "vendedor") {
+                if (res.rol === "administrador") {
                     clientesSinCompra = res.clientes;
-                    console.log(clientesSinCompra, "rrrrrrrrrrrrrrrrrrrrrr");
                 }
 
                 cant = Array(
@@ -64,44 +63,6 @@
                 return "error";
             });
     });
-
-    function filtrarArregloClientes(arr1, arr2) {
-        // Filtrar arr2: eliminar registros con el mismo id que en arr1
-        const arr2Final = arr2.filter((item2) => !arr1.includes(item2._id));
-
-        return arr2Final;
-    }
-
-    function filtrarClientesPorIds(ids, arregloClientes) {
-        // Filtra los clientes que no tienen un ID coincidente en el array de IDs
-        // const clientesFiltrados = arregloClientes.filter(
-        //     (cliente) => !ids.includes(cliente.id)
-        // );
-
-        const clientesFiltrados = arregloClientes.filter(
-            (cliente) => !ids.some((item1) => item1 === cliente._id),
-        );
-
-        // const arr2Final = arr2.filter(
-        //     (item2) => !arr1Filtrado.some((item1) => item1 === item2._id)
-        // );
-
-        return clientesFiltrados;
-    }
-
-    function obtenerIdsUnicos(arreglo1, arreglo2) {
-        // Función auxiliar para obtener los IDs de un arreglo
-        function obtenerIds(arreglo) {
-            return arreglo.map((item) => item.cliente.id);
-        }
-
-        // Combina los IDs de ambos arreglos y elimina duplicados
-        const todosLosIds = [
-            ...new Set([...obtenerIds(arreglo1), ...obtenerIds(arreglo2)]),
-        ];
-
-        return todosLosIds;
-    }
 
     function getPageItems() {
         const startIndex = (pagina_actual - 1) * itemsPerPage;
@@ -131,7 +92,7 @@
         <div class="tres centrado">Teléfono</div>
         <!-- <div class="cuatro centrado">Fecha nacimiento</div> -->
         <div class="cinco centrado">Perfil</div>
-        <div class="seis centrado">Región</div>
+        <div class="seis centrado">Agente</div>
         <!-- <div class="siete centrado">Plataforma</div> -->
         <!-- <div class="ocho centrado">Acciones</div> -->
     </div>

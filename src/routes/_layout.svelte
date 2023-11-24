@@ -34,36 +34,22 @@
     });
   });
 
-  function filtrarArregloClientes(arr1, arr2) {
-    // Filtrar arr2: eliminar registros con el mismo id que en arr1
-    const arr2Final = arr2.filter((item2) => !arr1.includes(item2._id));
-
-    return arr2Final;
-  }
-
   $: if ($usuario_db.rol != undefined) {
     //console.log($usuario_db, "usuario al montar ifififififfiif");
     postData("app/notificacion/activar_notis", {
       m: meses,
       us: $usuario_db,
+      donde: "layout",
     })
       .then((res) => {
         if (res.ok) {
           if (res.rol === "administrador") {
             noti = res.notis;
-            dir = res.rol;
-            console.log(res.rol, "else");
+            dir = res.ruta;
           }
           if (res.rol === "vendedor") {
-            const clientesSinCompra = filtrarArregloClientes(
-              res.ids,
-              res.clientes.lista
-            );
-            //console.log(clientesSinCompra, "rrrrrrrrrrrrrrrrrrrrrr");
-            if (clientesSinCompra.length) {
-              noti = true;
-              dir = res.rol;
-            }
+            noti = res.notis;
+            dir = res.ruta;
           }
         } else {
           console.log(res, "else");
@@ -74,53 +60,6 @@
         console.log(err);
         return "error";
       });
-  }
-
-  // Define la función que toma dos arreglos y retorna los IDs de los clientes sin repetir
-  function obtenerIdsClientes(pedido, carrito) {
-    // Obtén los IDs de clientes del carrito
-    const idsClientesCarrito = carrito.map((item) => item.cliente.id);
-
-    // Obtén los IDs de clientes del pedido
-    const idsClientesPedido = pedido.map((item) => item.cliente.id);
-
-    // Combina los dos conjuntos y elimina duplicados
-    const idsClientesUnicos = [
-      ...new Set([...idsClientesCarrito, ...idsClientesPedido]),
-    ];
-
-    return idsClientesUnicos;
-  }
-
-  // function obtenerIdsUnicos(arreglo1, arreglo2) {
-  //   // Función auxiliar para obtener los IDs de un arreglo
-  //   function obtenerIds(arreglo) {
-  //     return arreglo.map((item) => item.cliente.id);
-  //   }
-
-  //   // Combina los IDs de ambos arreglos y elimina duplicados
-  //   const todosLosIds = [
-  //     ...new Set([...obtenerIds(arreglo1), ...obtenerIds(arreglo2)]),
-  //   ];
-
-  //   return todosLosIds;
-  // }
-
-  function filtrarClientesPorIds(ids, arregloClientes) {
-    // Filtra los clientes que no tienen un ID coincidente en el array de IDs
-    // const clientesFiltrados = arregloClientes.filter(
-    //     (cliente) => !ids.includes(cliente.id)
-    // );
-
-    const clientesFiltrados = arregloClientes.filter(
-      (cliente) => !ids.some((item1) => item1 === cliente._id)
-    );
-
-    // const arr2Final = arr2.filter(
-    //     (item2) => !arr1Filtrado.some((item1) => item1 === item2._id)
-    // );
-
-    return clientesFiltrados;
   }
 </script>
 
@@ -190,11 +129,11 @@
                 <td>
                   <Button
                     on:click={() => {
-                      if (dir == "vendedor") {
-                        goto("app/notificacion/clientes");
+                      if ($usuario_db.rol == "vendedor") {
+                        goto(`app/notificacion/${dir}`);
                       }
-                      if (dir == "administrador") {
-                        goto("app/notificacion/productos");
+                      if ($usuario_db.rol == "administrador") {
+                        goto(`app/notificacion/${dir}`);
                       }
                     }}
                   >

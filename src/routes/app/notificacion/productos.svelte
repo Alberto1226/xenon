@@ -33,6 +33,7 @@
     var ha_cambiado_pagina_actual = false;
     var total_paginas2 = 50;
     var http_ocupado = true;
+    var activar = false;
 
     onMount(() => {
         pagina_actual = $paginas_actuales.productos;
@@ -40,18 +41,13 @@
         postData("app/notificacion/activar_notis", {
             us: $usuario_db,
             m: meses,
+            donde: "productos",
         })
             .then((res) => {
-                //console.log(res);
                 Prod = res.productos;
-                //console.log(Prod);
-                // const startIndex = (currentPage - 1) * itemsPerPage;
-                // const endIndex = startIndex + itemsPerPage;
-                // Prodpag = Prod.slice(startIndex, endIndex);
+                activar = res.btn;
                 cant = Array(Math.ceil(Prod.length / itemsPerPage)).fill();
                 Prodpag = getPageItems();
-                console.log(Prod, "todos los productos");
-                console.log(cant.length, "array");
                 total_paginas2 = cant.length;
 
                 return "hecho";
@@ -63,62 +59,6 @@
             });
     });
 
-    function filtrarArreglos(arr1, arr2) {
-        // Filtrar arr1: eliminar registros con cantidad menor a 10
-        const arr1Filtrado = arr1.filter((item) => item.cantidad >= 10);
-
-        // Filtrar arr2: eliminar registros con el mismo id que en arr1Filtrado
-        const arr2Final = arr2.filter(
-            (item2) => !arr1Filtrado.some((item1) => item1._id === item2._id)
-        );
-
-        return arr2Final;
-    }
-
-    function combinarArreglosConCantidad(arreglo1, arreglo2) {
-        const idsObj = {};
-
-        // Función auxiliar para procesar un arreglo y actualizar el objeto idsObj
-        function procesarArreglo(arreglo) {
-            for (let i = 0; i < arreglo.length; i++) {
-                // Verifica que el elemento actual sea un arreglo
-                if (Array.isArray(arreglo[i].lista)) {
-                    // Bucle interno para recorrer los subarreglos
-                    for (let j = 0; j < arreglo[i].lista.length; j++) {
-                        // Verifica que el elemento interno sea un objeto y tiene la propiedad '_id' y 'cantidad'
-                        if (
-                            typeof arreglo[i].lista[j] === "object" &&
-                            arreglo[i].lista[j].hasOwnProperty("_id") &&
-                            arreglo[i].lista[j].hasOwnProperty("cantidad")
-                        ) {
-                            const id = arreglo[i].lista[j].producto._id;
-                            const cantidad = arreglo[i].lista[j].cantidad;
-
-                            // Verifica si el id ya está en el objeto
-                            if (idsObj.hasOwnProperty(id)) {
-                                // Si existe, suma la cantidad
-                                idsObj[id] += cantidad;
-                            } else {
-                                // Si no existe, agrega el id con su cantidad
-                                idsObj[id] = cantidad;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Procesa cada arreglo
-        procesarArreglo(arreglo1);
-        procesarArreglo(arreglo2);
-
-        // Convierte el objeto a un arreglo antes de devolverlo
-        const resultado = Object.keys(idsObj).map((id) => ({
-            _id: id,
-            cantidad: idsObj[id],
-        }));
-        return resultado;
-    }
     function getPageItems() {
         const startIndex = (pagina_actual - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
@@ -139,7 +79,19 @@
 <svelte:head>
     <title>Productos Sin Vender</title>
 </svelte:head>
-
+{#if activar}
+    <div class="btn">
+        <Button
+            on:click={() => {
+                if ($usuario_db.rol == "administrador") {
+                    goto(`app/notificacion/clientes_admin`);
+                }
+            }}
+        >
+            <i class="material-icons" id="person">person</i>
+        </Button>
+    </div>
+{/if}
 <div class="contenedor">
     <div class="grid-container">
         <div class="uno">#</div>
@@ -244,5 +196,12 @@
 
     .siete {
         grid-area: siete;
+    }
+    #person {
+        color: rebeccapurple;
+    }
+    .btn {
+        display: flex;
+        justify-content: center;
     }
 </style>

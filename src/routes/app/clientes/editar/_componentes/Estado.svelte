@@ -2,6 +2,7 @@
   import { Button, Textfield, Menu, Menuitem } from "svelte-mui/src";
   import {onMount,createEventDispatcher} from "svelte";
   export var estado;
+  export var activar;
   export var actualizar;
   const dispatch = createEventDispatcher();
   onMount(()=>{
@@ -138,7 +139,7 @@
 
 <Menu origin="top left" style="width:250px;">
   <div slot="activator">
-    <Button  color={estado==""?"red":"primary"} raised ripple={false} style="padding-right: 4px;width:100%;">
+    <Button  color={estado==""?"red":"primary"} raised ripple={false} style="padding-right: 4px;width:100%;"disabled={!activar}>
       <i  class="material-icons vertical-alineado icono_peque">
         arrow_drop_down
       </i>

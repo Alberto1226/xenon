@@ -69,9 +69,9 @@
 
     $: if (ha_cambiado_pagina_actual == true) {
         ha_cambiado_pagina_actual = false;
-        console.log(pagina_actual, "pagina");
+        // console.log(pagina_actual, "pagina");
         Prodpag = getPageItems();
-        console.log(Prodpag, "productos por pagina");
+        // console.log(Prodpag, "productos por pagina");
         //cargar_pagina();
     }
 </script>
@@ -203,5 +203,6 @@
     .btn {
         display: flex;
         justify-content: center;
+        /* margin: 1px; */
     }
 </style>

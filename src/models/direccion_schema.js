@@ -18,8 +18,10 @@ var schema = new Schema({
     numero_interior:{type:String ,default :''},
     pais:{type:String ,default :''},
     y_calle:{type:String ,default :''},
-    rfc:{type:String ,default :''},
     tipo:{type:String ,default :''},
+    rfc:{type:String ,default :''},
+    cfdi:{type:String ,default :''},
+    rfiscal:{type:String ,default :''},
     telefono :{type: String ,default :'' },
     correo :{type: String ,default :'' },
 });

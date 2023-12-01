@@ -2,6 +2,7 @@
   import { Button, Textfield, Menu, Menuitem } from "svelte-mui/src";
   import {onMount} from "svelte";
   export var tipo_direccion;
+  export let isSelected = false; // Variable booleana para indicar si se seleccionó una opción
   onMount(()=>{
    lista= tipo_direccions;
   })
@@ -49,6 +50,7 @@
     <Menuitem
       on:click={() => {
         tipo_direccion = item;
+        isSelected = true; // Actualizar la variable booleana al seleccionar una opción
       }}>
       {item}
     </Menuitem>

@@ -308,7 +308,6 @@
   };
   let checked = true;
 
-
   let municipio_editable = "";
 
   $: if (direccion_a_editar.cfdi == "") {
@@ -500,6 +499,7 @@
                       direccion_a_editar.cfdi = item.value;
 
                       if (!direccion_a_editar.cfdi == "") {
+                        direccion_a_editar.rfiscal = "";
                         showRfisMenu = true;
                         updateRfisOptions();
                       }

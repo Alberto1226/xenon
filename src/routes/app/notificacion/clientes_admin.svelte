@@ -1,5 +1,5 @@
 <script>
-    import { Button } from "svelte-mui/src";
+    import { Button, Menuitem, Menu } from "svelte-mui/src";
     import Lista from "../productos/_Lista.svelte";
     import { fade } from "svelte/transition";
     import Row from "./row_clientes_admin.svelte";
@@ -24,7 +24,8 @@
     import Login from "../../login/index.svelte";
     import { onMount } from "svelte";
     //export let segment;
-    var meses = 3;
+    let mes = 3;
+    var meses = [1, 2, 3];
     var pagina_actual = 1;
     var client,
         clientesSinCompra = [];
@@ -38,9 +39,15 @@
     onMount(() => {
         pagina_actual = $paginas_actuales.productos;
         //console.log($usuario_db);
+        datos();
+    });
+
+    function datos() {
+        // Este bloque se ejecutará cada vez que 'mes' cambie
+        http_ocupado = true; // Puedes agregar esto para mostrar "Cargando..." mientras se obtienen los datos
         postData("app/notificacion/activar_notis", {
             us: $usuario_db,
-            m: meses,
+            m: mes,
             donde: "clientesAdmin",
         })
             .then((res) => {
@@ -62,7 +69,7 @@
                 //http_ocupado = false;
                 return "error";
             });
-    });
+    }
 
     function getPageItems() {
         const startIndex = (pagina_actual - 1) * itemsPerPage;
@@ -79,13 +86,62 @@
         console.log(clientpag, "productos por pagina");
         //cargar_pagina();
     }
+
+    $: if (mes !== undefined) {
+        datos();
+    }
 </script>
 
 <svelte:head>
     <title>Clientes Sin Compras</title>
 </svelte:head>
 
+<div class="filtro">
+    <div>
+        <Menu origin="top left" style="width:250px;">
+            <div slot="activator">
+                <Button
+                    color={mes == "" ? "red" : "primary"}
+                    raised
+                    ripple={false}
+                    style="padding-right: 4px;width:100%;"
+                >
+                    <span> {mes == "" ? "Meses" : mes}</span>
+                    <i class="material-icons vertical-alineado icono_peque">
+                        arrow_drop_down
+                    </i>
+                </Button>
+                <br />
+                <span class="indice_row">Meses a Buscar</span>
+            </div>
+
+            <div class="scrollable">
+                {#each meses as item}
+                    <!-- content here -->
+
+                    <Menuitem
+                        on:click={() => {
+                            mes = item;
+                            // isSelected = true; // Actualizar la variable booleana al seleccionar una opción
+                        }}
+                    >
+                        {`${item} ${item === 1 ? "mes" : "meses"}`}
+                    </Menuitem>
+                {/each}
+            </div>
+        </Menu>
+    </div>
+</div>
+
 <div class="contenedor">
+    <div
+        class="titulo"
+        style="display: flex;
+            flex-direction: row;
+            justify-content: center;"
+    >
+        <h4>Clientes Sin Compras</h4>
+    </div>
     <div class="grid-container-head">
         <div class="uno">Alias</div>
         <div class="dos centrado">Nombre</div>
@@ -131,6 +187,18 @@
 </div>
 
 <style>
+    .filtro {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .scrollable {
+        overflow-y: auto;
+        height: 150px;
+        width: 350px;
+    }
+
     .paginacion {
         width: 100%;
         position: absolute;
@@ -139,8 +207,8 @@
 
     .contenedor {
         background: rgba(255, 255, 255, 0.349);
-        margin: 15px 15px;
-        padding: 15px;
+        /* margin: 15px 15px; */
+        padding: 0px 15px;
         border-radius: 5px;
         border: 1px solid #d8d8d8;
         max-height: calc(110vh - 230px);

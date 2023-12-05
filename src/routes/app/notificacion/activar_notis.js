@@ -358,7 +358,7 @@ function consultar_pedidos(m) {
                         .then(async (resDB) => {
                             console.log(resDB)
                             //let lista_filtrada= await filtrar_lista(buscando,resDB);
-                            resolve({ ok: true, lista: resDB, numero_total, paginas: Math.floor((numero_total + 10 - 1) / (10)) });
+                            resolve({ ok: true, lista: resDB, /*query,*/ numero_total, paginas: Math.floor((numero_total + 10 - 1) / (10)) });
                         })
                 })
         } catch (err) {
@@ -520,7 +520,7 @@ function eliminarDatosCoincidentes(arrResultado, arrDatos) {
 
 
     // Filtrar el arrDatos para eliminar los elementos con _id coincidentes
-    const arrDatosFiltrado = arrDatos.filter(item => !idsResultado.includes(item._id));
+    const arrDatosFiltrado = arrDatos.filter(item => !idsResultado.includes(item.id));
     return arrDatosFiltrado;
 }
 

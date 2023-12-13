@@ -297,7 +297,7 @@ async function row_en_texto(registro, i, tipo_cambio) {
       <div class="unidad">${registro.producto.unidad} </div>
       <div class="marca">${registro.producto.marca} </div>
       <div class="codigo">${registro.producto.codigo} </div>
-      <div class="descripcion">${registro.producto.nombre} ${tipo_cambio == 1 ? "" : " X " + tipo_cambio} </div>
+      <div class="descripcion">${registro.producto.nombre}  </div>
       <div class="precio">${formato_precio(+registro.producto.precio * tipo_cambio)}</div>
       <div class="importe">${formato_precio(+registro.producto.precio * registro.cantidad / tipo_cambio)}</div>
     </div>  `;

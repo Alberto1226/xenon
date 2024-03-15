@@ -35,3 +35,7 @@
 <Tarjeta  url="app/graficos/BarrasProductos" titulo="x Producto"  tipo="Barras" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
 
 
+
+<Tarjeta  url="app/graficos/BarrasUsuarios" titulo="x Usuario"  tipo="Barras" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
+
+

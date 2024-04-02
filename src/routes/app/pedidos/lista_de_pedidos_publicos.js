@@ -58,9 +58,9 @@ const arreglo_de_buscando_separado_por_comas = (buscando, usuario) => {
 
                 query = {
                     $or: [
-                        { 'cliente.alias': { '$regex': buscando_pipes, '$options': "gi" } },
-                        { 'cliente.nombre': { '$regex': buscando_pipes, '$options': "gi" } },
-                        { 'cliente.direccion': { '$regex': buscando_pipes, '$options': "gi" } },
+                        { 'cliente.alias': { '$regex': buscando_pipes, '$options': "im" } },
+                        { 'cliente.nombre': { '$regex': buscando_pipes, '$options': "im" } },
+                        { 'cliente.direccion': { '$regex': buscando_pipes, '$options': "im" } },
                     ]
                 }
 

@@ -13,7 +13,7 @@ export async function post(req, res, next) {
     if (buscando.length > 30) return res.send({ ok: false, mensaje: 'error#876' });
     const pagina_actual = req.body.pagina_actual - 1;
     //console.log(req.body); 
-    let query = { nombre: { '$regex': buscando, '$options': "gi" } };
+    let query = { nombre: { '$regex': buscando, '$options': "im" } };
     if (buscando === '') {
          res.send( await consulta(query, res, pagina_actual));
     }

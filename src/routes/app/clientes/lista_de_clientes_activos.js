@@ -16,7 +16,7 @@ export function post(req, res, next) {
     //console.log("id usuairo = ",cliente._id);    //  cliente:{$ne: req.user.cliente},  que no sea el mismo
     //var query = buscando.length==0?{}:{$text:{$search:buscando}};
 //let query = buscando===''? {} :{nombre:{$regex : buscando,$options:"gmi" }};
-let query = {nombre:{ '$regex':buscando,'$options':"gi"},activo:true};
+let query = {nombre:{ '$regex':buscando,'$options':"im"},activo:true};
 
     Cliente.countDocuments({})
     .then((numero_total) => {

@@ -54,14 +54,14 @@ const arreglo_de_buscando_separado_por_comas = (buscando,usuario) => {
                         [{ "agente.id": usuario._id },
                         {
                             $or: [
-                                { alias: { '$regex': buscando_pipes, '$options': "gi" } },
-                                { nombre: { '$regex': buscando_pipes, '$options': "gi" } },
-                                { correo: { '$regex': buscando_pipes, '$options': "gi" } },
-                                { 'direcciones_asociadas.correo': { '$regex': buscando_pipes, '$options': "gi" } },
-                                { 'direcciones_asociadas.estado': { '$regex': buscando_pipes, '$options': "gi" } },
-                                { 'direcciones_asociadas.cp': { '$regex': buscando_pipes, '$options': "gi" } },
-                                { 'direcciones_asociadas.estado': { '$regex': buscando_pipes, '$options': "gi" } },
-                                { 'direcciones_asociadas.municipio': { '$regex': buscando_pipes, '$options': "gi" } }
+                                { alias: { '$regex': buscando_pipes, '$options': "im" } },
+                                { nombre: { '$regex': buscando_pipes, '$options': "im" } },
+                                { correo: { '$regex': buscando_pipes, '$options': "im" } },
+                                { 'direcciones_asociadas.correo': { '$regex': buscando_pipes, '$options': "im" } },
+                                { 'direcciones_asociadas.estado': { '$regex': buscando_pipes, '$options': "im" } },
+                                { 'direcciones_asociadas.cp': { '$regex': buscando_pipes, '$options': "im" } },
+                                { 'direcciones_asociadas.estado': { '$regex': buscando_pipes, '$options': "im" } },
+                                { 'direcciones_asociadas.municipio': { '$regex': buscando_pipes, '$options': "im" } }
                             ]
                         }
                         ]}
@@ -71,14 +71,14 @@ const arreglo_de_buscando_separado_por_comas = (buscando,usuario) => {
             else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
                 query =     {
                     $or: [
-                        { alias: { '$regex': buscando_pipes, '$options': "gi" } },
-                        { nombre: { '$regex': buscando_pipes, '$options': "gi" } },
-                        { correo: { '$regex': buscando_pipes, '$options': "gi" } },
-                        { 'direcciones_asociadas.correo': { '$regex': buscando_pipes, '$options': "gi" } },
-                        { 'direcciones_asociadas.estado': { '$regex': buscando_pipes, '$options': "gi" } },
-                        { 'direcciones_asociadas.cp': { '$regex': buscando_pipes, '$options': "gi" } },
-                        { 'direcciones_asociadas.estado': { '$regex': buscando_pipes, '$options': "gi" } },
-                        { 'direcciones_asociadas.municipio': { '$regex': buscando_pipes, '$options': "gi" } }
+                        { alias: { '$regex': buscando_pipes, '$options': "im" } },
+                        { nombre: { '$regex': buscando_pipes, '$options': "im" } },
+                        { correo: { '$regex': buscando_pipes, '$options': "im" } },
+                        { 'direcciones_asociadas.correo': { '$regex': buscando_pipes, '$options': "im" } },
+                        { 'direcciones_asociadas.estado': { '$regex': buscando_pipes, '$options': "im" } },
+                        { 'direcciones_asociadas.cp': { '$regex': buscando_pipes, '$options': "im" } },
+                        { 'direcciones_asociadas.estado': { '$regex': buscando_pipes, '$options': "im" } },
+                        { 'direcciones_asociadas.municipio': { '$regex': buscando_pipes, '$options': "im" } }
                     ]
                 }
             }

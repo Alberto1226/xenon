@@ -16,7 +16,7 @@ export function post(req, res, next) {
     //usuario:{$ne: req.user.usuario},  que no sea el mismo
     //var query = buscando.length==0?{}:{$text:{$search:buscando}};
     //let query = buscando===''? {} :{nombre:{$regex : buscando,$options:"gmi" }};
-    let query = {nombre:{ '$regex':buscando,'$options':"gi"}};
+    let query = {nombre:{ '$regex':buscando,'$options':"im"}};
     let filtro ={activo:true};
     console.log(query);
 

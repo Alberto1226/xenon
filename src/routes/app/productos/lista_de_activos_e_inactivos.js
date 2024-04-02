@@ -47,17 +47,44 @@ const arreglo_de_buscando_separado_por_comas = (buscando) => {
             if (buscando.includes('"')) {
                 buscando_pipes = buscando.replace('"', '')
             }
+
+            //la siguiente cuare al migrar el servidor no realiza la consulta
+            // query = {
+            //     $or: [
+            //         { nombre: { '$regex': buscando_pipes, '$options': "gi" } },
+            //         { codigo_de_barras: { '$regex': buscando_pipes, '$options': "gi" } },
+            //         { marca: { '$regex': buscando_pipes, '$options': "gi" } },
+            //         { 'categoria.nombre': { '$regex': buscando_pipes, '$options': "gi" } },
+            //         { 'subcategoria.nombre': { '$regex': buscando_pipes, '$options': "gi" } },
+            //         { codigo: { '$regex': buscando_pipes, '$options': "gi" } },
+
+            //     ]
+            // }
+
+            //esta consulta se cambio los 
             query = {
                 $or: [
-                    { nombre: { '$regex': buscando_pipes, '$options': "gi" } },
-                    { codigo_de_barras: { '$regex': buscando_pipes, '$options': "gi" } },
-                    { marca: { '$regex': buscando_pipes, '$options': "gi" } },
-                    { 'categoria.nombre': { '$regex': buscando_pipes, '$options': "gi" } },
-                    { 'subcategoria.nombre': { '$regex': buscando_pipes, '$options': "gi" } },
-                    { codigo: { '$regex': buscando_pipes, '$options': "gi" } },
-
+                    { nombre: { '$regex': buscando_pipes, '$options': "i" } },
+                    { codigo_de_barras: { '$regex': buscando_pipes, '$options': "i" } },
+                    { marca: { '$regex': buscando_pipes, '$options': "i" } },
+                    { 'categoria.nombre': { '$regex': buscando_pipes, '$options': "i" } },
+                    { 'subcategoria.nombre': { '$regex': buscando_pipes, '$options': "i" } },
+                    { codigo: { '$regex': buscando_pipes, '$options': "i" } }
                 ]
             }
+
+            // query = {
+            //     $or: [
+            //         { nombre: { '$regex': buscando_pipes, '$options': "im" } },
+            //         { codigo_de_barras: { '$regex': buscando_pipes, '$options': "im" } },
+            //         { marca: { '$regex': buscando_pipes, '$options': "im" } },
+            //         { 'categoria.nombre': { '$regex': buscando_pipes, '$options': "im" } },
+            //         { 'subcategoria.nombre': { '$regex': buscando_pipes, '$options': "im" } },
+            //         { codigo: { '$regex': buscando_pipes, '$options': "im" } }
+            //     ]
+            // }
+            
+            
 
             // query.activo = activo;
             console.log(query);

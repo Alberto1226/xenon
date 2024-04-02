@@ -49,11 +49,11 @@ const arreglo_de_buscando_separado_por_comas = (buscando ,activo) => {
             }
             query = {
                 $or: [
-                    { nombre: { '$regex': buscando_pipes, '$options': "gi" } },
-                    { marca: { '$regex': buscando_pipes, '$options': "gi" } },
-                    { 'categoria.nombre': { '$regex': buscando_pipes, '$options': "gi" } },
-                    { 'subcategoria.nombre': { '$regex': buscando_pipes, '$options': "gi" } },
-                    { codigo: { '$regex': buscando_pipes, '$options': "gi" } },
+                    { nombre: { '$regex': buscando_pipes, '$options': "im" } },
+                    { marca: { '$regex': buscando_pipes, '$options': "im" } },
+                    { 'categoria.nombre': { '$regex': buscando_pipes, '$options': "im" } },
+                    { 'subcategoria.nombre': { '$regex': buscando_pipes, '$options': "im" } },
+                    { codigo: { '$regex': buscando_pipes, '$options': "im" } },
 
                 ]
             }

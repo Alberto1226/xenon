@@ -54,11 +54,11 @@ const arreglo_de_buscando_separado_por_comas = (buscando ,activo) => {
             }
             query = {
                 $or: [
-                    { nombre: { '$regex': buscando_pipes, '$options': "gi" } },
-                    { correo: { '$regex': buscando_pipes, '$options': "gi" } },
-                    { 'direcciones_asociadas.estado': { '$regex': buscando_pipes, '$options': "gi" } },
-                    { 'direcciones_asociadas.municipio': { '$regex': buscando_pipes, '$options': "gi" } },
-                    { 'direcciones_asociadas.cp': { '$regex': buscando_pipes, '$options': "gi" } },
+                    { nombre: { '$regex': buscando_pipes, '$options': "im" } },
+                    { correo: { '$regex': buscando_pipes, '$options': "im" } },
+                    { 'direcciones_asociadas.estado': { '$regex': buscando_pipes, '$options': "im" } },
+                    { 'direcciones_asociadas.municipio': { '$regex': buscando_pipes, '$options': "im" } },
+                    { 'direcciones_asociadas.cp': { '$regex': buscando_pipes, '$options': "im" } },
                 ]
             }
 

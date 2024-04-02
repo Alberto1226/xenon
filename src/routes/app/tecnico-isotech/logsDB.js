@@ -76,7 +76,7 @@ async function consulta_compleja(accion , buscando_texto , pagina_actual,cantida
             let consulta={$and:[]} ;
             
             if(buscando_texto!=""){
-                var expresion_regular =  {body:{ '$regex': String(buscando_texto).replace(' ', '|'), '$options': "gi" }} ;
+                var expresion_regular =  {body:{ '$regex': String(buscando_texto).replace(' ', '|'), '$options': "im" }} ;
                 consulta = {$and:[expresion_regular ]}
             }
             if(accion!="todos")consulta.$and.push({accion});

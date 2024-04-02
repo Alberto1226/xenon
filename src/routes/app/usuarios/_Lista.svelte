@@ -36,7 +36,7 @@ function obtener_usuarios() {
         $usuarios = $usuarios;
         lista= $usuarios.lista;
         total_paginas= Math.ceil($usuarios.lista.length/limite_lista);
-        console.log("ar");
+        // console.log("ar");
       }
     })
     .catch((err)=>{

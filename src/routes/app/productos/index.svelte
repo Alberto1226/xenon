@@ -1,6 +1,12 @@
 <script>
   import { Button, Textfield } from "svelte-mui/src";
-  import { ui, productos, buscadores, paginas_actuales } from "./../../stores";
+  import {
+    ui,
+    productos,
+    buscadores,
+    usuario_db,
+    paginas_actuales,
+  } from "./../../stores";
   import { storeWithDebounce, accion_buscar } from "./storez.js";
   //****import Nuevo from "./nuevo/nuevo.svelte";
   import { blur } from "svelte/transition";
@@ -103,19 +109,21 @@
               <Info_escaneados />
             </td>
             <td>
-              Nuevo
-              <Button
-                on:click={() => {
-                  estado_actual = "creando producto";
-                  goto("app/productos/nuevo");
-                }}
-                icon
-                raised
-                outlined
-                title="crear producto nuevo (+)"
-              >
-                <i class="material-icons">add</i>
-              </Button>
+              {#if $usuario_db.rol != "diseñador"}
+                Nuevo
+                <Button
+                  on:click={() => {
+                    estado_actual = "creando producto";
+                    goto("app/productos/nuevo");
+                  }}
+                  icon
+                  raised
+                  outlined
+                  title="crear producto nuevo (+)"
+                >
+                  <i class="material-icons">add</i>
+                </Button>
+              {/if}
             </td>
           </tr>
         </table>

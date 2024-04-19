@@ -123,7 +123,7 @@
           });
           $mensajes_app = $mensajes_app;
           var producto_tmp = $productos.lista.find(
-            (producto_t) => producto_t._id == producto._id
+            (producto_t) => producto_t._id == producto._id,
           );
           producto.activo = status;
           producto_tmp.activo = status;
@@ -171,11 +171,11 @@
           //producto.existencia.actual = cantidad_existente;
           //console.log(producto.existencia)
           mensaje_bueno(
-            `Existencias de <b>${producto.nombre}</b> actualizadas a ${cantidad_existente}.`
+            `Existencias de <b>${producto.nombre}</b> actualizadas a ${cantidad_existente}.`,
           );
           var lista_temp = $productos.lista;
           var producto_temp = lista_temp.find(
-            (prod) => prod._id == producto._id
+            (prod) => prod._id == producto._id,
           );
           producto_temp.existencia.actual = cantidad_existente;
           producto.existencia.actual = cantidad_existente;
@@ -213,11 +213,11 @@
         //console.log(doc.data())
         if (doc.ok) {
           mensaje_bueno(
-            `Ingreso nuevo en existencias de <b>${producto.nombre}</b> actualizadas a ${cantidad_existente}.`
+            `Ingreso nuevo en existencias de <b>${producto.nombre}</b> actualizadas a ${cantidad_existente}.`,
           );
           var lista_temp = $productos.lista;
           var producto_temp = lista_temp.find(
-            (prod) => prod._id == producto._id
+            (prod) => prod._id == producto._id,
           );
           producto_temp.existencia.actual =
             +cantidad_existente + +cantidad_a_ingresar;
@@ -258,7 +258,7 @@
           $mensajes_app = $mensajes_app;
           var lista_temp = $productos.lista;
           var producto_temp = lista_temp.find(
-            (prod) => prod._id == producto._id
+            (prod) => prod._id == producto._id,
           );
           producto_temp.existencia = doc.producto.existencia;
           producto_temp.carritos = doc.producto.carritos;
@@ -346,7 +346,7 @@
         <td>
           {#if promo.tiene_promo == true}
             <div in:scale={{ duration: 200, delay: 500 }} class="icono_promo">
-              <i class="material-icons " title="Promoción ">new_releases</i>
+              <i class="material-icons" title="Promoción ">new_releases</i>
             </div>
           {/if}
           {#if producto.galeria_imagenes != undefined && producto.galeria_imagenes.length > 0}
@@ -408,15 +408,17 @@
         <i class="material-icons icono_15px">create</i>
       </Button>
     {/if}
-    <Button
-      icon
-      dense
-      color="green"
-      on:click={() => (viendo_masterbox_inyector = true)}
-      title="Inyectar usando Master-Box "
-    >
-      <img src="imagenes/masterbox.svg" alt="" class="masterbox" />
-    </Button>
+    {#if $usuario_db.rol != "diseñador"}
+      <Button
+        icon
+        dense
+        color="green"
+        on:click={() => (viendo_masterbox_inyector = true)}
+        title="Inyectar usando Master-Box "
+      >
+        <img src="imagenes/masterbox.svg" alt="" class="masterbox" />
+      </Button>
+    {/if}
   </div>
   <div>
     <div class="display-flex">
@@ -446,71 +448,90 @@
     <!-- content here -->
     <div class="once">
       <ButtonGroup>
-        {#if producto.activo}
-          <!-- content here -->
-          <Button
-            icon
-            dense
-            color="accent"
-            on:click={() => {
-              cambiar_status_activo(false);
-            }}
-            title="desactivar para pedidos"
-          >
-            <i class="material-icons">cancel</i>
-          </Button>
-        {:else}
-          <!-- else content here -->
-          <Button
-            icon
-            dense
-            color="green"
-            on:click={() => {
-              cambiar_status_activo(true);
-            }}
-            title="activar para pedidos"
-          >
-            <i class="material-icons">check</i>
-          </Button>
+        {#if $usuario_db.rol != "diseñador"}
+          {#if producto.activo}
+            <!-- content here -->
+            <Button
+              icon
+              dense
+              color="accent"
+              on:click={() => {
+                cambiar_status_activo(false);
+              }}
+              title="desactivar para pedidos"
+            >
+              <i class="material-icons">cancel</i>
+            </Button>
+          {:else}
+            <!-- else content here -->
+            <Button
+              icon
+              dense
+              color="green"
+              on:click={() => {
+                cambiar_status_activo(true);
+              }}
+              title="activar para pedidos"
+            >
+              <i class="material-icons">check</i>
+            </Button>
+          {/if}
         {/if}
-        {#if $usuario_db.rol != "vendedor"}
-          <Button
-            icon
-            dense
-            color="green"
-            on:click={() => {
-              $editar_store.producto = producto;
-              goto("/app/productos/editar");
-            }}
-            title="editar"
-          >
-            <i class="material-icons">create</i>
-          </Button>
 
-          <Button
-            icon
-            dense
-            color="darkorange"
-            title="movimientos"
-            on:click={ir_a_movimientos_por_producto}
-          >
-            <i class="material-icons">history</i>
-          </Button>
-          <Button
-            icon
-            dense
-            color="darkorange"
-            title="movimientos"
-            on:click={ir_a_todos_movimientos_por_producto}
-          >
-            <i class="material-icons">details</i>
-          </Button>
+        {#if $usuario_db.rol != "vendedor"}
+          {#if $usuario_db.rol != "diseñador"}
+            <Button
+              icon
+              dense
+              color="green"
+              on:click={() => {
+                $editar_store.producto = producto;
+                goto("/app/productos/editar");
+              }}
+              title="editar"
+            >
+              <i class="material-icons">create</i>
+            </Button>
+
+            <Button
+              icon
+              dense
+              color="darkorange"
+              title="movimientos"
+              on:click={ir_a_movimientos_por_producto}
+            >
+              <i class="material-icons">history</i>
+            </Button>
+            <Button
+              icon
+              dense
+              color="darkorange"
+              title="movimientos"
+              on:click={ir_a_todos_movimientos_por_producto}
+            >
+              <i class="material-icons">details</i>
+            </Button>
+          {/if}
+          {#if $usuario_db.rol == "diseñador"}
+            <Button
+              icon
+              dense
+              color="green"
+              on:click={() => {
+                $editar_store.producto = producto;
+                goto("/app/productos/editar");
+              }}
+              title="editar"
+            >
+              <i class="material-icons">create</i>
+            </Button>
+          {/if}
         {/if}
       </ButtonGroup>
       <br />
 
       <ButtonGroup>
-        {#if $usuario_db.rol != "vendedor"}
+        {#if $usuario_db.rol != "vendedor" && $usuario_db.rol != "diseñador"}
           <Button
             icon
             dense
@@ -560,7 +581,7 @@
         <tr>
           <td class="indice col10">{i + 1})</td>
           <td class="cantidad col10">{item.cantidad}</td>
-          <td class="folio  col10">{item.folio}</td>
+          <td class="folio col10">{item.folio}</td>
           <td class="nombre col40">{item.cliente.nombre}</td>
           <td class="fecha col40"
             >{new Date(item.fecha).toLocaleDateString("es-MX", options)}</td

@@ -51,7 +51,7 @@
 <div class="centrado">
   <div class="centrado">Version {$version}</div>
 
-  {#if $usuario_db.rol != "almacen"}
+  {#if $usuario_db.rol != "almacen" && $usuario_db.rol != "diseñador"}
     <div class="centrado" in:fade={{ duration: 400 }}>
       <Button
         title="Presiona + en tu teclado"

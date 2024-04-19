@@ -91,7 +91,7 @@
         //producto_tmp.fh_creado = new Date(producto_tmp.fh_creado)
         let nueva_lista = $productos.lista;
         let producto_en_lista = nueva_lista.find(
-          (element) => element._id === nuevo_producto._id
+          (element) => element._id === nuevo_producto._id,
         );
         producto_en_lista = nuevo_producto;
         $productos = $productos;
@@ -223,150 +223,164 @@
 
 <div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}>
   <div class="grid-container">
-    <div class="area_info_general margen caja">
-      <div class="subtitulo ">Información general</div>
-      <div class="contenido_caja">
-        <Textfield
-          outlined
-          id="codigo_input"
-          bind:value={nuevo_producto.codigo}
-          placeholder="Código*"
-          message="Código*"
-          type="text"
-        />
+    {#if $usuario_db.rol != "diseñador"}
+      <div class="area_info_general margen caja">
+        <div class="subtitulo">Información general</div>
+        <div class="contenido_caja">
+          <Textfield
+            outlined
+            id="codigo_input"
+            bind:value={nuevo_producto.codigo}
+            placeholder="Código*"
+            message="Código*"
+            type="text"
+          />
 
-        <Textfield
-          outlined
-          id="codigo_de_barras_input"
-          bind:value={nuevo_producto.codigo_de_barras}
-          placeholder="Código de barras"
-          message="Código de barras"
-          type="text"
-        />
+          <Textfield
+            outlined
+            id="codigo_de_barras_input"
+            bind:value={nuevo_producto.codigo_de_barras}
+            placeholder="Código de barras"
+            message="Código de barras"
+            type="text"
+          />
 
-        <Textfield
-          outlined
-          bind:value={nuevo_producto.nombre}
-          placeholder="Nombre*"
-          message="Nombre*"
-          type="text"
-        />
+          <Textfield
+            outlined
+            bind:value={nuevo_producto.nombre}
+            placeholder="Nombre*"
+            message="Nombre*"
+            type="text"
+          />
 
-        <Textfield
-          outlined
-          bind:value={nuevo_producto.descripcion}
-          placeholder="Descripción"
-          message="Descripción"
-          type="text"
-        />
+          <Textfield
+            outlined
+            bind:value={nuevo_producto.descripcion}
+            placeholder="Descripción"
+            message="Descripción"
+            type="text"
+          />
 
-        <table>
-          <tr>
-            <td style="width: 50%;">
-              <Marca bind:marca={nuevo_producto.marca} />
-            </td>
-            <td style="width: 50%;">
-              <Unidad bind:unidad={nuevo_producto.unidad} />
-            </td>
-          </tr>
-        </table>
-        <!-- <Categoria bind:categoria={nuevo_producto.categoria} /> -->
-        <Checkbox {...props} bind:checked={nuevo_producto.para_venta_publico}>
-          Para venta al público
-        </Checkbox>
+          <table>
+            <tr>
+              <td style="width: 50%;">
+                <Marca bind:marca={nuevo_producto.marca} />
+              </td>
+              <td style="width: 50%;">
+                <Unidad bind:unidad={nuevo_producto.unidad} />
+              </td>
+            </tr>
+          </table>
+          <!-- <Categoria bind:categoria={nuevo_producto.categoria} /> -->
+          <Checkbox {...props} bind:checked={nuevo_producto.para_venta_publico}>
+            Para venta al público
+          </Checkbox>
+        </div>
       </div>
-    </div>
-    <div class="area_carac_tecnicas margen caja">
-      <div class="subtitulo ">Características técnicas</div>
-      <div class="contenido_caja">
-        <Caracteristicas_tecnicas
-          bind:caracteristicas_tecnicas={nuevo_producto.caracteristicas_tecnicas}
-        />
+      <div class="area_carac_tecnicas margen caja">
+        <div class="subtitulo">Características técnicas</div>
+        <div class="contenido_caja">
+          <Caracteristicas_tecnicas
+            bind:caracteristicas_tecnicas={nuevo_producto.caracteristicas_tecnicas}
+          />
+        </div>
       </div>
-    </div>
-    <div class="area_precios margen caja">
-      <div class="subtitulo ">Precios</div>
-      <div class="contenido_caja">
-        <table style="width: 99%;">
-          <tr>
-            <td>
-              <span class="indice_row">$</span>
-            </td>
-            <td>
-              {#if $usuario_db.rol === "administrador"}
-                <Textfield
-                  outlined
-                  bind:value={nuevo_producto.precio}
-                  placeholder="Precio público*"
-                  message="Precio público*"
-                  type="number"
-                />
-              {/if}
-            </td>
-          </tr>
-        </table>
+      <div class="area_precios margen caja">
+        <div class="subtitulo">Precios</div>
+        <div class="contenido_caja">
+          <table style="width: 99%;">
+            <tr>
+              <td>
+                <span class="indice_row">$</span>
+              </td>
+              <td>
+                {#if $usuario_db.rol === "administrador"}
+                  <Textfield
+                    outlined
+                    bind:value={nuevo_producto.precio}
+                    placeholder="Precio público*"
+                    message="Precio público*"
+                    type="number"
+                  />
+                {/if}
+              </td>
+            </tr>
+          </table>
 
-        <Checkbox
-          {...props}
-          bind:checked={nuevo_producto.recomendar_como_paqueteria}
-        >
-          <i class="material-icons vertical-alineado">local_shipping</i> Recomendar
-          como paquetería
-        </Checkbox>
-        <Checkbox
-          {...props}
-          bind:checked={nuevo_producto.aplicar_descuento_distribuidor}
-        >
-          Aplicar descuento distribuidor
-        </Checkbox>
-        <Precios bind:precio_publico={nuevo_producto.precio} />
+          <Checkbox
+            {...props}
+            bind:checked={nuevo_producto.recomendar_como_paqueteria}
+          >
+            <i class="material-icons vertical-alineado">local_shipping</i> Recomendar
+            como paquetería
+          </Checkbox>
+          <Checkbox
+            {...props}
+            bind:checked={nuevo_producto.aplicar_descuento_distribuidor}
+          >
+            Aplicar descuento distribuidor
+          </Checkbox>
+          <Precios bind:precio_publico={nuevo_producto.precio} />
+        </div>
       </div>
-    </div>
-    <div class="existencias margen caja">
-      <div class="subtitulo ">Existencias</div>
-      <div class="contenido_caja">
-        {#if $usuario_db.rol === "administrador"}
-          <!-- content here -->
+      <div class="existencias margen caja">
+        <div class="subtitulo">Existencias</div>
+        <div class="contenido_caja">
+          {#if $usuario_db.rol === "administrador"}
+            <!-- content here -->
 
-          <!-- <Textfield
+            <!-- <Textfield
             outlined
             bind:value={nuevo_producto.existencia.actual}
             placeholder="Existencias"
             message="Existencias"
             type="number" /> -->
-        {/if}
-        <table>
-          <tr>
-            <td>
-              <Textfield
-                outlined
-                bind:value={nuevo_producto.existencia.minimo}
-                placeholder="Mínimo"
-                message="Mínimo"
-                type="number"
-              />
-            </td>
-            <td>
-              <Textfield
-                outlined
-                bind:value={nuevo_producto.existencia.maximo}
-                placeholder="Máximo"
-                message="Máximo"
-                type="number"
-              />
-            </td>
-          </tr>
-        </table>
+          {/if}
+          <table>
+            <tr>
+              <td>
+                <Textfield
+                  outlined
+                  bind:value={nuevo_producto.existencia.minimo}
+                  placeholder="Mínimo"
+                  message="Mínimo"
+                  type="number"
+                />
+              </td>
+              <td>
+                <Textfield
+                  outlined
+                  bind:value={nuevo_producto.existencia.maximo}
+                  placeholder="Máximo"
+                  message="Máximo"
+                  type="number"
+                />
+              </td>
+            </tr>
+          </table>
+        </div>
       </div>
-    </div>
-    <div class="imagenes margen caja">
-      <div class="subtitulo ">Imágenes</div>
-      <div class="contenido_caja">
-        <Uploader
-          bind:galeria_imagenes_original={nuevo_producto.galeria_imagenes}
-        />
+      <div class="imagenes margen caja">
+        <div class="subtitulo">Imágenes</div>
+        <div class="contenido_caja">
+          <Uploader
+            bind:galeria_imagenes_original={nuevo_producto.galeria_imagenes}
+          />
+        </div>
       </div>
-    </div>
+    {/if}
+
+    {#if $usuario_db.rol == "diseñador"}
+      <div class="imagenes margen caja">
+        <div class="subtitulo">Imágenes</div>
+        <div class="contenido_caja">
+          <Uploader
+            bind:galeria_imagenes_original={nuevo_producto.galeria_imagenes}
+          />
+        </div>
+      </div>
+    {/if}
+
     <div class="area_footer1" />
     <div class="area_footer2">
       <Button on:click={cancelar}>

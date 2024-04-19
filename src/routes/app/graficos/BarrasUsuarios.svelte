@@ -123,7 +123,7 @@
   function solicitarUsuarios() {
     http_ocupado = true;
     postData("app/pedidos/consultas/todos_los_usuarios", {
-      tipo: "vendedor",
+      // tipo: "vendedor",
     })
       .then((respuesta) => {
         http_ocupado = false;

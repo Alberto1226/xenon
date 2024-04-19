@@ -11,14 +11,14 @@ export async function post(req, res, next) {
         res.send({ ok: false, mensaje: "permisos insuficientes" })
         return;
     }
-    let tipo = req.body.tipo;
+    // let tipo = req.body.tipo;
     try {
 
         Usuario.aggregate()
             .match(
                 {
-                    rol: tipo,
-                    activo: true
+                    // rol: tipo,
+                    // activo: true
                 }
             )
             .project(

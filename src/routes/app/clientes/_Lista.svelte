@@ -182,7 +182,7 @@
   <table style="width:100%;">
     <tr>
       <td style="width:20vw;">
-        {#if $usuario_db.rol != "vendedor"}
+        {#if $usuario_db.rol == "administrador"}
           <!-- content here -->
           <Descargar bind:lista_completa_para_descarga bind:http_ocupado />
         {/if}

@@ -10,7 +10,8 @@
     //console.log()
     setTimeout(()=>{
       cliente_selecto = $editar_store.cliente;
-      cliente_selecto.fecha_nacimiento = new Date(cliente_selecto.fecha_nacimiento);
+      // cliente_selecto.fecha_nacimiento = new Date(cliente_selecto.fecha_nacimiento);
+      // console.log("index-----",cliente_selecto);
     },500)
   })
   const dispatch = createEventDispatcher();

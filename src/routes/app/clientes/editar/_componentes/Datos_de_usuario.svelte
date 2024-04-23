@@ -15,11 +15,12 @@
     setTimeout(() => {
       const primer_input = document.getElementById("primer_input");
       primer_input.focus();
-      //console.log(cliente_selecto);
+      // console.log("datos----------------",cliente_selecto);
     }, 500);
   });
   const onchange = ({ detail }) => {
-    //console.log("onchange", detail);
+    // console.log("onchange", detail);
+    cliente_selecto.fecha_nacimiento = detail;
   };
   var errores = {
     nombre: "Nombre no puede estar vacío",

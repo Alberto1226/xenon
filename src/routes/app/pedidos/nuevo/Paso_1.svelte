@@ -14,7 +14,7 @@
     clientes,
     lista_productos_en_pedido_en_edicion,
     usuario_db,
-    editar_store
+    editar_store,
   } from "./../../../stores";
   export var pedido_nuevo;
   export var cliente;
@@ -39,7 +39,8 @@
   var moneda = "Pesos Mexicanos";
   var direccion = "";
   var obs = "Sin Observaciones";
-  var cliente_tiene_carrito = true; //  false es lo que se busca para poder hacer el pedido
+  // var cliente_tiene_carrito = true; //  false es lo que se busca para poder hacer el pedido
+  var cliente_tiene_carrito = false; //  false es lo que se busca para poder hacer el pedido
   var cliente_tiene_ficha_de_descuento = false;
   let cargando = false;
   let http_ultima_actividad_fecha = Date.now();
@@ -94,21 +95,22 @@
   function checar_si_tiene_carrito_pendiente(id_cliente) {
     cargando = true;
     postData("app/pedidos/nuevo/ya_tiene_carrito", { id: id_cliente })
-      .then(res => {
+      .then((res) => {
         cargando = false;
         //console.log(res);
 
         if (res.ok) {
           //console.log(res);
-          cliente_tiene_carrito = res.carrito != null;
+          // cliente_tiene_carrito = res.carrito != null;
+          cliente_tiene_carrito = false;
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
         cargando = false;
         $mensajes_app.push({
           tipo: "error",
-          mensaje: "No se pudo saber si ya tiene un carrito en proceso"
+          mensaje: "No se pudo saber si ya tiene un carrito en proceso",
         });
         $mensajes_app = $mensajes_app;
       });
@@ -116,7 +118,7 @@
 
   function buscar_ficha_existente() {
     postData("app/clientes/leer_ficha_descuento_cliente", { cliente }).then(
-      res => {
+      (res) => {
         if (res.ok) {
           //console.log(res.ficha);
           cliente_tiene_ficha_de_descuento = res.ficha !== null;
@@ -128,12 +130,11 @@
           cliente_tiene_ficha_de_descuento = false;
           ficha_descuento_existente = res.ficha;
         }
-      }
+      },
     );
   }
 
-
-function crear_ficha_descuento_temporal() {
+  function crear_ficha_descuento_temporal() {
     if (isNaN(descuento_nuevo) || descuento_nuevo <= 0) {
       $mensajes_app.push({
         tipo: "error",
@@ -197,17 +198,20 @@ function crear_ficha_descuento_temporal() {
   }
 
   const handle_key_up = (evt) => {
-    if (evt.key ===  "Enter") {
+    if (evt.key === "Enter") {
       crear_ficha_descuento_temporal();
     }
   };
-  
-
 
   function handleKeydown(evt) {
     if (evt.key == "+") {
       evt.preventDefault();
-      if(cliente_tiene_carrito == false && direccion != '' && tipo_de_cambio_correcto) dispatch('continuar');
+      if (
+        cliente_tiene_carrito == false &&
+        direccion != "" &&
+        tipo_de_cambio_correcto
+      )
+        dispatch("continuar");
       return;
     }
     if (evt.key == "Escape") {
@@ -219,21 +223,22 @@ function crear_ficha_descuento_temporal() {
   function guardar_en_DB() {
     ////console.log(pedido_nuevo);
     ////console.log(cliente);
-    if(http_ocupado) return;
+    if (http_ocupado) return;
     let arreglado_pedido = JSON.parse(JSON.stringify(pedido_nuevo));
     arreglado_pedido.cliente = cliente;
     if (arreglado_pedido.moneda === "Pesos Mexicanos")
       arreglado_pedido.tipo_de_cambio = 1;
     else arreglado_pedido.tipo_de_cambio = pedido_nuevo.tipo_de_cambio;
-    arreglado_pedido.descuento =parseFloat(cliente.perfil.porcentaje);
-    if(cliente_tiene_ficha_de_descuento )arreglado_pedido.descuento =formato_precio(ficha_de_descuento.descuento);
+    arreglado_pedido.descuento = parseFloat(cliente.perfil.porcentaje);
+    if (cliente_tiene_ficha_de_descuento)
+      arreglado_pedido.descuento = formato_precio(ficha_de_descuento.descuento);
     //console.log(arreglado_pedido);
 
     http_ocupado = true;
     postData("app/pedidos/nuevo/crear_pedido_nuevo_v2", {
-      pedido_nuevo: arreglado_pedido
+      pedido_nuevo: arreglado_pedido,
     })
-      .then(respuesta => {
+      .then((respuesta) => {
         //console.log(respuesta);
 
         //  Checar si se logro guardar el usuario
@@ -241,15 +246,16 @@ function crear_ficha_descuento_temporal() {
           if (respuesta.ok) {
             $mensajes_app.push({
               tipo: "exito",
-              mensaje: "pedido creado !"
+              mensaje: "pedido creado !",
             });
             $mensajes_app = $mensajes_app;
             console.log(respuesta);
-            
+
             $editar_store.pedido = respuesta.carrito_creado.doc_nuevo;
 
             $lista_productos_en_pedido_en_edicion = [];
-            $lista_productos_en_pedido_en_edicion = $lista_productos_en_pedido_en_edicion;
+            $lista_productos_en_pedido_en_edicion =
+              $lista_productos_en_pedido_en_edicion;
 
             //dispatch("ver_lista");
             goto("/app/pedidos/editor_wrap");
@@ -259,24 +265,25 @@ function crear_ficha_descuento_temporal() {
           http_ocupado = false;
           $mensajes_app.push({
             tipo: "error",
-            mensaje: respuesta?respuesta.mensaje: "No se pudo crear el pedido."
+            mensaje: respuesta
+              ? respuesta.mensaje
+              : "No se pudo crear el pedido.",
           });
           $mensajes_app = $mensajes_app;
         }
 
         ////console.log(respuesta);
       })
-      .catch(err => {
+      .catch((err) => {
         http_ocupado = false;
         console.log(err);
         $mensajes_app.push({
           tipo: "error",
-          mensaje: "No se pudo crear el pedido."
+          mensaje: "No se pudo crear el pedido.",
         });
         $mensajes_app = $mensajes_app;
       });
   }
-  
 </script>
 
 <Dialog width="350" bind:visible>
@@ -380,6 +387,246 @@ function crear_ficha_descuento_temporal() {
 
 <svelte:window on:keydown={handleKeydown} />
 
+<div class="izquierda" style="padding-left: 5px;">
+  <table>
+    <tr>
+      <td>
+        <Button
+          on:click={() => {
+            goto("/app/pedidos");
+          }}
+          raised
+          outlined
+          title="ver lista"
+        >
+          <i class="material-icons">arrow_back</i>
+          Ver lista
+        </Button>
+      </td>
+      <td class="centrado titulo_formulario" style="width: 63vw;">
+        Pedido Nuevo
+      </td>
+    </tr>
+  </table>
+</div>
+
+<Ayuda />
+<div class="grid-container">
+  <div class="cliente con_borde">
+    <div class="padding">
+      <Cliente
+        bind:cliente
+        on:cliente_selecto={handle_cliente_selecto}
+        {cliente_tiene_carrito}
+      />
+    </div>
+    <div class="padding">
+      {#if cliente_tiene_carrito && cliente.nombre != ""}
+        <!-- content here -->
+        <span style="color:red">
+          El cliente
+          <b>{cliente.nombre}</b>
+          , ya tiene un pedido pendiente
+        </span>
+        <br />
+      {/if}
+      {#if cliente.agente == "" && cliente.nombre != ""}
+        <!-- content here -->
+        <span style="color:red">
+          El cliente
+          <b>{cliente.nombre}</b>
+          , no tiene un agente asignado
+        </span>
+        <br />
+      {/if}
+      {direccion == "" ? "--" : "Perfil de cliente: " + cliente.perfil.perfil}
+      <br />
+      {cliente.agente == "" ? "--" : " Agente : " + cliente.agente.nombre}
+      <br />
+      <b class="observaciones">Observaciones: {cliente.observaciones}</b>
+      <br />
+      {#if cliente_tiene_ficha_de_descuento}
+        <!-- content here -->
+        <div class="existe_ficha">
+          <i style="vertical-align:middle;" class="material-icons">loyalty</i>
+          Existe una ficha de descuento de
+          <b>{formato_precio(ficha_de_descuento.descuento)} %</b>
+        </div>
+      {/if}
+    </div>
+    <div class="padding">
+      <Moneda bind:moneda />
+      <br />
+
+      {#if moneda != "Pesos Mexicanos"}
+        <!--TIPO DE CAMBIO-->
+        <Textfield
+          on:change={validar_tipo_cambio}
+          error={tipo_de_cambio_correcto ? "" : "Valor incorrecto"}
+          label="Tipo de cambio"
+          type="number"
+          min=".1"
+          bind:value={pedido_nuevo.tipo_de_cambio}
+          style="width: 215px;margin: 0 0px 0 calc(23vw - 250px);"
+        />
+      {/if}
+
+      <Button
+        icon
+        dense
+        color="#0065ff"
+        on:click={() => {
+          visible = true;
+        }}
+        title="Crear un a ficha de descuento para el siguiente pedido"
+      >
+        <i class="material-icons">loyalty</i>
+      </Button>
+    </div>
+  </div>
+  <div class="direccion_de_envio">
+    <i class="material-icons" style="vertical-align: top;">location_on</i>
+    Dirección editable
+    <textarea
+      class="direccion-box"
+      class:borde_rojo={direccion == ""}
+      cols="30"
+      rows="20"
+      bind:value={direccion}
+    />
+  </div>
+  <div class="perfil_del_cliente">
+    <i
+      class="material-icons"
+      style="vertical-align: middle;font-size: 5em;color:#222d32;padding-top:
+      50px;"
+    >
+      local_shipping
+    </i>
+    <br />
+    {#if cliente_tiene_carrito == false && direccion != "" && tipo_de_cambio_correcto}
+      <!-- content here -->
+      <div in:fade={{ duration: 400, delay: 400 }}>
+        <Button
+          disabled={cliente_tiene_carrito ||
+            direccion == "" ||
+            !tipo_de_cambio_correcto}
+          raised
+          color="primary"
+          title="Presiona el boton + "
+          on:click={() => {
+            guardar_en_DB();
+          }}
+        >
+          Continuar
+          <i class="material-icons">chevron_right</i>
+        </Button>
+      </div>
+    {:else}
+      <div class=" rojo">
+        Escribe una dirección manualmente, <br /> Tip: Agrega una dirección al cliente.
+      </div>
+    {/if}
+  </div>
+
+  <div class="buscar_producto" style="padding-left:17px;">
+    {#if cliente.direcciones_asociadas !== undefined && cliente.direcciones_asociadas !== null}
+      <!-- content here -->
+      <div class="centrado titulo_formulario">
+        Lista de direcciones ({cliente.direcciones_asociadas.length})
+      </div>
+      <div class="scrollable">
+        {#each cliente.direcciones_asociadas as direccion, i}
+          <!-- content here -->
+          <div
+            class="row pointer"
+            on:click={() => {
+              arreglar_direccion(direccion);
+            }}
+          >
+            <table>
+              <tr>
+                <td class="color_azul td_estilo">
+                  <span class="indice_row">{i + 1})</span>
+                  {direccion.tipo}
+                </td>
+                <td>
+                  <span class="td_estilo">Calle:</span>
+
+                  <b>{direccion.calle}</b></td
+                >
+
+                <td class="td_estilo">
+                  <span class="td_estilo">, #ext:</span>
+
+                  <b> {direccion.numero_exterior}</b>
+                </td>
+                <td class="td_estilo">
+                  <span class="td_estilo">, #int: </span>
+                  <b>{direccion.numero_interior}</b>
+                </td>
+              </tr>
+              <tr>
+                <td class="td_estilo">
+                  <span class="td_estilo">, Colonia:</span>
+
+                  <b>{direccion.colonia}</b>
+                </td>
+                <td class="td_estilo">
+                  <span class="td_estilo">, C.P.:</span>
+
+                  <b>{direccion.cp}</b>
+                </td>
+                <td class="td_estilo">
+                  <span class="td_estilo">, Estado:</span>
+
+                  <b>{direccion.estado}</b>
+                </td>
+                <td class="td_estilo">
+                  <span class="td_estilo">, Municipio:</span>
+
+                  <b>{direccion.municipio}</b>
+                </td>
+              </tr>
+              <tr>
+                <td class="td_estilo">
+                  <span class="td_estilo">, Telefono:</span>
+
+                  <b>{direccion.telefono}</b>
+                </td>
+                <td class="td_estilo">
+                  <span class="td_estilo">, RFC:</span>
+
+                  <b>{direccion.rfc}</b>
+                </td>
+
+                <td class="td_estilo">
+                  <span class="td_estilo">, Correo:</span>
+
+                  <b>
+                    {direccion.correo != "" ? direccion.correo : cliente.correo}
+                  </b>
+                </td>
+
+                <td class="td_estilo">
+                  <span class="td_estilo">, Notas: </span>
+
+                  <b class:tiene_notas={direccion.notas != ""}
+                    >{direccion.notas != ""
+                      ? direccion.notas
+                      : "-sin notas-"}</b
+                  >
+                </td>
+                <td class="td_estilo" />
+              </tr>
+            </table>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
+</div>
+
 <style>
   .grid-container {
     height: calc(100vh - 158px);
@@ -460,251 +707,14 @@ function crear_ficha_descuento_temporal() {
     border-radius: 2px;
   }
 
-  .tiene_notas{
-        color: blueviolet;
+  .tiene_notas {
+    color: blueviolet;
   }
-  .rojo{
-      color: red;
+  .rojo {
+    color: red;
     font-weight: 700;
   }
-  .borde_rojo{
-    border:1px solid red;
+  .borde_rojo {
+    border: 1px solid red;
   }
 </style>
-
-<div class="izquierda" style="padding-left: 5px;">
-  <table>
-    <tr>
-      <td>
-        <Button
-          on:click={() => {
-            goto('/app/pedidos');
-          }}
-          raised
-          outlined
-          title="ver lista">
-          <i class="material-icons">arrow_back</i>
-          Ver lista
-        </Button>
-      </td>
-      <td class="centrado titulo_formulario" style="width: 63vw;">
-        Pedido Nuevo
-      </td>
-    </tr>
-  </table>
-</div>
-
-<Ayuda />
-<div class="grid-container ">
-  <div class="cliente con_borde">
-
-    <div class="padding">
-      <Cliente
-        bind:cliente
-        on:cliente_selecto={handle_cliente_selecto}
-        {cliente_tiene_carrito} />
-    </div>
-    <div class="padding ">
-
-      {#if cliente_tiene_carrito && cliente.nombre != ''}
-        <!-- content here -->
-        <span style="color:red">
-          El cliente
-          <b>{cliente.nombre}</b>
-          , ya tiene un pedido pendiente
-        </span>
-        <br />
-      {/if}
-      {#if cliente.agente == '' && cliente.nombre != ''}
-        <!-- content here -->
-        <span style="color:red">
-          El cliente
-          <b>{cliente.nombre}</b>
-          , no tiene un agente asignado
-        </span>
-        <br />
-      {/if}
-      {direccion == '' ? '--' : 'Perfil de cliente: ' + cliente.perfil.perfil}
-      <br />
-      {cliente.agente == '' ? '--' : ' Agente : ' + cliente.agente.nombre}
-      <br />
-      <b class="observaciones">Observaciones: {cliente.observaciones}</b>
-      <br/>
-      {#if cliente_tiene_ficha_de_descuento}
-        <!-- content here -->
-        <div class="existe_ficha">
-          <i style="vertical-align:middle;" class="material-icons">loyalty</i>
-          Existe una ficha de descuento de
-          <b>{formato_precio(ficha_de_descuento.descuento)} %</b>
-        </div>
-      {/if}
-    </div>
-    <div class="padding">
-      <Moneda bind:moneda />
-      <br />
-
-      {#if moneda != 'Pesos Mexicanos'}
-        <!--TIPO DE CAMBIO-->
-        <Textfield
-          on:change={validar_tipo_cambio}
-          error={tipo_de_cambio_correcto ? '' : 'Valor incorrecto'}
-          label="Tipo de cambio"
-          type="number"
-          min=".1"
-          bind:value={pedido_nuevo.tipo_de_cambio}
-          style="width: 215px;margin: 0 0px 0 calc(23vw - 250px);" />
-      {/if}
-      
-            
-      <Button
-                icon
-                dense
-                color="#0065ff"
-                on:click={() => {
-                  visible = true;
-                }}
-                title="Crear un a ficha de descuento para el siguiente pedido"
-              >
-                <i class="material-icons">loyalty</i>
-              </Button>
-    </div>
-  </div>
-  <div class="direccion_de_envio">
-    <i class="material-icons" style="vertical-align: top;">location_on</i>
-    Dirección editable
-    <textarea
-      class="direccion-box"
-      class:borde_rojo={direccion==""}
-      cols="30"
-      rows="20"
-      bind:value={direccion} />
-  </div>
-  <div class="perfil_del_cliente">
-    <i
-      class="material-icons"
-      style="vertical-align: middle;font-size: 5em;color:#222d32;padding-top:
-      50px;">
-      local_shipping
-    </i>
-    <br />
-    {#if cliente_tiene_carrito == false && direccion != '' && tipo_de_cambio_correcto}
-      <!-- content here -->
-      <div in:fade={{ duration: 400, delay: 400 }}>
-
-        <Button
-          disabled={cliente_tiene_carrito || direccion == '' || !tipo_de_cambio_correcto}
-          raised
-          color="primary"
-          title="Presiona el boton + "
-          on:click={() => {
-            guardar_en_DB();
-          }}>
-          Continuar
-          <i class="material-icons">chevron_right</i>
-        </Button>
-      </div>
-
-      {:else}
-      <div class=" rojo">
-      Escribe una dirección manualmente, <br> Tip: Agrega una dirección al cliente.
-      </div>
-    {/if}
-
-  </div>
-
-  <div class="buscar_producto" style="padding-left:17px;">
-    {#if cliente.direcciones_asociadas !== undefined && cliente.direcciones_asociadas !== null}
-      <!-- content here -->
-      <div class="centrado titulo_formulario">
-        Lista de direcciones ({cliente.direcciones_asociadas.length})
-      </div>
-      <div class="scrollable">
-        {#each cliente.direcciones_asociadas as direccion, i}
-          <!-- content here -->
-          <div
-            class="row pointer"
-            on:click={() => {
-              arreglar_direccion(direccion);
-            }}>
-            <table>
-              <tr>
-
-                <td class="color_azul td_estilo">
-                  <span class="indice_row">{i + 1})</span>
-                  {direccion.tipo}
-                </td>
-                <td >
-                <span class="td_estilo">Calle:</span>
-                
-                <b>{direccion.calle}</b></td>
-                
-                <td class="td_estilo">
-                <span class="td_estilo">, #ext:</span>
-                  
-                  <b> {direccion.numero_exterior}</b>
-                </td>
-                <td class="td_estilo">
-                <span class="td_estilo">, #int: </span>
-                 <b>{direccion.numero_interior}</b>
-                </td>
-
-              </tr>
-              <tr>
-                <td class="td_estilo">
-                <span class="td_estilo">, Colonia:</span>
-                  
-                  <b>{direccion.colonia}</b>
-                </td>
-                <td class="td_estilo">
-                <span class="td_estilo">, C.P.:</span>
-                  
-                  <b>{direccion.cp}</b>
-                </td>
-                <td class="td_estilo">
-                <span class="td_estilo">, Estado:</span>
-                  
-                  <b>{direccion.estado}</b>
-                </td>
-                <td class="td_estilo">
-                <span class="td_estilo">, Municipio:</span>
-                
-                  <b>{direccion.municipio}</b>
-                </td>
-              </tr>
-              <tr>
-                <td class="td_estilo">
-                <span class="td_estilo">, Telefono:</span>
-                  
-                  <b>{direccion.telefono}</b>
-                </td>
-                <td class="td_estilo">
-                <span class="td_estilo">, RFC:</span>
-                  
-                  <b>{direccion.rfc}</b>
-                </td>
-
-                <td class="td_estilo">
-                <span class="td_estilo">, Correo:</span>
-                  
-                  <b>
-                    {direccion.correo != '' ? direccion.correo : cliente.correo}
-                  </b>
-                </td>
-
-                <td class="td_estilo">
-                <span class="td_estilo">, Notas: </span>
-                  
-                  <b class:tiene_notas={direccion.notas!=''}>{direccion.notas!=''?direccion.notas:'-sin notas-'}</b>
-                </td>
-                <td class="td_estilo" />
-              </tr>
-            </table>
-
-          </div>
-        {/each}
-      </div>
-    {/if}
-  </div>
-
-</div>
-

@@ -38,7 +38,7 @@ export async function post(req, res, next) {
     }
     //  Checar si tiene carrito
     const tiene_carrito_ = await tiene_carrito(data.pedido_nuevo.cliente._id)
-    if(tiene_carrito_){
+    if(!tiene_carrito_){
         res.send({
             ok: false,
             mensaje: "El cliente ya tiene un pedido "

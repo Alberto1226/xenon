@@ -7,5 +7,4 @@ yarn-error.log
 src/routes/_importaciones
 src/routes/_importaciones_clientes
 log-especifico.txt
-static/productos
 /nbproject/private/

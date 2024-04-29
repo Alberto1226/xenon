@@ -37,7 +37,8 @@ export async function post(req, res, next) {
 
     //var cabecera_base64 = archivos[0].base64.slice(0, 60);
     var url = "static/productos/"
-    var url_pub = "productos/"
+    // var url_pub = "productos/"
+    var url_pub = "Xenon-pruebas/static/productos/"
     var contador_errores = 0;
     var archivos_guardados = 0;
     var galeria_imagenes = [];

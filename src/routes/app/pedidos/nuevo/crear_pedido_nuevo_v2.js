@@ -37,11 +37,13 @@ export async function post(req, res, next) {
         return;
     }
     //  Checar si tiene carrito
-    const tiene_carrito_ = await tiene_carrito(data.pedido_nuevo.cliente._id)
-    if(!tiene_carrito_){
+    // const tiene_carrito_ = await tiene_carrito(data.pedido_nuevo.cliente._id)
+    const tiene_carrito_ = false;
+    if(tiene_carrito_){
         res.send({
             ok: false,
-            mensaje: "El cliente ya tiene un pedido "
+            mensaje: "El cliente ya tiene un pedido ",
+            // variable: tiene_carrito_,
         })
         return;
     }

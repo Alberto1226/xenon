@@ -1,6 +1,7 @@
 <script>
   import Cliente from "./Cliente.svelte";
   import Moneda from "./Moneda.svelte";
+  import { fade } from "svelte/transition";
   import { clientes } from "./../../../stores";
   import { Button, Textfield } from "svelte-mui/src";
   import { onMount, createEventDispatcher } from "svelte";
@@ -276,6 +277,13 @@
     padding-left: 10px;
     width: 15vw;
   }
+  .borde_rojo {
+    border: 1px solid red;
+  }
+  .rojo {
+    color: red;
+    font-weight: 700;
+  }
 </style>
 
 <div class="izquierda" style="padding-left: 5px;">
@@ -368,6 +376,7 @@
           <textarea
             style="width: 468px;max-width: 30vw;"
             class="direccion-box"
+            class:borde_rojo={direccion == ""}
             cols="30"
             rows="3"
             bind:value={direccion} />
@@ -396,7 +405,7 @@
       local_shipping
     </i>
     <br />
-    <Button
+    <!-- <Button
       raised
       style="height: 50px;margin-top: 22px;"
       color="green"
@@ -406,9 +415,33 @@
         else dispatch('continuar');
       }}>
       Continuar
-      <!-- <i class="material-icons">create</i> -->
+      <i class="material-icons">create</i>
       <i class="material-icons">chevron_right</i>
-    </Button>
+    </Button> -->
+    {#if direccion != ""}
+      <!-- content here -->
+      <div in:fade={{ duration: 400, delay: 400 }}>
+        <Button
+          disabled={cliente_tiene_carrito === false || direccion == ''}
+          raised
+          style="height: 50px;margin-top: 22px;"
+          color="green"
+          title="Presiona el boton + "
+          on:click={() => {
+            // guardar_en_DB();
+            if (moneda_original != moneda || tipo_de_cambio_original != pedido_selecto.tipo_de_cambio || notas != $editar_store.pedido.notas) actualizar_moneda_y_direccion_y_continuar($editar_store.pedido._id);
+            else dispatch('continuar');
+          }}
+        >
+          Continuar
+          <i class="material-icons">chevron_right</i>
+        </Button>
+      </div>
+    {:else}
+      <div class="rojo">
+        Escribe una dirección manualmente, <br /> Tip: Agrega una dirección al cliente.
+      </div>
+    {/if}
   </div>
   <div class="buscar_producto">
     {#if cliente_completo !== undefined && cliente_completo !== null}

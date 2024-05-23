@@ -15,10 +15,10 @@ export async function post(req, res, next) {
     }
 
 
-    if (accesos.tiene_permisos_administrativos(req) === false && accesos.tiene_permisos_gerenciales(req) === false) {
-        res.send({ ok: false, mensaje: "sesion expirada" })
-        return;
-    }
+    // if (accesos.tiene_permisos_administrativos(req) === false && accesos.tiene_permisos_gerenciales(req) === false) {
+    //     res.send({ ok: false, mensaje: "sesion expirada" })
+    //     return;
+    // }
 
     const inyeccion_id = req.body.inyeccion_id;
     const solo_agregar_folios = req.body.solo_agregar_folios;

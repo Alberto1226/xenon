@@ -5,13 +5,12 @@
     import { postData, mensaje_bueno, mensaje_error } from "./../../../stores";
     const dispatch = createEventDispatcher();
     export var lista = [];
-    // export var visible = false;
+    export var visible = false;
     export var producto_id = "";
 
     var ocupado = false;
     var estado_actual = "conectado";
     var resultado_fue_exitoso = true;
-    var solo_agregar_folios = false;
 
     onMount(() => {
         subir();
@@ -31,32 +30,21 @@
             ocupado = true;
 
             let resultado = await postData(
-                // "app/productos/crear_inyeccion_pendiente",
-                "app/productos/Inyeccion_directa",
-                { lista, producto_id, solo_agregar_folios },
+                "app/productos/crear_inyeccion_pendiente",
+                { lista, producto_id }
             );
             estado_actual = "mandando datos";
             ocupado = false;
             estado_actual = "terminado";
             if (resultado.ok == true) {
-                // mensaje_bueno("Los folios se han subido de forma correcta");
-                // resultado_fue_exitoso = true;
-                let resultado2 = await postData(
-                    "app/productos/inyectar_un_pendiente",
-                    { inyeccion_id: resultado.id, solo_agregar_folios },
-                );
-                if (resultado2.ok == true) {
-                    mensaje_bueno(
-                        "Los folios se han introducido de forma correcta al inventario",
-                    );
-                    resultado_fue_exitoso = true;
-                }
+                mensaje_bueno("Los folios se han subido de forma correcta");
+                resultado_fue_exitoso = true;
             } else {
                 resultado_fue_exitoso = false;
                 mensaje_error(
                     resultado.mensaje
                         ? resultado.mensaje
-                        : "Ha ocurrido un error al subir los folios",
+                        : "Ha ocurrido un error al subir los folios"
                 );
             }
         } catch (err) {
@@ -85,7 +73,7 @@
                 </Button>
             </div>
         {:else}
-            <h1 class="centrado">
+            <h1 class="centrado ">
                 se ha detectado un error, presiona F12 para ver los detalles
             </h1>
             <div class="centrado">

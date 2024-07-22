@@ -335,29 +335,30 @@
             placeholder="Existencias"
             message="Existencias"
             type="number" /> -->
+            <table>
+              <tr>
+                <td>
+                  <Textfield
+                    outlined
+                    bind:value={nuevo_producto.existencia.minimo}
+                    placeholder="Mínimo"
+                    message="Mínimo"
+                    type="number"
+                  />
+                </td>
+                <td>
+                  <Textfield
+                    outlined
+                    bind:value={nuevo_producto.existencia.maximo}
+                    placeholder="Máximo"
+                    message="Máximo"
+                    type="number"
+                  />
+                </td>
+              </tr>
+            </table>
           {/if}
-          <table>
-            <tr>
-              <td>
-                <Textfield
-                  outlined
-                  bind:value={nuevo_producto.existencia.minimo}
-                  placeholder="Mínimo"
-                  message="Mínimo"
-                  type="number"
-                />
-              </td>
-              <td>
-                <Textfield
-                  outlined
-                  bind:value={nuevo_producto.existencia.maximo}
-                  placeholder="Máximo"
-                  message="Máximo"
-                  type="number"
-                />
-              </td>
-            </tr>
-          </table>
+          
         </div>
       </div>
       <div class="imagenes margen caja">

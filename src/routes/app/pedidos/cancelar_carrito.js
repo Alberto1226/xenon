@@ -32,7 +32,8 @@ export async function post(req, res, next) {
     }
     //      SI no tiene productos guardar el log y despues cancelarlo
     if (carrito.lista.length == 0) {
-        accesos.logActividad('carrito/cancelar/', usuario, { folio: carrito.folio, req });
+        // accesos.logActividad('carrito/cancelar/', usuario, { folio: carrito.folio, req }, req);
+        accesos.logActividad('carrito/cancelar/',usuario,{folio:carrito.folio},req);
         const cancelar_carrito_proceso = await cancelar_carrito(carrito, usuario);
         res.send(cancelar_carrito_proceso);
         return;
@@ -51,7 +52,8 @@ export async function post(req, res, next) {
     //console.log(proceso_ciclo_snaps);
 
     const cancelar_carrito_proceso = await cancelar_carrito(carrito, usuario);
-    accesos.logActividad('carrito/cancelar/', req.user, { folio: carrito.folio, req });
+    // accesos.logActividad('carrito/cancelar/', req.user, { folio: carrito.folio, req }, req);
+    accesos.logActividad('carrito/cancelar/',usuario,{folio:carrito.folio, Carrito: carrito.lista, Cliente:carrito.cliente},req);
     res.send(cancelar_carrito_proceso);
 
 

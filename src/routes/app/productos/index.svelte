@@ -39,15 +39,19 @@
   }
 
   function handleKeydown(evt) {
-    if (evt.key == "+") {
-      evt.preventDefault();
-      estado_actual = "creando producto";
-      goto("app/productos/nuevo");
-      return;
+    if ($usuario_db.rol == "administrador") {
+      // console.log("usuario_db.rol", $usuario_db.rol);
+      if (evt.key == "+") {
+        evt.preventDefault();
+        estado_actual = "creando producto";
+        goto("app/productos/nuevo");
+        return;
+      }
     }
-    if (evt.key == "Escape") {
-      //  estado_actual = "viendo lista"
-    }
+
+    // if (evt.key == "Escape") {
+    //   //  estado_actual = "viendo lista"
+    // }
   }
 
   function handle_buscar(evt) {
@@ -109,7 +113,7 @@
               <Info_escaneados />
             </td>
             <td>
-              {#if $usuario_db.rol != "diseñador"}
+              {#if $usuario_db.rol != "diseñador" && $usuario_db.rol != "vendedor" && $usuario_db.rol != "gerente" && $usuario_db.rol != "almacen"}
                 Nuevo
                 <Button
                   on:click={() => {

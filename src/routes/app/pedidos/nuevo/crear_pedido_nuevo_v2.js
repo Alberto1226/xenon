@@ -7,6 +7,7 @@ import { Pedido } from "../../../../models/pedido";
 import * as accesos from "../../accesos";
 import { Producto } from "../../../../models/producto";
 import { Ficha_de_descuento } from "../../../../models/ficha_de_descuento";
+import { ChecarFolioEnCarritosCancelados } from "./ChecarFolioEnCarritosCancelados";
 
 
 export async function post(req, res, next) {
@@ -37,8 +38,8 @@ export async function post(req, res, next) {
         return;
     }
     //  Checar si tiene carrito
-    // const tiene_carrito_ = await tiene_carrito(data.pedido_nuevo.cliente._id)
-    const tiene_carrito_ = false;
+    const tiene_carrito_ = await tiene_carrito(data.pedido_nuevo.cliente._id)
+    // const tiene_carrito_ = false;
     if(tiene_carrito_){
         res.send({
             ok: false,
@@ -95,6 +96,7 @@ export async function post(req, res, next) {
 
 function crear_su_carrito(data, email, tenia_ficha, usuario,req) {
     return new Promise(async (resolve, reject) => {
+        let folio = 0;
 
         let referencia_folio = await obtener_folio_actual();
         if (referencia_folio.ok == false) {
@@ -102,7 +104,15 @@ function crear_su_carrito(data, email, tenia_ficha, usuario,req) {
             reject({ ok: false, err: "No se pudo obtener el folio." });
             return;
         }
-        let folio = referencia_folio.folio;
+        // let folio = referencia_folio.folio;
+        let pCancelados = await ChecarFolioEnCarritosCancelados(referencia_folio.folio);
+        if (pCancelados) {
+            folio = referencia_folio.folio;
+            folio += 1;
+        }
+        else {
+            folio = referencia_folio.folio;
+        }
         let total_pedido = 0;
         const cliente_db = await obtener_cliente(data.pedido_nuevo.cliente._id)
         const descuento_sin_ficha = cliente_db.perfil.porcentaje;
@@ -155,7 +165,8 @@ function crear_su_carrito(data, email, tenia_ficha, usuario,req) {
                 //nuevo_carrito.tipo_de_cambio = parseFloat(doc_nuevo.tipo_de_cambio);
                 nuevo_carrito.save()
                     .then((resultado) => {
-                        accesos.logActividad('pedido/nuevo',usuario,{folio:resultado.folio,id:resultado._id},req);
+                        // accesos.logActividad('pedido/nuevo',usuario,{folio:resultado.folio,id:resultado._id},req);
+                        accesos.logActividad('pedido/nuevo',usuario,{folio:folio,id:resultado._id},req);
                         resolve({ ok: true, doc_nuevo: nuevo_carrito });
                     })
                     .catch((err) => {

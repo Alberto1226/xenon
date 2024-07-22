@@ -5,8 +5,10 @@ import { Promocion } from './../../../../models/promocion';
 import { Producto } from "../../../../models/producto";
 import { devolver_producto_db } from './_server_cambiar_cantidad/devolver_producto_db';
 import { devolver_carrito_db } from './_server_cambiar_cantidad/devolver_carrito_db';
-import * as accesos from "../../accesos"
-import { snap_por_cambio_en_pedido } from './_producto_snaplogs/snap_por_cambio_en_pedido'
+import * as accesos from "../../accesos";
+import { snap_por_cambio_en_pedido } from './_producto_snaplogs/snap_por_cambio_en_pedido';
+import { devolver_prod_snap_log_fixBug } from './_server_cambiar_cantidad/devolver_prod_snap_log_fixBug';
+import { isEmpty } from "underscore";
 
 export async function post(req, res, next) {
     if (accesos.esta_logueado(req) === false) {
@@ -137,84 +139,176 @@ export async function post(req, res, next) {
         //accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log, req);
     }
     else {
-        lista.push(registro_seguro);
-        snap_tipo_Accion = "4a"; //    4a:nuevo en pedido
-        cantidad_anterior = 0;
-        //      logActividad(ruta, usuario, body, req, previousValue = 'ninguno')
-        //  modificar el precio de acuerdo al descuento del pedido         
-        log = { registro_cantidades: registro_seguro, registro_previo: 'El producto no existia previamente en pedido', precios, inventario, folio: carritoDB.folio }
-
+        const registrar = await devolver_prod_snap_log_fixBug(carritoDB.folio, carritoDB.cliente.id, registro.producto._id);
+        console.log('================',registrar);
+        // res.send({ ok: false, mensaje: '================' , registrar})
+        // if (registrar) {
+            lista.push(registro_seguro);
+            snap_tipo_Accion = "4a"; //    4a:nuevo en pedido
+            cantidad_anterior = 0;
+            //      logActividad(ruta, usuario, body, req, previousValue = 'ninguno')
+            //  modificar el precio de acuerdo al descuento del pedido         
+            log = { registro_cantidades: registro_seguro, registro_previo: 'El producto no existia previamente en pedido', precios, inventario, folio: carritoDB.folio }
+        // }
     }
     //console.log('lista despues de proceso *****');
     //console.log('registro.producto id=' + registro.producto._id);
-    //console.log(lista);
-    const total_dinero = await sumar_cantidades_dinero(lista);
+    console.log(lista);
+    // const total_dinero = await sumar_cantidades_dinero(lista);
     //let total_dinero = total_dinero;
-    const proceso_apartado = await apartar_producto(registro_seguro, carritoDB.cliente, carritoDB.folio);
 
-    if (proceso_apartado.ok === false) {
-        log.error = {
-            linea: 108,
-            mensaje: "Error en apartar_producto, retornando antes de actualizar el carrito y agregar el producto sin haber apartado correctamente",
-            solucion: "No es necesario algun cambio en inventario o apartados"
-        }
-        accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log, req);
-        return res.send({ ok: false, mensaje: proceso_apartado.mensaje })
-    }
-    else {
-        const proceso_cambiar_carrito_de_cliente = await cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, registro.producto._id);
-        if (proceso_cambiar_carrito_de_cliente.ok == true) {
-            //  exito , proseguir
-            const snap_proceso = await snap_por_cambio_en_pedido({ nombre: producto_constante.nombre, id: producto_constante._id },
-                { nombre: req.user.nombre, id: req.user._id },
-                registro.cantidad,
-                cantidad_anterior,
-                snap_tipo_Accion,  //
-                { folio: carritoDB.folio, cliente: { nombre: carritoDB.cliente.nombre, id: carritoDB.cliente.id } },
-                producto_constante
-            )
-            //console.log("---|||");
-            //console.log(snap_proceso)
-            return res.send({ ok: true, registro_agregado: registro_seguro })
-        }
-        else {
-            //      falla log acceso
-            log.error = {
-                linea: 124,
-                mensaje: "Se aparto el producto, pero no se pudo cambiar el carrito del cliente",
-                solucion: "Es necesario desapartar el producto"
+    // modificacion a codigo por bug que no registro en el arrgle de carritos de cada producto  *fb3
+
+    try {
+        const total_dinero = await sumar_cantidades_dinero(lista);
+        const proceso_apartado = await apartar_producto(registro_seguro, carritoDB.cliente, carritoDB.folio);
+
+
+        if (proceso_apartado.ok === true) {
+
+            const proceso_cambiar_carrito_de_cliente = await cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, registro.producto._id);
+            if (proceso_cambiar_carrito_de_cliente.ok == true) {
+                //  exito , proseguir
+                const snap_proceso = await snap_por_cambio_en_pedido({ nombre: producto_constante.nombre, id: producto_constante._id },
+                    { nombre: req.user.nombre, id: req.user._id },
+                    registro.cantidad,
+                    cantidad_anterior,
+                    snap_tipo_Accion,  //
+                    { folio: carritoDB.folio, cliente: { nombre: carritoDB.cliente.nombre, id: carritoDB.cliente.id } },
+                    producto_constante
+                )
+                //console.log("---|||");
+                //console.log(snap_proceso)
+                return res.send({ ok: true, registro_agregado: registro_seguro })
             }
-            console.log("Error al cambiar carrito de cliente")
-            accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log, req);
+            else {
+                //      falla log acceso
+                log.error = {
+                    linea: 124,
+                    mensaje: "Se aparto el producto, pero no se pudo cambiar el carrito del cliente",
+                    solucion: "Es necesario desapartar el producto"
+                }
+                console.log("Error al cambiar carrito de cliente")
+                accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log, req);
+            }
+
         }
+
+
+
+        if (proceso_apartado.ok === false) {
+            log.error = {
+                linea: 108,
+                mensaje: "Error en apartar_producto, retornando antes de actualizar el carrito y agregar el producto sin haber apartado correctamente",
+                solucion: "No es necesario algun cambio en inventario o apartados"
+            }
+            accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log, req);
+            return res.send({ ok: false, mensaje: proceso_apartado.mensaje })
+        }
+
+    } catch (error) {
+        console.log(error);
+        return res.send({ ok: false, mensaje: 'Error en proceso de apartado' });
     }
 
+    //----------------------------------------------------------------------------------------- *fb3
+
+    // if (proceso_apartado.ok === false) {
+    //     log.error = {
+    //         linea: 108,
+    //         mensaje: "Error en apartar_producto, retornando antes de actualizar el carrito y agregar el producto sin haber apartado correctamente",
+    //         solucion: "No es necesario algun cambio en inventario o apartados"
+    //     }
+    //     accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log, req);
+    //     return res.send({ ok: false, mensaje: proceso_apartado.mensaje })
+    // }
+    // else {
+    //     const proceso_cambiar_carrito_de_cliente = await cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, registro.producto._id);
+    //     if (proceso_cambiar_carrito_de_cliente.ok == true) {
+    //         //  exito , proseguir
+    //         const snap_proceso = await snap_por_cambio_en_pedido({ nombre: producto_constante.nombre, id: producto_constante._id },
+    //             { nombre: req.user.nombre, id: req.user._id },
+    //             registro.cantidad,
+    //             cantidad_anterior,
+    //             snap_tipo_Accion,  //
+    //             { folio: carritoDB.folio, cliente: { nombre: carritoDB.cliente.nombre, id: carritoDB.cliente.id } },
+    //             producto_constante
+    //         )
+    //         //console.log("---|||");
+    //         //console.log(snap_proceso)
+    //         return res.send({ ok: true, registro_agregado: registro_seguro })
+    //     }
+    //     else {
+    //         //      falla log acceso
+    //         log.error = {
+    //             linea: 124,
+    //             mensaje: "Se aparto el producto, pero no se pudo cambiar el carrito del cliente",
+    //             solucion: "Es necesario desapartar el producto"
+    //         }
+    //         console.log("Error al cambiar carrito de cliente")
+    //         accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log, req);
+    //     }
+    // }
+
 
 }
 
+async function cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, producto_id) {
+    console.log("id-ar", id, "lista-ar", isEmpty(lista),"*--*", lista, "total", isEmpty(total_dinero),"*--*", total_dinero, "req", isEmpty(req), "producto_id", isEmpty(producto_id),"*--*", producto_id);
+    try {
+        const updateResult = await Carrito.findByIdAndUpdate(id, {
+            lista,
+            total_pedido: total_dinero,
+            fecha: new Date()
+        }, { new: true });
 
-async function cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, id_producto) {
-    return Carrito.findByIdAndUpdate(id, { lista, total_pedido: total_dinero, fecha: new Date() })
-        .then((async () => {
-            //      datos para logs
-            const producto_despues_proceso = await devolver_producto_db(id_producto);
-            const producto_despues = producto_despues_proceso.producto;
-            const carritos_despues = producto_despues.carritos;
-            const existencias_despues = producto_despues.existencia.actual;
-            let total_reservado_despues = carritos_despues.reduce((a, b) => +a + parseInt(b.cantidad), 0);
-            let log_tmp = log;
-            log_tmp.inventario.existencias_despues = existencias_despues;
-            log_tmp.inventario.total_reservado_despues = total_reservado_despues;
-            log_tmp.producto_despues = producto_despues;
-            accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log_tmp, req);
-            //      datos pra logs
-            return { ok: true, log_tmp }
-        }))
-        .catch((err) => {
-            console.log(err)
-            return { ok: false, log }
-        })
+        // console.log("updateResult", updateResult);
+        // console.log("8888888888888888888888888888888888888888888888888888888888");
+
+        if (!updateResult) {
+            throw new Error("No se pudo actualizar el carrito del cliente");
+        }
+
+        // Registrar el cambio en el log de actividades
+        // await accesos.logActividad('carrito/cambiar_carrito_de_cliente', req, { id, lista, total_dinero, producto_id });
+
+        // Retornar éxito
+        return { ok: true, carrito: updateResult };
+
+    } catch (error) {
+        console.error("Error en cambiar_carrito_de_cliente:", error);
+
+        // Registrar el error en el log
+        await accesos.logActividad('carrito/cambiar_carrito_de_cliente/error', req, { error, id, lista, total_dinero, producto_id });
+
+        return { ok: false, error: error.message };
+    }
 }
+
+
+
+// async function cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, id_producto) {
+//     return Carrito.findByIdAndUpdate(id, { lista, total_pedido: total_dinero, fecha: new Date() })
+//         .then((async () => {
+//             //      datos para logs
+//             const producto_despues_proceso = await devolver_producto_db(id_producto);
+//             const producto_despues = producto_despues_proceso.producto;
+//             const carritos_despues = producto_despues.carritos;
+//             const existencias_despues = producto_despues.existencia.actual;
+//             let total_reservado_despues = carritos_despues.reduce((a, b) => +a + parseInt(b.cantidad), 0);
+//             let log_tmp = log;
+//             log_tmp.inventario.existencias_despues = existencias_despues;
+//             log_tmp.inventario.total_reservado_despues = total_reservado_despues;
+//             log_tmp.producto_despues = producto_despues;
+//             accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log_tmp, req);
+//             //      datos pra logs
+//             return { ok: true, log_tmp }
+//         }))
+//         .catch((err) => {
+//             console.log(err)
+//             return { ok: false, log }
+//         })
+// }
 
 
 ////   Sumar el total neto del pedido
@@ -246,7 +340,6 @@ async function sumar_cantidades_dinero(lista) {
 
 
 
-
 //   Aparta los productos en el registor de cada producto para que nadie pueda exceder existencias
 async function apartar_producto(registro, cliente, folio) {
     //  Ciclo producto por producto apartando su cantidad respectiva
@@ -262,7 +355,8 @@ async function apartar_producto(registro, cliente, folio) {
     return Producto.findByIdAndUpdate({ _id: registro.producto._id }, {
         $pull: {
             carritos: {
-                'cliente.id': { $in: [cliente.id] }
+                // 'cliente.id': { $in: [cliente.id] },
+                folio: folio
             }
         }
     })

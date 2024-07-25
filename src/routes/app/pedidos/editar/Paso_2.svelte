@@ -603,7 +603,13 @@
       <div class="contenedor_lista_busqueda">
         <br />
         {#each $productos.lista as producto, i (producto._id)}
-          <!-- content here -->
+           <!-- svelte-ignore empty-block -->
+           {#if procesando_pedido || procesando_en_la_nube}
+           {#if i == 0}
+           <div class="centrado">cargando...</div>
+           {/if}           
+           {:else}
+           <!-- content here -->
           <Row_productos
             bind:procesando_en_la_nube
             on:actualizar_lista={filtrar_nuevo_arreglo}
@@ -612,6 +618,7 @@
             {producto}
             indice={10 * $productos.pagina_actual + i + 1 - 10}
           />
+          {/if}
         {:else}
           <!-- empty list -->
         {/each}

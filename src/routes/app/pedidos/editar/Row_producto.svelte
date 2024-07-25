@@ -151,7 +151,8 @@
     var promo = { con_promo: promo_solicitada };
     var registro = { producto: producto_temp, cantidad, promo };
     //console.log(registro);
-    postData("/app/pedidos/editar/cambiar_cantidad", { registro, id_carrito })
+    let donde = "agregar";
+    postData("/app/pedidos/editar/cambiar_cantidad", { registro, id_carrito, donde })
       .then((respuesta) => {
         if (respuesta.ok) {
           console.log(respuesta);

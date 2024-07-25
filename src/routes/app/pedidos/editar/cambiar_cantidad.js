@@ -27,6 +27,7 @@ export async function post(req, res, next) {
 
     var registro = req.body.registro;
     const id = req.body.id_carrito;
+    const donde = req.body.donde;
 
     //          checar suficiencia version 2 
     const son_suficientes = await suficientes_productos_version_2(registro.producto._id, registro.cantidad).catch(console.error);
@@ -115,11 +116,11 @@ export async function post(req, res, next) {
     let cantidad_anterior = -123456;
     //  datos de logs
 
-    if (producto_temp != undefined) {
+    if (producto_temp != undefined ) {
         const producto_const = JSON.parse(JSON.stringify(producto_temp));
         const cantidad_previa = producto_const.cantidad
         //   > a cero
-        if (registro.cantidad > 0) {
+        if (registro.cantidad > 0 && donde == "agregar") {
             producto_temp.cantidad = registro.cantidad;
             producto_temp.promo = registro.promo;
             producto_temp.producto.precio = producto_seguro.precio;
@@ -127,7 +128,7 @@ export async function post(req, res, next) {
             cantidad_anterior = cantidad_previa
         }
         //    == a cero
-        if (registro.cantidad == 0) {
+        if (registro.cantidad == 0 && donde == "eliminar") {
             lista = lista.filter(element => JSON.stringify(element.producto._id) !== JSON.stringify(registro.producto._id));
             snap_tipo_Accion = "4c"; //     4c:borro_de_pedido
             cantidad_anterior = cantidad_previa
@@ -140,20 +141,22 @@ export async function post(req, res, next) {
     }
     else {
         const registrar = await devolver_prod_snap_log_fixBug(carritoDB.folio, carritoDB.cliente.id, registro.producto._id);
-        console.log('================',registrar);
+        console.log('================', registrar);
         // res.send({ ok: false, mensaje: '================' , registrar})
-        // if (registrar) {
-            lista.push(registro_seguro);
-            snap_tipo_Accion = "4a"; //    4a:nuevo en pedido
-            cantidad_anterior = 0;
-            //      logActividad(ruta, usuario, body, req, previousValue = 'ninguno')
-            //  modificar el precio de acuerdo al descuento del pedido         
-            log = { registro_cantidades: registro_seguro, registro_previo: 'El producto no existia previamente en pedido', precios, inventario, folio: carritoDB.folio }
-        // }
+        
+        // if (registrar && donde == "agregar") {    
+        if (donde == "agregar") {    
+        lista.push(registro_seguro);    
+        snap_tipo_Accion = "4a"; //    4a:nuevo en pedido
+        cantidad_anterior = 0;
+        //      logActividad(ruta, usuario, body, req, previousValue = 'ninguno')
+        //  modificar el precio de acuerdo al descuento del pedido         
+        log = { registro_cantidades: registro_seguro, registro_previo: 'El producto no existia previamente en pedido', precios, inventario, folio: carritoDB.folio }
+        }
     }
     //console.log('lista despues de proceso *****');
     //console.log('registro.producto id=' + registro.producto._id);
-    console.log(lista);
+    // console.log(lista);
     // const total_dinero = await sumar_cantidades_dinero(lista);
     //let total_dinero = total_dinero;
 
@@ -254,7 +257,7 @@ export async function post(req, res, next) {
 }
 
 async function cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, producto_id) {
-    console.log("id-ar", id, "lista-ar", isEmpty(lista),"*--*", lista, "total", isEmpty(total_dinero),"*--*", total_dinero, "req", isEmpty(req), "producto_id", isEmpty(producto_id),"*--*", producto_id);
+    //console.log("id-ar", id, "lista-ar", isEmpty(lista), "*--*", lista, "total", isEmpty(total_dinero), "*--*", total_dinero, "req", isEmpty(req), "producto_id", isEmpty(producto_id), "*--*", producto_id);
     try {
         const updateResult = await Carrito.findByIdAndUpdate(id, {
             lista,

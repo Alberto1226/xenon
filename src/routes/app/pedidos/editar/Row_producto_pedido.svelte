@@ -116,8 +116,9 @@
     procesando_en_la_nube = true;
     producto.precio = precio_nuevo;
     let registro = { producto, cantidad: 0 };
+    let donde = "eliminar";
     //console.log(registro);
-    postData("/app/pedidos/editar/cambiar_cantidad", { registro, id_carrito })
+    postData("/app/pedidos/editar/cambiar_cantidad", { registro, id_carrito, donde })
       .then((respuesta) => {
         procesando_en_la_nube = false;
         //console.log(respuesta)

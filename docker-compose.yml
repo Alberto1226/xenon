@@ -1,0 +1,23 @@
+services:
+  xenon:
+    build:
+      args:
+        user: lpablo
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: xenon_node:16
+    container_name: xenon
+    restart: unless-stopped
+    tty: true    
+    working_dir: /usr/src/app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./xenon:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - red_dev
+      
+networks:
+  red_dev:

@@ -6,7 +6,7 @@ ARG user
 ARG uid
 
 # Actualiza y agrega las herramientas y librerías necesarias
-RUN apk update && apk add --no-cache \
+# RUN apk update && apk add --no-cache \
     vim \
     build-base \
     nano \
@@ -43,7 +43,7 @@ RUN npm install
 # RUN npm run build
 
 # Expone el puerto que usa la aplicación
-EXPOSE 3000
+EXPOSE 3006
 
 # Define el entrypoint
 # CMD ["node", "__sapper__/build"]

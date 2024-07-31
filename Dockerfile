@@ -7,25 +7,6 @@ ARG uid
 
 # Actualiza y agrega las herramientas y librerías necesarias
 # RUN apk update && apk add --no-cache \
-    vim \
-    build-base \
-    nano \
-    git \
-    libpng-dev \
-    oniguruma-dev \
-    libxml2-dev \
-    libzip-dev \
-    freetype-dev \
-    jpeg-dev \
-    jpegoptim \
-    optipng \
-    pngquant \
-    gifsicle \
-    imagemagick-dev \
-    zip \
-    unzip \
-    curl \
-    wget
 
 # Establece el directorio de trabajo
 WORKDIR /usr/src/app

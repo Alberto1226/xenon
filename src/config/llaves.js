@@ -1,7 +1,7 @@
 export let llaves = {
   mongodb: {
-    user: 'adminBeto',
-    password: '11111',
+    user: 'usuarioAppXenonyMas',
+    password: 'bravo-coca-loma-terra-sierra#-1',
     server: 'localhost',
     database: 'xenon-y-mas-app',
     puerto: 27017,
@@ -45,8 +45,8 @@ export function devolver_db() {
       return {
         llaves: {
           mongodb: {
-            user: 'adminBeto',
-            password: '11111',
+            user: 'usuarioAppXenonyMas',
+            password: 'bravo-coca-loma-terra-sierra#-1',
             server: 'localhost',
             database: 'xenon-y-mas-app',
             puerto: 27017,
@@ -62,13 +62,13 @@ export function devolver_db() {
 }
 
 
-
-/*db.createUser(
+/*
+db.createUser(
    {
      user: "usuarioAppXenonyMas",
      pwd: "bravo-coca-loma-terra-sierra#-1",
      roles: [ "readWrite", "dbAdmin" ]
    }
-)*/
+)
 
-
+*/

@@ -134,33 +134,64 @@ function consulta(pagina_actual, usuario) {
             query = {
                 $or: [{ "usuario_que_registro.id": usuario._id }, { "agente.id": usuario._id }]
             };
+        } else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
+            query = {};
         }
-        else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
-            query = {}
-        }
-        ////console.log("5e7f8b470382191c8b82897c")
-        ////console.log(usuario._id)
-        //console.log(query)
+
         try {
             Pedido.countDocuments(query)
                 .then((numero_total) => {
                     Pedido.find(query)
-                        .sort({ folio: -1 })
+                        .sort({ fecha: -1 })
                         .limit(10)
                         .skip(pagina_actual * 10)
+                        .select({
+                            folio: 1,
+                            fecha: 1,
+                            "usuario_que_registro.usuario": 1,
+                            tenia_ficha: 1,
+                            moneda: 1,
+                            descuento: 1,
+                            total_pedido: 1,
+                            "cliente.nombre": 1,
+                            "cliente.correo": 1,
+                            "agente.nombre": 1,
+                            "agente.correo": 1,
+                            mensajeria: 1,
+                            // lista: {
+                            //     cantidad: 1,
+                            //     // descripcion: 1,
+                            //     // precio: 1,
+                            //     "producto.nombre": 1,
+                            //     "producto.descripcion": 1,
+                            //     "producto.precio": 1,
+                            // }
+                        })
+                        .allowDiskUse(true)
                         .exec()
                         .then(async (resDB) => {
-                            //console.log(pagina_actual)
-                            //console.log(resDB)
-                            //let lista_filtrada= await filtrar_lista(buscando,resDB);
-                            resolve({ ok: true, lista: resDB, numero_total, paginas: Math.floor((numero_total + 10 - 1) / (10)) });
+                            resolve({
+                                ok: true,
+                                lista: resDB,
+                                numero_total,
+                                paginas: Math.floor((numero_total + 10 - 1) / 10)
+                            });
                         })
+                        .catch((err) => {
+                            console.log(err);
+                            reject({ ok: false, mensaje: "error al buscar resultados.", error: err });
+                        });
                 })
+                .catch((err) => {
+                    console.log(err);
+                    reject({ ok: false, mensaje: "error al contar documentos.", error: err });
+                });
         } catch (err) {
             console.log(err);
-            reject({ ok: false, mensaje: "error al buscar resultados." })
+            reject({ ok: false, mensaje: "error al buscar resultados.", error: err });
         }
-    })
+    });
 }
+
 
 

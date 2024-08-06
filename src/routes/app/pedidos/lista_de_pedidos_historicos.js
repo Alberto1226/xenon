@@ -2,7 +2,7 @@
 import { Pedido } from "../../../models/pedido";
 import * as accesos from "../accesos"
 
-import * as mongoose from 'mongoose';
+// import * as mongoose from 'mongoose';
 //  Se EMPLEA EN LISTA DE PEDIDIDOS QUE EN DB SE VE COMO Pedido
 
 import { Cliente } from "../../../models/cliente";
@@ -127,6 +127,74 @@ function consullta_con_texto(query, res, pagina_actual) {
 
 
 
+// function consulta(pagina_actual, usuario) {
+//     return new Promise((resolve, reject) => {
+//         let query;
+//         if (usuario.rol === 'vendedor') {
+//             query = {
+//                 $or: [{ "usuario_que_registro.id": usuario._id }, { "agente.id": usuario._id }]
+//             };
+//         } else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
+//             query = {};
+//         }
+
+//         try {
+//             Pedido.countDocuments(query)
+//                 .then((numero_total) => {
+//                     Pedido.find(query)
+//                         .sort({ fecha: -1 })
+//                         .limit(10)
+//                         .skip(pagina_actual * 10)
+//                         .select({
+//                             folio: 1,
+//                             fecha: 1,
+//                             "usuario_que_registro.usuario": 1,
+//                             tenia_ficha: 1,
+//                             moneda: 1,
+//                             descuento: 1,
+//                             total_pedido: 1,
+//                             "cliente.nombre": 1,
+//                             "cliente.correo": 1,
+//                             "agente.nombre": 1,
+//                             "agente.correo": 1,
+//                             mensajeria: 1,
+//                             // lista: {
+//                             //     cantidad: 1,
+//                             //     "producto.nombre": 1,
+//                             //     "producto.descripcion": 1,
+//                             //     "producto.precio": 1,
+//                             // }
+//                         })
+//                         .allowDiskUse(true)
+//                         .exec()
+//                         .then(async (resDB) => {
+//                             resolve({
+//                                 ok: true,
+//                                 lista: resDB,
+//                                 numero_total,
+//                                 paginas: Math.floor((numero_total + 10 - 1) / 10)
+//                             });
+//                         })
+//                         .catch((err) => {
+//                             console.log(err);
+//                             reject({ ok: false, mensaje: "error al buscar resultados.", error: err });
+//                         });
+//                 })
+//                 .catch((err) => {
+//                     console.log(err);
+//                     reject({ ok: false, mensaje: "error al contar documentos.", error: err });
+//                 });
+//         } catch (err) {
+//             console.log(err);
+//             reject({ ok: false, mensaje: "error al buscar resultados.", error: err });
+//         }
+//     });
+// }
+
+
+
+const mongoose = require('mongoose');
+
 function consulta(pagina_actual, usuario) {
     return new Promise((resolve, reject) => {
         let query;
@@ -141,57 +209,34 @@ function consulta(pagina_actual, usuario) {
         try {
             Pedido.countDocuments(query)
                 .then((numero_total) => {
-                    Pedido.find(query)
+                    mongoose.connection.collection('vistaPedidosDatos')
+                        .find(query)
                         .sort({ fecha: -1 })
                         .limit(10)
                         .skip(pagina_actual * 10)
-                        .select({
-                            folio: 1,
-                            fecha: 1,
-                            "usuario_que_registro.usuario": 1,
-                            tenia_ficha: 1,
-                            moneda: 1,
-                            descuento: 1,
-                            total_pedido: 1,
-                            "cliente.nombre": 1,
-                            "cliente.correo": 1,
-                            "agente.nombre": 1,
-                            "agente.correo": 1,
-                            mensajeria: 1,
-                            // lista: {
-                            //     cantidad: 1,
-                            //     // descripcion: 1,
-                            //     // precio: 1,
-                            //     "producto.nombre": 1,
-                            //     "producto.descripcion": 1,
-                            //     "producto.precio": 1,
-                            // }
-                        })
-                        .allowDiskUse(true)
-                        .exec()
-                        .then(async (resDB) => {
+                        .toArray()
+                        .then((resDB) => {
+                            const ids = resDB.map(doc => doc._id);
                             resolve({
                                 ok: true,
                                 lista: resDB,
                                 numero_total,
-                                paginas: Math.floor((numero_total + 10 - 1) / 10)
+                                paginas: Math.ceil(numero_total / 10)
                             });
                         })
                         .catch((err) => {
                             console.log(err);
-                            reject({ ok: false, mensaje: "error al buscar resultados.", error: err });
+                            reject({ ok: false, mensaje: "Error al buscar resultados.", error: err });
                         });
                 })
                 .catch((err) => {
                     console.log(err);
-                    reject({ ok: false, mensaje: "error al contar documentos.", error: err });
+                    reject({ ok: false, mensaje: "Error al contar documentos.", error: err });
                 });
         } catch (err) {
             console.log(err);
-            reject({ ok: false, mensaje: "error al buscar resultados.", error: err });
+            reject({ ok: false, mensaje: "Error al buscar resultados.", error: err });
         }
     });
 }
-
-
 

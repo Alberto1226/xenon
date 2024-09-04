@@ -164,6 +164,10 @@ async function productos_en_pedido(id, origen) {
     const carrito = await consultar_carrito(id, origen)
 
     if (carrito.lista.length === 0) {
+      if (origen === "pedidos3") {
+        resolve({ productos: "sin productos", cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
+        return
+      }
       resolve({ productos: "sin productos", cliente: carrito.cliente, fecha: carrito.fecha, folio: carrito.folio });
       return
     }
@@ -171,7 +175,13 @@ async function productos_en_pedido(id, origen) {
     // lista = lista.concat(lista)
     //lista = lista.concat(lista)
     const texto = await concatenar_aun_solo_texto(lista, carrito);
-    resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha, folio: carrito.folio });
+    if (origen === "pedidos3") {
+      resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
+      return
+    } else {
+      resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha, folio: carrito.folio });
+    }
+
   })
 }
 

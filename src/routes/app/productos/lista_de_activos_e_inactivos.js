@@ -146,7 +146,8 @@ function consulta(pagina_actual) {
             Producto.countDocuments(filtro)
                 .then((numero_total) => {
                     Producto.find(filtro)
-                        .sort({ nombre: 1 })
+                        // .sort({ nombre: 1 })
+                        .sort({ codigo: 1 })
                         .limit(10)
                         .skip(pagina_actual * 10)
                         .exec()

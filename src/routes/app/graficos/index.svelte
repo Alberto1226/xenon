@@ -39,6 +39,6 @@
 
 <Tarjeta  url="app/graficos/BarrasClientes" titulo="x Clientes"  tipo="Barras" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
 
-<Tarjeta  url="app/reporte/general" titulo="Reporte"  tipo="Tabla" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
+<!-- <Tarjeta  url="app/reporte/general" titulo="Reporte"  tipo="Tabla" img="imagenes/grafico_paginado_productos.png"></Tarjeta> -->
 
 

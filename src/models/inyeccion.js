@@ -19,9 +19,10 @@ var schema = new Schema({
         nombre: { type: String, default: '' },
         id: { type: String, default: '' }
     },
-    lista: [
-        { lista: [String] }
-    ]
+    // lista: [
+    //     { lista: [String] }
+    // ]
+    lista: [String]
 }, { timestamps: true });
 
 

@@ -408,7 +408,7 @@
         <i class="material-icons icono_15px">create</i>
       </Button>
     {/if}
-    {#if $usuario_db.rol != "diseñador"}
+    <!-- {#if $usuario_db.rol != "diseñador"}
       <Button
         icon
         dense
@@ -418,7 +418,7 @@
       >
         <img src="imagenes/masterbox.svg" alt="" class="masterbox" />
       </Button>
-    {/if}
+    {/if} -->
   </div>
   <div>
     <div class="display-flex">

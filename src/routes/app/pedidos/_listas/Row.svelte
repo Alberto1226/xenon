@@ -432,7 +432,8 @@
                 icon
                 dense
                 color={pedido.status !== "Envío" ? "darkorange" : "gray"}
-                disabled={pedido.status === "Envío"}
+                disabled={pedido.status === "Envío" || $usuario_db.rol == "almacen"}
+                hidden={$usuario_db.rol == "almacen"}
                 on:click={() => {
                   visible_cancelar = true;
                 }}

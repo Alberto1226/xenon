@@ -36,13 +36,13 @@
       url: "/app/pedidos",
       titulo: "Pedidos",
       icono: "shopping_cart",
-      roles: ["administrador", "vendedor", "gerente"],
+      roles: ["administrador", "almacen", "vendedor", "gerente"],
     },
     {
       url: "/app/productos",
       titulo: "Productos",
       icono: "view_list",
-      roles: ["administrador", "vendedor", "almacen", "gerente", "diseñador"],
+      roles: ["administrador", "vendedor", "gerente", "diseñador"],
     },
 
     {

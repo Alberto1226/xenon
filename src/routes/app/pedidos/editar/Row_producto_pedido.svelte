@@ -118,7 +118,11 @@
     let registro = { producto, cantidad: 0 };
     let donde = "eliminar";
     //console.log(registro);
-    postData("/app/pedidos/editar/cambiar_cantidad", { registro, id_carrito, donde })
+    postData("/app/pedidos/editar/cambiar_cantidad", {
+      registro,
+      id_carrito,
+      donde,
+    })
       .then((respuesta) => {
         procesando_en_la_nube = false;
         //console.log(respuesta)
@@ -128,7 +132,7 @@
           var indice_a_borrar = $lista_productos_en_pedido_en_edicion.findIndex(
             (element) =>
               JSON.stringify(element.producto._id) ==
-              JSON.stringify(producto._id)
+              JSON.stringify(producto._id),
           );
           $lista_productos_en_pedido_en_edicion.splice(indice_a_borrar, 1);
           $lista_productos_en_pedido_en_edicion =
@@ -165,7 +169,7 @@
           $mensajes_app.push({ tipo: "exito", mensaje: "Precio cambiado" });
           $mensajes_app = $mensajes_app;
           var prod_temp = $lista_productos_en_pedido_en_edicion.find(
-            (element) => element.producto.codigo == producto.codigo
+            (element) => element.producto.codigo == producto.codigo,
           );
           prod_temp.precio = precio_nuevo;
           $lista_productos_en_pedido_en_edicion =
@@ -200,10 +204,10 @@
       let lista_temp = $productos.lista;
 
       let producto_temp = lista_temp.find(
-        (element) => element._id === producto._id
+        (element) => element._id === producto._id,
       );
       producto_temp.carritos = producto_temp.carritos.filter(
-        (element) => element.cliente.id !== cliente.id
+        (element) => element.cliente.id !== cliente.id,
       );
 
       dispatch("actualizar_lista");
@@ -221,7 +225,7 @@
     let pedido_actual = $editar_store.pedido;
 
     let lista_temp = pedido_actual.lista.filter(
-      (element) => element._id != producto._id
+      (element) => element._id != producto._id,
     );
     //dispatch('actualizar_lista')
     $editar_store.pedido.lista = lista_temp;
@@ -230,11 +234,11 @@
     let lista_tmp = $pedidos.lista;
 
     let pedido_en_lista_stores = lista_tmp.find(
-      (element) => element._id === $editar_store.pedido._id
+      (element) => element._id === $editar_store.pedido._id,
     );
     let lista_pedido_en_stores = pedido_en_lista_stores.lista;
     lista_pedido_en_stores = lista_pedido_en_stores.filter(
-      (element) => element._id !== producto._id
+      (element) => element._id !== producto._id,
     );
 
     $pedidos.lista = lista_tmp;
@@ -260,6 +264,12 @@
         lista_de_folios_visible = true;
       }
     });
+  }
+
+  async function Insertar_Folios(cantidad) {
+    console.log("Cantidad de proiducto en el carrito", cantidad);
+    lista_de_folios_visible = true;
+    // obtener_folios();
   }
 </script>
 
@@ -295,14 +305,14 @@
               {#if item_pedido.promo.con_promo == true}
                 <!-- SI FUE APLICADO  -->
                 <div class="icono_promo">
-                  <i class="material-icons " title="Promoción aplicada"
+                  <i class="material-icons" title="Promoción aplicada"
                     >new_releases</i
                   >
                 </div>
               {:else}
                 <!-- NO FUE APLICADO -->
                 <div class="icono_promo_no_aplicada">
-                  <i class="material-icons " title="Promoción no aplicada"
+                  <i class="material-icons" title="Promoción no aplicada"
                     >new_releases</i
                   >
                 </div>
@@ -310,7 +320,7 @@
             {/if}
             <div
               data-imagen={ref_txt}
-              class="imagen_row_circular "
+              class="imagen_row_circular"
               style="background-image:url({imagen})"
             />
           </td>
@@ -325,7 +335,7 @@
     <div
       class:padding_2={mostrando_producto}
       class:padding_3={!mostrando_producto}
-      class="tres "
+      class="tres"
     >
       {#if mostrando_producto}
         <table>
@@ -403,7 +413,7 @@
                 src="imagenes/barras.png"
                 alt=""
                 class="folios"
-                on:click={obtener_folios}
+                on:click={Insertar_Folios(cantidad)}
               />
             </td>
             <td title="Folios selectos">
@@ -456,7 +466,7 @@
       <Button
         icon
         dense
-        disabled={procesando_en_la_nube}
+        disabled={procesando_en_la_nube || $usuario_db.rol == "almacen"}
         color="darkorange"
         on:click={quitar_de_pedido}
         title="Borrar"
@@ -563,7 +573,9 @@
     border-radius: 25px;
     border: 1px dashed #009206;
     /* box-shadow: 0 0 4px 0px #ffffff9e; */
-    box-shadow: 0 0 4px 0px #ffffff9e, inset 0 0 20px 0px #1447a769;
+    box-shadow:
+      0 0 4px 0px #ffffff9e,
+      inset 0 0 20px 0px #1447a769;
     margin-bottom: 5px;
     margin-top: 5px;
   }

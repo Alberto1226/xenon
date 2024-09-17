@@ -21,6 +21,7 @@
     editar_store,
     buscadores,
     paginas_actuales,
+    usuario_db,
   } from "./../../../stores";
   import Row_productos from "./Row_producto.svelte";
   import Row_productos_pedido from "./Row_producto_pedido.svelte";
@@ -61,7 +62,6 @@
   let visible = false;
   let descuento_nuevo = 1;
   let input;
-  
 
   var recargar_txt =
     "Recargar lista de productos en pedido " + $editar_store.pedido
@@ -122,7 +122,7 @@
     if (http_ocupado == true) return;
     http_ocupado = true;
     let analisis_proceso = await obtener_analisis_promos_de_carrito(
-      $editar_store.pedido._id
+      $editar_store.pedido._id,
     );
     console.log("--**---***---*-*-*-*-*-*");
     visible_promos_analisis = true;
@@ -152,7 +152,7 @@
     }
     var lista_previa = $productos.lista;
     var lista_temp = $productos.lista.filter((producto) =>
-      incluye_busqueda(producto.nombre + producto.codigo)
+      incluye_busqueda(producto.nombre + producto.codigo),
     );
 
     lista = lista_temp;
@@ -178,25 +178,25 @@
     }
     total_dinero = $lista_productos_en_pedido_en_edicion.reduce(
       (a, b) => +a + +b.producto.precio * +b.cantidad,
-      0
+      0,
     );
 
     total_unidades = $lista_productos_en_pedido_en_edicion.reduce(
       (a, b) => +a + +b.cantidad,
-      0
+      0,
     );
     let lista_temp = $pedidos.lista;
     //console.log('buscar '+$editar_store.pedido._id );
     //console.log(lista_temp);
 
     let pedido_en_lista_stores = lista_temp.find(
-      (element) => element._id === $editar_store.pedido._id
+      (element) => element._id === $editar_store.pedido._id,
     );
     if (pedido_en_lista_stores === undefined) {
       $pedidos.lista.push($editar_store.pedido);
       $pedidos = $pedidos;
       pedido_en_lista_stores = lista_temp.find(
-        (element) => element._id === $editar_store.pedido._id
+        (element) => element._id === $editar_store.pedido._id,
       );
     }
     pedido_en_lista_stores.total_pedido = total_dinero;
@@ -226,7 +226,7 @@
     let respuesta = await get_productos(
       $buscadores.productos,
       $productos.pagina_actual,
-      true
+      true,
     );
     http_ocupado = false;
     if (respuesta.ok === false) {
@@ -275,7 +275,7 @@
           if (respuesta.ok) {
             let lista_temp = $pedidos.lista;
             let pedido_en_lista = lista_temp.find(
-              (element) => element._id === $editar_store.pedido._id
+              (element) => element._id === $editar_store.pedido._id,
             );
             pedido_en_lista = respuesta.carrito;
             $lista_productos_en_pedido_en_edicion = respuesta.carrito.lista;
@@ -303,23 +303,26 @@
   }
 
   function cambiar_descuento() {
-    if (http_ocupado ) return;
+    if (http_ocupado) return;
     if (descuento_nuevo > 99 || descuento_nuevo < 0) return;
-  
+
     http_ocupado = true;
     console.log($editar_store.pedido);
     postData("/app/pedidos/cambiar_descuento_de_pedido", {
       id: $editar_store.pedido._id,
-      descuento_nuevo
+      descuento_nuevo,
     })
-      .then(respuesta => {
+      .then((respuesta) => {
         //console.log(respuesta);
         http_ocupado = false;
         if (respuesta.ok) {
           $mensajes_app.push({
             tipo: "exito",
             mensaje:
-              "Pedido " + $editar_store.pedido.folio + " ha cambiado el descuento " + status
+              "Pedido " +
+              $editar_store.pedido.folio +
+              " ha cambiado el descuento " +
+              status,
           });
           $mensajes_app = $mensajes_app;
           const { nueva_lista, total_pedido, descuento_nuevo } = respuesta;
@@ -328,27 +331,28 @@
           $editar_store.pedido.lista = descuento_nuevo;
 
           dispatch("descuento_cambiado", respuesta);
-          visible =false;
+          visible = false;
           actualizar_pedido();
           descuento_a_usar = descuento_nuevo;
           // console.log(descuento_a_usar);
-        }
-        else{
-
+        } else {
           $mensajes_app.push({
             tipo: "error",
             mensaje:
-              "Pedido " + $editar_store.pedido.folio + " no pudo cambiar el descuento " 
+              "Pedido " +
+              $editar_store.pedido.folio +
+              " no pudo cambiar el descuento ",
           });
           $mensajes_app = $mensajes_app;
         }
       })
-      .catch(err => {
+      .catch((err) => {
         http_ocupado = false;
         console.log(err);
         $mensajes_app.push({
           tipo: "error",
-          mensaje: "Ups, no se pudo hacer el cambio de descuento, intalo de nuevo."
+          mensaje:
+            "Ups, no se pudo hacer el cambio de descuento, intalo de nuevo.",
         });
         $mensajes_app = $mensajes_app;
         procesando = false;
@@ -415,6 +419,8 @@
           icon
           dense
           color="white"
+          disabled={$usuario_db.rol == "almacen"}
+          hidden={$usuario_db.rol == "almacen"}
           on:click={mover_a_mouse}
           title="Cambiar descuento de un pedido"
         >
@@ -425,7 +431,9 @@
 
         <div
           id={$editar_store.pedido._id}
-          class="flotante" in:blur={{ amount: 3, duration: 450 }} out:blur={{ amount: 3, duration: 450, delay: 500 }}
+          class="flotante"
+          in:blur={{ amount: 3, duration: 450 }}
+          out:blur={{ amount: 3, duration: 450, delay: 500 }}
         >
           <table style="width:100%" class="no_select">
             <tr>
@@ -490,14 +498,22 @@
         </div>
       {/if}
 
-      <Button on:click={solicitar_resumen_folios}
+      <Button
+        on:click={solicitar_resumen_folios}
+        disabled={$usuario_db.rol == "almacen"}
         ><img
           src="imagenes/icono_mas_info_de_folios.svg"
           alt="Más información de los folios"
           title="Info sobre disponibilidad de los folios selectos"
         /></Button
       >
-      <Button color="white" icon dense on:click={obtener_analisis_promos}>
+      <Button
+        color="white"
+        disabled={$usuario_db.rol == "almacen"}
+        icon
+        dense
+        on:click={obtener_analisis_promos}
+      >
         <i
           class="material-icons"
           title="Obtener analisis de promos y sus condiciones en el pedido"
@@ -516,6 +532,7 @@
         <td>
           <Textfield
             id="input_buscar"
+            disabled={$usuario_db.rol == "almacen"}
             on:keyup={handle_buscar}
             outlined
             bind:value={buscar}
@@ -552,77 +569,84 @@
       </tr>
     </table>
 
-    <!-- paginacion -->
-    <table style="margin: -23px 0 0 39px;">
-      <tr>
-        <td>
-          <Button
-            dense
-            icon
-            on:click={() => {
-              if ($productos.pagina_actual == 1) return;
-              $productos.pagina_actual--;
-              obtener_productos_por_pagina();
-            }}
-          >
-            <i class="material-icons">arrow_left</i>
-          </Button>
-        </td>
-        <td>
-          pag: {$productos.pagina_actual}
-          <span title="total de páginas">de {$productos.paginas}</span>
-        </td>
+    {#if $usuario_db.rol != "almacen"}
+      <!-- paginacion -->
+      <table style="margin: -23px 0 0 39px;">
+        <tr>
+          <td>
+            <Button
+              dense
+              icon
+              on:click={() => {
+                if ($productos.pagina_actual == 1) return;
+                $productos.pagina_actual--;
+                obtener_productos_por_pagina();
+              }}
+            >
+              <i class="material-icons">arrow_left</i>
+            </Button>
+          </td>
+          <td>
+            pag: {$productos.pagina_actual}
+            <span title="total de páginas">de {$productos.paginas}</span>
+          </td>
 
-        <td>
-          <Button
-            dense
-            icon
-            on:click={() => {
-              if ($productos.pagina_actual == $productos.paginas) return;
-              $productos.pagina_actual++;
-              obtener_productos_por_pagina();
-            }}
-          >
-            <i class="material-icons">arrow_right</i>
-          </Button>
-        </td>
-        <td>
-          {#if buscar != ""}
-            <!-- content here -->
-            <span class="indice_row">coinciden {$productos.coincidencias}</span>
+          <td>
+            <Button
+              dense
+              icon
+              on:click={() => {
+                if ($productos.pagina_actual == $productos.paginas) return;
+                $productos.pagina_actual++;
+                obtener_productos_por_pagina();
+              }}
+            >
+              <i class="material-icons">arrow_right</i>
+            </Button>
+          </td>
+          <td>
+            {#if buscar != ""}
+              <!-- content here -->
+              <span class="indice_row"
+                >coinciden {$productos.coincidencias}</span
+              >
+            {:else}
+              <span class="indice_row">total {$productos.total_registros}</span>
+            {/if}
+          </td>
+        </tr>
+      </table>
+    {/if}
+
+    {#if $usuario_db.rol != "almacen"}
+      {#if http_ocupado}
+        <!-- content here -->
+        <div class="centrado">cargando...</div>
+      {:else}
+        <div class="contenedor_lista_busqueda">
+          <br />
+          {#each $productos.lista as producto, i (producto._id)}
+            <!-- svelte-ignore empty-block -->
+            {#if procesando_pedido || procesando_en_la_nube}
+              {#if i == 0}
+                <div class="centrado">cargando...</div>
+              {/if}
+            {:else}
+              <!-- content here -->
+              <Row_productos
+                bind:procesando_en_la_nube
+                on:actualizar_lista={filtrar_nuevo_arreglo}
+                bind:id_carrito
+                bind:descuento_a_usar
+                {producto}
+                indice={10 * $productos.pagina_actual + i + 1 - 10}
+              />
+            {/if}
           {:else}
-            <span class="indice_row">total {$productos.total_registros}</span>
-          {/if}
-        </td>
-      </tr>
-    </table>
-    {#if http_ocupado}
-      <!-- content here -->
-      <div class="centrado">cargando...</div>
-    {:else}
-      <div class="contenedor_lista_busqueda">
-        <br />
-        {#each $productos.lista as producto, i (producto._id)}
-           <!-- svelte-ignore empty-block -->
-           {#if procesando_pedido || procesando_en_la_nube}
-           {#if i == 0}
-           <div class="centrado">cargando...</div>
-           {/if}           
-           {:else}
-           <!-- content here -->
-          <Row_productos
-            bind:procesando_en_la_nube
-            on:actualizar_lista={filtrar_nuevo_arreglo}
-            bind:id_carrito
-            bind:descuento_a_usar
-            {producto}
-            indice={10 * $productos.pagina_actual + i + 1 - 10}
-          />
-          {/if}
-        {:else}
-          <!-- empty list -->
-        {/each}
-      </div>
+            <!-- empty list -->
+          {/each}
+        </div>
+      {/if}
     {/if}
   </div>
   <div class="lista_de_pedido">
@@ -704,7 +728,7 @@
               $ {formato_precio(total)}
               <br />
               <span style="color:white;font-size:0.9em;">
-                descuento en ficha {(descuento_nuevo)} %
+                descuento en ficha {descuento_nuevo} %
               </span>
             </td>
           {/if}

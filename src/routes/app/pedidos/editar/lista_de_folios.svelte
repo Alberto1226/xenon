@@ -152,43 +152,103 @@
         lista_filtrada = folios.filter(
             (elem) => elem.folio.toUpperCase().indexOf(buscando_upper) > -1,
         );
-        console.log(lista_filtrada.length);
+        // console.log(lista_filtrada.length);
     }
 
     function AgregarFolio(dato) {
-        foliosMaster = [...foliosMaster, dato];
-        // console.log("Arreglo de folios actualizado:", foliosMaster);
+        if (!foliosMaster.includes(dato)) {
+            foliosMaster = [...foliosMaster, dato];
+            // console.log("Arreglo de folios actualizado:", foliosMaster);
+        } else {
+            // console.log("El folio ya existe en la lista");
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje:
+                    "El folio ya existe en la lista, por favor ingresa otro",
+            });
+            $mensajes_app = $mensajes_app;
+        }
     }
 
     function GenerarFolios(dato) {
         // console.log("dato", dato, "Cantidad Arreglo", CantidadArreglo);
         let resultado_ya_existia = checar_que_sea_unico(dato);
         if (resultado_ya_existia) {
-            console.log("El folio ya existe en la lista"); //manejar el folio repetido
+            // console.log("El folio ya existe en la lista"); // manejar el folio repetido
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje:
+                    "El folio ya existe en la lista, por favor ingresa otro",
+            });
             return;
         }
-        let termina_en_numero = !isNaN(dato[dato.length - 1]);
+
+        // Expresión regular para manejar ambos formatos
+        const match = dato.match(/^([A-Z]+)(\d+)([A-Z]*)(\d*)$/);
+
         let lista = [];
 
-        // Si el último carácter es un número, incrementamos desde el dato recibido
-        if (termina_en_numero) {
-            let numeroBase = parseInt(dato);
+        if (match) {
+            // console.log("match", match);
+            let parteInicial = match[1]; // Parte alfanumérica fija
+            let numeroBase = parseInt(match[2], 10); // Parte numérica base
+
+            // Verificamos si hay una parte de letras y una parte numérica final
+            let parteLetras = match[3]; // Puede ser vacío para el nuevo formato
+            let numeroFinal = match[4]
+                ? parseInt(match[4], 10)
+                : match[2]
+                  ? parseInt(match[3], 10)
+                  : 0; // Parte numérica final, por defecto 0 si no existe
+
+            // Generar la lista con las partes fijas y la parte numérica incrementada
             for (let i = 0; i < CantidadArreglo; i++) {
-                lista.push((numeroBase + i).toString());
+                let m4 = match[4];
+                let m3 = match[3];
+                let m2 = match[2];
+                if (m4 == "" && m3 == "") {
+                    let folioGenerado = `${parteInicial}${numeroBase + i}`;
+                    lista.push(folioGenerado);
+                }
+                if (m4 != "" && m3 != "") {
+                    let folioGenerado = `${parteInicial}${numeroBase}${parteLetras}${numeroFinal + i}`;
+                    lista.push(folioGenerado);
+                }
+                // let folioGenerado = `${parteInicial}${numeroBase}${parteLetras}${numeroFinal + i}`;
+                // lista.push(folioGenerado);
             }
         } else {
-            // Si el último carácter es una letra, concatenamos un contador al dato recibido
-            for (let i = 0; i < CantidadArreglo; i++) {
-                lista.push(`${dato}${i}`);
-            }
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "El folio no sigue un formato esperado",
+            });
+            $mensajes_app = $mensajes_app;
+            // // Intentar un segundo match para datos que solo contienen letras seguidas de números
+            // const simpleMatch = dato.match(/^([A-Z]+)(\d+)$/); // Cambiar a letras seguidas de números
+            // if (simpleMatch) {
+            //     console.log("simpleMatch", simpleMatch);
+            //     let parteInicial = simpleMatch[1]; // Parte alfabética inicial
+            //     let numeroBase = parseInt(simpleMatch[2], 10); // Parte numérica base
+
+            //     // Generar la lista con la parte inicial y la parte numérica incrementada
+            //     for (let i = 0; i < CantidadArreglo; i++) {
+            //         lista.push(`${parteInicial}${numeroBase + i}`);
+            //     }
+            // } else {
+            //     // Si el dato no sigue ningún patrón esperado, simplemente agregamos con el contador
+            //     for (let i = 0; i < CantidadArreglo; i++) {
+            //         lista.push(`${dato}${i}`);
+            //     }
+            // }
         }
 
+        // Agregar los folios generados al arreglo maestro, si no existen
         for (let index = 0; index < lista.length; index++) {
             const element = lista[index];
-            foliosMaster = [...foliosMaster, element];
+            if (!foliosMaster.includes(element)) {
+                foliosMaster = [...foliosMaster, element];
+            }
         }
-
-        // foliosMaster = [...foliosMaster, lista];
 
         // console.log("Lista generada:", foliosMaster);
     }

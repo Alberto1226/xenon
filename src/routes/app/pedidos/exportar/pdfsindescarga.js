@@ -168,7 +168,7 @@ async function productos_en_pedido(id, origen) {
         resolve({ productos: "sin productos", cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
         return
       }
-      resolve({ productos: "sin productos", cliente: carrito.cliente, fecha: carrito.fecha, folio: carrito.folio });
+      resolve({ productos: "sin productos", cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
       return
     }
     let lista = await separar_productos(carrito.lista, carrito.tipo_de_cambio);
@@ -179,7 +179,7 @@ async function productos_en_pedido(id, origen) {
       resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
       return
     } else {
-      resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha, folio: carrito.folio });
+      resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
     }
 
   })

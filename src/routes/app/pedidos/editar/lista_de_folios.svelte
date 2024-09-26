@@ -171,8 +171,10 @@
     }
 
     function GenerarFolios(dato) {
-        // console.log("dato", dato, "Cantidad Arreglo", CantidadArreglo);
-        let resultado_ya_existia = checar_que_sea_unico(dato);
+        let dato2 = dato.toUpperCase().replace(/\s+/g, "");
+        // console.log("dato", dato2, "Cantidad Arreglo", CantidadArreglo);
+
+        let resultado_ya_existia = checar_que_sea_unico(dato2);
         if (resultado_ya_existia) {
             // console.log("El folio ya existe en la lista"); // manejar el folio repetido
             $mensajes_app.push({
@@ -184,7 +186,7 @@
         }
 
         // Expresión regular para manejar ambos formatos
-        const match = dato.match(/^([A-Z]+)(\d+)([A-Z]*)(\d*)$/);
+        const match = dato2.match(/^([A-Z]+)(\d+)([A-Z]*)(\d*)$/);
 
         let lista = [];
 

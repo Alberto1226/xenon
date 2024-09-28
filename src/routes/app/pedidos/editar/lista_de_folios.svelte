@@ -156,8 +156,9 @@
     }
 
     function AgregarFolio(dato) {
-        if (!foliosMaster.includes(dato)) {
-            foliosMaster = [...foliosMaster, dato];
+        let dato2 = dato.toUpperCase().replace(/\s+/g, "");
+        if (!foliosMaster.includes(dato2)) {
+            foliosMaster = [...foliosMaster, dato2];
             // console.log("Arreglo de folios actualizado:", foliosMaster);
         } else {
             // console.log("El folio ya existe en la lista");

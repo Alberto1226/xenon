@@ -28,6 +28,8 @@ export function post(req, res, next) {
                 return;
             }
 
+            let folioCarrito = resultado.folio;
+
             let lista = resultado.lista;
             console.log({ lista });
             let registro_tmp = lista.find(element => element.producto._id == registro.producto_id);
@@ -54,6 +56,7 @@ export function post(req, res, next) {
                     estado_actual: 'En Carrito',
                     iniciado: true,
                     terminado: false,
+                    carrito_folio: folioCarrito
                 },
                 producto: {
                     nombre: registro_tmp.producto.nombre,

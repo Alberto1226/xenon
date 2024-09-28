@@ -9,6 +9,7 @@ var schema = new Schema({
         estado_actual: { type: String, default: 'pendiente' },
         iniciado: { type: Boolean, default: false },
         terminado: { type: Boolean, default: false },
+        carrito_folio: { type: Number, default: 0 }
     },
     producto: {
         nombre: { type: String, default: '' },

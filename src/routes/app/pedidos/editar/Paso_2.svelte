@@ -419,8 +419,9 @@
           icon
           dense
           color="white"
-          disabled={$usuario_db.rol == "almacen"}
-          hidden={$usuario_db.rol == "almacen"}
+          disabled={$usuario_db.rol == "almacen" ||
+            $usuario_db.rol == "vendedor"}
+          hidden={$usuario_db.rol == "almacen" || $usuario_db.rol == "vendedor"}
           on:click={mover_a_mouse}
           title="Cambiar descuento de un pedido"
         >
@@ -498,7 +499,7 @@
         </div>
       {/if}
 
-      <Button
+      <!-- <Button
         on:click={solicitar_resumen_folios}
         disabled={$usuario_db.rol == "almacen"}
         ><img
@@ -506,7 +507,7 @@
           alt="Más información de los folios"
           title="Info sobre disponibilidad de los folios selectos"
         /></Button
-      >
+      > -->
       <Button
         color="white"
         disabled={$usuario_db.rol == "almacen"}

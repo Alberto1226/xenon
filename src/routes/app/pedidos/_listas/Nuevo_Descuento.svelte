@@ -2,7 +2,7 @@
   import { Button, Textfield } from "svelte-mui/src";
   import { blur } from "svelte/transition";
   import { onMount, createEventDispatcher } from "svelte";
-  import { mensajes_app, postData } from "./../../../stores";
+  import { mensajes_app, postData, usuario_db } from "./../../../stores";
   export let pedido;
   const dispatch = createEventDispatcher();
 
@@ -120,6 +120,7 @@
   <Button
     icon
     dense
+    hidden={$usuario_db.rol == "almacen" || $usuario_db.rol == "vendedor"}
     color="#2B78FE"
     on:click={mover_a_mouse}
     title="Cambiar descuento de un pedido">

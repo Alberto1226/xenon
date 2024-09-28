@@ -493,12 +493,12 @@
               <Paqueteria bind:pedido bind:mensajeria={pedido.mensajeria} />
             {/if}
 
-            <!-- {#if ($usuario_db.rol === "administrador" || $usuario_db.rol === "gerente") && pedido.status != "Envío"}
+            {#if ($usuario_db.rol === "administrador" || $usuario_db.rol === "gerente") && pedido.status != "Envío"}
               <Cambiar_descuento
                 bind:pedido
                 on:descuento_cambiado={handle_descuento_cambiado}
               />
-            {/if} -->
+            {/if}
           </ButtonGroup>
         </td>
       </tr>

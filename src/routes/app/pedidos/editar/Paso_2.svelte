@@ -415,7 +415,7 @@
     <div class="tools-folio">
       {#if visible === false}
         <!-- content here -->
-        <Button
+        <!-- <Button
           icon
           dense
           color="white"
@@ -426,7 +426,7 @@
           title="Cambiar descuento de un pedido"
         >
           <i class="material-icons">local_atm</i>
-        </Button>
+        </Button> -->
       {:else}
         <!-- else content here -->
 

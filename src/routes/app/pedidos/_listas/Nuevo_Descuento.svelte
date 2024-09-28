@@ -117,7 +117,7 @@
 <!-- content here -->
 {#if visible === false}
   <!-- content here -->
-  <Button
+  <!-- <Button
     icon
     dense
     hidden={$usuario_db.rol == "almacen" || $usuario_db.rol == "vendedor"}
@@ -125,7 +125,7 @@
     on:click={mover_a_mouse}
     title="Cambiar descuento de un pedido">
     <i class="material-icons">local_atm</i>
-  </Button>
+  </Button> -->
 {:else}
   <!-- else content here -->
 

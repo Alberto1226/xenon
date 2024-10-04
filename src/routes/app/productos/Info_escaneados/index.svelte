@@ -5,6 +5,7 @@
     import No_se_encontraron_resultados from "./No_se_encontraron_resultados.svelte";
     import Cargador from "./Cargando.svelte";
     import Productos from "./Productos.svelte";
+    import CarritoInfo from "./CarritoInfo.svelte";
     import Inyeccion from "./Inyeccion.svelte";
     import Salida from "./Salida.svelte";
     import Borrado_folio from "./Borrado_de_folios.svelte";
@@ -65,6 +66,10 @@
         },
         folios: [],
     };
+    var carrito = {
+        hay_registro: false,
+    };
+
     var lista_productos_relacion = [];
 
     function toggle() {
@@ -83,11 +88,18 @@
         borrado_folio.hay_registro = false;
         salida.hay_registro = false;
         var resultado = await postData(
-            "app/productos/Info_escaneados/buscar_folio",
-            { folio_a_buscar }
+            // "app/productos/Info_escaneados/buscar_folio",
+            "app/productos/Info_escaneados/Verificar_folios_pedidos",
+            { folio_a_buscar },
         );
         console.log({ resultado });
         lista_productos_relacion = resultado.existe_en_la_bodega_resultado;
+
+        if (resultado.existe_en_carrito_resultado) {
+            carrito = resultado.existe_en_carrito_resultado;
+            carrito.hay_registro = true;
+            // console.log("Carrito", carrito);
+        }
 
         if (resultado.existe_registro_de_inyeccion) {
             inyeccion = resultado.existe_registro_de_inyeccion;
@@ -119,7 +131,7 @@
 
 {#if visible == true}
     <div class="contenedor" in:fade={{ duration: 350 }}>
-        <div class="boton-cerrar ">
+        <div class="boton-cerrar">
             <Button raised color="red" icons dense on:click={cerrar}>
                 <i class="material-icons"> close </i>
             </Button>
@@ -141,8 +153,19 @@
                         on:keyup={handleKey}
                     />
                     {#if buscador_virgen == false}
-                        <Productos bind:lista={lista_productos_relacion} />
-                        <Inyeccion
+                        <!-- <Productos bind:lista={lista_productos_relacion} /> -->
+                        <!-- monstrare la info del carrito con el folio que se busco -->
+                        {#if carrito.hay_registro}
+                            <CarritoInfo
+                                _id={carrito._id}
+                                folio={carrito.folio}
+                                nombre={carrito.cliente.nombre}
+                                status={carrito.status}
+                                galeria_imagenes={[]}
+                            />
+                        {/if}
+
+                        <!-- <Inyeccion
                             id={inyeccion._id}
                             fecha={inyeccion.fecha}
                             producto={inyeccion.producto}
@@ -151,7 +174,7 @@
                             inventario_despues={inyeccion.inventario_despues}
                             folios={inyeccion.folios}
                             hay_registro={inyeccion.hay_registro}
-                        />
+                        /> -->
                         <Salida
                             id={salida._id}
                             fecha={salida.fecha}

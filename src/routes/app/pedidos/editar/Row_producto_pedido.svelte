@@ -267,7 +267,7 @@
   }
 
   async function Insertar_Folios(cantidad) {
-    console.log("Cantidad de proiducto en el carrito", cantidad);
+    // console.log("Cantidad de proiducto en el carrito", cantidad);
     lista_de_folios_visible = true;
     // obtener_folios();
   }

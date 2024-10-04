@@ -17,6 +17,8 @@
     export var desactivar = false;
     export var CantidadArreglo = 10;
 
+    export var foliosRepetidos = [];
+
     var buscando = "";
     var actualizado = false;
     var lista_filtrada = [];
@@ -42,6 +44,24 @@
                 tipo: "error",
                 mensaje:
                     "La cantidad de folios es mayor a la cantidad de productos",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+        if (foliosMaster.length === 0) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "No hay folios en la lista",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
+        if (foliosMaster.length < cantidad) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje:
+                    "La cantidad de folios es menor a la cantidad de productos",
             });
             $mensajes_app = $mensajes_app;
             return;
@@ -76,6 +96,13 @@
                         dispatch("se_actualizaron_folios");
                     }, 5500);
                 }
+                if (!respuesta.ok) {
+                    $mensajes_app.push({
+                        tipo: "error",
+                        mensaje: respuesta.error,
+                    });
+                    foliosRepetidos = respuesta.foliosRepetidos;
+                }
             })
             .catch((err) => {
                 console.log(err);
@@ -106,7 +133,9 @@
     }
 
     function cerrar(params) {
+        foliosMaster = [];
         visible = false;
+        DesactivarInput();
         // dispatch("actualizar_folios");
     }
 
@@ -173,11 +202,9 @@
 
     function GenerarFolios(dato) {
         let dato2 = dato.toUpperCase().replace(/\s+/g, "");
-        // console.log("dato", dato2, "Cantidad Arreglo", CantidadArreglo);
 
         let resultado_ya_existia = checar_que_sea_unico(dato2);
         if (resultado_ya_existia) {
-            // console.log("El folio ya existe en la lista"); // manejar el folio repetido
             $mensajes_app.push({
                 tipo: "error",
                 mensaje:
@@ -186,63 +213,49 @@
             return;
         }
 
-        // Expresión regular para manejar ambos formatos
-        const match = dato2.match(/^([A-Z]+)(\d+)([A-Z]*)(\d*)$/);
-
+        let parteInicial = dato2; // Iniciamos con el folio completo
+        let ultimosCuatro = dato2.slice(-4); // Últimos 4 caracteres
         let lista = [];
+        let numeroBase = null;
+        let letrasFinales = ""; // Letras después del número
 
-        if (match) {
-            // console.log("match", match);
-            let parteInicial = match[1]; // Parte alfanumérica fija
-            let numeroBase = parseInt(match[2], 10); // Parte numérica base
+        // Comprobamos si los últimos 4 caracteres tienen letras
+        let tieneLetras = /[A-Z]/.test(ultimosCuatro);
+        let tieneNumeros = /^\d+$/.test(ultimosCuatro);
 
-            // Verificamos si hay una parte de letras y una parte numérica final
-            let parteLetras = match[3]; // Puede ser vacío para el nuevo formato
-            let numeroFinal = match[4]
-                ? parseInt(match[4], 10)
-                : match[2]
-                  ? parseInt(match[3], 10)
-                  : 0; // Parte numérica final, por defecto 0 si no existe
-
-            // Generar la lista con las partes fijas y la parte numérica incrementada
-            for (let i = 0; i < CantidadArreglo; i++) {
-                let m4 = match[4];
-                let m3 = match[3];
-                let m2 = match[2];
-                if (m4 == "" && m3 == "") {
-                    let folioGenerado = `${parteInicial}${numeroBase + i}`;
-                    lista.push(folioGenerado);
+        if (tieneLetras) {
+            // Recorremos los últimos caracteres para encontrar el número base
+            for (let i = ultimosCuatro.length - 1; i >= 0; i--) {
+                if (isNaN(ultimosCuatro[ultimosCuatro.length - 1])) {
+                    parteInicial = dato2.slice(0, -ultimosCuatro.length + i);
+                    numeroBase = 0;
+                    break;
                 }
-                if (m4 != "" && m3 != "") {
-                    let folioGenerado = `${parteInicial}${numeroBase}${parteLetras}${numeroFinal + i}`;
-                    lista.push(folioGenerado);
+
+                if (!isNaN(ultimosCuatro[i])) {
+                    numeroBase = parseInt(ultimosCuatro.slice(i));
+                    parteInicial = dato2.slice(0, -ultimosCuatro.length + i);
+                    // break;
                 }
-                // let folioGenerado = `${parteInicial}${numeroBase}${parteLetras}${numeroFinal + i}`;
-                // lista.push(folioGenerado);
             }
-        } else {
-            $mensajes_app.push({
-                tipo: "error",
-                mensaje: "El folio no sigue un formato esperado",
-            });
-            $mensajes_app = $mensajes_app;
-            // // Intentar un segundo match para datos que solo contienen letras seguidas de números
-            // const simpleMatch = dato.match(/^([A-Z]+)(\d+)$/); // Cambiar a letras seguidas de números
-            // if (simpleMatch) {
-            //     console.log("simpleMatch", simpleMatch);
-            //     let parteInicial = simpleMatch[1]; // Parte alfabética inicial
-            //     let numeroBase = parseInt(simpleMatch[2], 10); // Parte numérica base
+        }
+        if (tieneNumeros) {
+            console.log("todosnumeros", ultimosCuatro);
+            numeroBase = parseInt(ultimosCuatro);
+        }
 
-            //     // Generar la lista con la parte inicial y la parte numérica incrementada
-            //     for (let i = 0; i < CantidadArreglo; i++) {
-            //         lista.push(`${parteInicial}${numeroBase + i}`);
-            //     }
-            // } else {
-            //     // Si el dato no sigue ningún patrón esperado, simplemente agregamos con el contador
-            //     for (let i = 0; i < CantidadArreglo; i++) {
-            //         lista.push(`${dato}${i}`);
-            //     }
-            // }
+        // Si no se encontró un número, comenzamos la iteración desde 0
+        // if (numeroBase === null) {
+        //     numeroBase = 0;
+        //     parteInicial = dato2; // Usamos todo el folio como parte inicial
+        // }
+
+        // Generamos los folios incrementando el número base, respetando las letras finales
+        for (let i = 0; i < CantidadArreglo; i++) {
+            let nuevoNumero = (numeroBase + i).toString();
+            // let folioGenerado = `${parteInicial}${nuevoNumero}${letrasFinales}`;
+            let folioGenerado = `${parteInicial}${nuevoNumero}`;
+            lista.push(folioGenerado);
         }
 
         // Agregar los folios generados al arreglo maestro, si no existen
@@ -253,7 +266,7 @@
             }
         }
 
-        // console.log("Lista generada:", foliosMaster);
+        console.log("Lista generada:", foliosMaster);
     }
 
     function checar_que_sea_unico(folio) {
@@ -423,7 +436,10 @@
                 <div class="lista">
                     {#each foliosMaster as item, i}
                         <!-- {console.log(item)} -->
-                        <div class="item">
+                        <div
+                            class="item"
+                            class:repetido={foliosRepetidos.includes(item)}
+                        >
                             <span class="indices">{i + 1})</span>
                             {item}
                             <button
@@ -512,6 +528,13 @@
 {/if}
 
 <style>
+    .item.repetido {
+        background-color: #b19cd9; /* Un tono de morado claro */
+        color: white; /* Texto blanco para mayor contraste */
+        border-radius: 5px;
+        padding: 5px;
+    }
+
     .indices {
         font-size: 10px;
         color: gray;

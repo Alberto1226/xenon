@@ -438,7 +438,7 @@
     {:else if existen_resultados_a_mostrar}
       <!-- SI HAY ALGO QUE MOSTRAR -->
 
-      <h2 style="color:white;padding-top:10px;">{ordenado?'Productos de menos a más vendidos':'Productos de más a menos vendidos'}</h2>
+      <h2 style="color:white;padding-top:10px;">{ordenado?'Productos de más a menos vendidos':'Productos de menos a más vendidos'}</h2>
 
       <div class="chart" bind:clientWidth={width} bind:clientHeight={height}>
         <svg>

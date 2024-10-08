@@ -216,8 +216,10 @@
         let parteInicial = dato2; // Iniciamos con el folio completo
         let ultimosCuatro = dato2.slice(-4); // Últimos 4 caracteres
         let lista = [];
-        let numeroBase = null;
+        let numeroBase = "";
         let letrasFinales = ""; // Letras después del número
+        let leadingZeros = "";
+        let leadingZerosStr = "";
 
         // Comprobamos si los últimos 4 caracteres tienen letras
         let tieneLetras = /[A-Z]/.test(ultimosCuatro);
@@ -238,24 +240,48 @@
                     // break;
                 }
             }
+            for (let i = 0; i < CantidadArreglo; i++) {
+                let nuevoNumero = (numeroBase + i).toString();
+                // let folioGenerado = `${parteInicial}${nuevoNumero}${letrasFinales}`;
+                let folioGenerado = `${parteInicial}${nuevoNumero}`;
+                // console.log("FOLg", folioGenerado);
+                lista.push(folioGenerado);
+            }
         }
         if (tieneNumeros) {
-            console.log("todosnumeros", ultimosCuatro);
-            numeroBase = parseInt(ultimosCuatro);
-        }
+            numeroBase = parseInt(ultimosCuatro, 10);
+            leadingZeros = ultimosCuatro.length - numeroBase.toString().length;
+            leadingZerosStr = "0".repeat(leadingZeros);
+            parteInicial = dato2.slice(0, -ultimosCuatro.toString().length);
+            // console.log(
+            //     "todosnumeros",
+            //     ultimosCuatro,
+            //     "base",
+            //     numeroBase,
+            //     "zeros",
+            //     leadingZeros,
+            //     "Zstring",
+            //     leadingZerosStr,
+            // );
+            if (leadingZeros === 0) {
+                for (let i = 0; i < CantidadArreglo; i++) {
+                    let nuevoNumero = (numeroBase + i).toString();
+                    // let folioGenerado = `${parteInicial}${nuevoNumero}${letrasFinales}`;
+                    let folioGenerado = `${parteInicial}${nuevoNumero}`;
+                    // console.log("FOLg", folioGenerado);
+                    lista.push(folioGenerado);
+                }
+            }
+            if (leadingZeros > 0) {
 
-        // Si no se encontró un número, comenzamos la iteración desde 0
-        // if (numeroBase === null) {
-        //     numeroBase = 0;
-        //     parteInicial = dato2; // Usamos todo el folio como parte inicial
-        // }
-
-        // Generamos los folios incrementando el número base, respetando las letras finales
-        for (let i = 0; i < CantidadArreglo; i++) {
-            let nuevoNumero = (numeroBase + i).toString();
-            // let folioGenerado = `${parteInicial}${nuevoNumero}${letrasFinales}`;
-            let folioGenerado = `${parteInicial}${nuevoNumero}`;
-            lista.push(folioGenerado);
+                for (let i = 0; i < CantidadArreglo; i++) {
+                    let folio3dfd = (numeroBase + i)
+                        .toString()
+                        .padStart(4, "0");
+                    let folioGenerado = `${parteInicial}${folio3dfd}`;
+                    lista.push(folioGenerado);
+                }
+            }
         }
 
         // Agregar los folios generados al arreglo maestro, si no existen
@@ -266,7 +292,7 @@
             }
         }
 
-        console.log("Lista generada:", foliosMaster);
+        // console.log("Lista generada:", foliosMaster);
     }
 
     function checar_que_sea_unico(folio) {

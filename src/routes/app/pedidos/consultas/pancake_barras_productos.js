@@ -16,7 +16,7 @@ export async function post(req, res, next) {
         res.send({ ok: false, mensaje: "permisos insuficientes" })
         return;
     }
-    
+
 
 
 
@@ -30,9 +30,9 @@ export async function post(req, res, next) {
     let orden = req.body.orden;
     //console.table(pagina_actual);
     //console.table(step);
-   let periodicidad = { desde: new Date(req.body.desde), hasta: new Date(req.body.hasta) }
-   // let periodicidad = { desde: new Date(), hasta: new Date() }
-   // periodicidad.desde.setMonth(periodicidad.desde.getMonth() - 2);
+    let periodicidad = { desde: new Date(req.body.desde), hasta: new Date(req.body.hasta) }
+    // let periodicidad = { desde: new Date(), hasta: new Date() }
+    // periodicidad.desde.setMonth(periodicidad.desde.getMonth() - 2);
 
     try {
         const fechasFiltro = { $and: [{ fecha: { $gte: periodicidad.desde } }, { fecha: { $lt: periodicidad.hasta } }] };
@@ -55,19 +55,23 @@ export async function post(req, res, next) {
                         name: { $first: '$lista.producto.nombre' },
                         ventas_totales: { $sum: { $multiply: ['$lista.producto.precio', '$lista.cantidad'] } },// total de ventas del periodo
                         unidades_vendidas: { $sum: { $multiply: ['$lista.cantidad', '$lista.cantidad'] } }, // multiplicar por cantidad en pedido
-                    }).sort({ ventas_totales: orden }).skip(pagina_actual * step).limit(10)
+                        // }).sort({ ventas_totales: orden }).skip(pagina_actual * step).limit(10)
+                    }).sort({ unidades_vendidas: orden }).skip(pagina_actual * step).limit(10)
                     .then(async (suma_ventas_por_producto) => {
                         if (suma_ventas_por_producto.length == 0) {
                             res.send({ resumen: 'No existen ventas en el periodo' })
                             return
                         }
                         //  construir consulta que involucra a los productos agregados
-                        const consultaProductosInvolucrados = await crear_or(suma_ventas_por_producto)
+                        const consultaProductosInvolucrados = await crear_or(suma_ventas_por_producto);
+                        console.log(consultaProductosInvolucrados);
                         //  ejecutar consulta de productos asociados 
                         Producto.find().where(consultaProductosInvolucrados)
+                        // mongoose.connection.collection('vistaGraficoProductos').find(consultaProductosInvolucrados).toArray()
                             .then(async (productos_completos) => {
+                                console.log(productos_completos);
                                 const children = await ordenarArbol(suma_ventas_por_producto, productos_completos);
-                                res.send({ ok: true, name: 'Barras productos paginados', children: children, cantidad_de_registros_en_db:cantidad_de_registros_en_db[0].productos_distintos_en_pedidos_de_periodo });
+                                res.send({ ok: true, name: 'Barras productos paginados', children: children, cantidad_de_registros_en_db: cantidad_de_registros_en_db[0].productos_distintos_en_pedidos_de_periodo });
                             })
                     })
             })
@@ -77,6 +81,27 @@ export async function post(req, res, next) {
         res.send({ ok: false });
     }
 }
+
+/*
+esta vista se creo para un error que se presento en local perose puede aplicar sustituyendo la busqueda dierecta en la coleccion
+productos ya que maneja menos datos por registro que la coleccion original
+db.createView(
+    "vistaGraficoProductos",  // Nombre de la vista
+    "productos",              // Nombre de la colección original
+    [
+        {
+            $project: {
+                _id: 1,
+                "category.nombre": 1,
+                "subcategoria.nombre": 1,
+                precio: 1,
+                unidad: 1,
+                galeria_imagenes: 1
+            }
+        }
+    ]
+);
+*/
 
 
 
@@ -92,7 +117,7 @@ let unflatten = async function (array, productos_completos, parent, tree, tree2)
     children = productos_a_hijos;
 
     // const productos_pertenecientes = productos_completos.filter(element => element.subcategoria == parent.descripcion );
-  
+
     if (!_.isEmpty(children)) {
         if (parent.id_categoria == null) {//solo la primera vez
             tree = children;
@@ -141,9 +166,10 @@ function unir_productos_a_su_agregacion(productos_completos, agregaciones) {
                 //console.log(element);
                 //console.log(agregaciones);
                 let producto_completo = productos_completos.find((prod) => JSON.stringify(prod._id) === JSON.stringify(element._id));
+                // console.log(producto_completo);
                 let nuevo_super_producto = JSON.parse(JSON.stringify(element));
-                nuevo_super_producto.categoria = producto_completo.category.nombre;
-                nuevo_super_producto.subcategoria = producto_completo.subcategoria.nombre;
+                // nuevo_super_producto.categoria = producto_completo.category.nombre;
+                // nuevo_super_producto.subcategoria = producto_completo.subcategoria.nombre;
                 nuevo_super_producto.precio = producto_completo.precio;
                 nuevo_super_producto.unidad = producto_completo.unidad;
                 nuevo_super_producto.id = producto_completo._id;

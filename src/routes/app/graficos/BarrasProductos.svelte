@@ -71,11 +71,11 @@
           let intervalo;
           if (ordenado) {
             intervalo =
-              respuesta.children[0].ventas_totales /
+              respuesta.children[0].unidades_vendidas /
               (intervalos_horizontales - 1);
           } else {
             intervalo =
-              respuesta.children[respuesta.children.length - 1].ventas_totales /
+              respuesta.children[respuesta.children.length - 1].unidades_vendidas /
               (intervalos_horizontales - 1);
           }
           for (let i = 1; i < intervalos_horizontales; i++) {
@@ -449,7 +449,7 @@
                 class="tick tick-{tick}"
                 transform="translate(0, {yScale(tick) - padding.bottom})">
                 <line x2="100%" />
-                <text y="-4">$ {borrar_ultimos_2(formato_precio(tick))}</text>
+                <text y="-4">Uds. {borrar_ultimos_2(formato_precio(tick))}</text>
               </g>
             {/each}
           </g>
@@ -480,9 +480,9 @@
                   select(point);
                 }}
                 x={xScale(i) + 2}
-                y={yScale(point.total_ventas_periodo)}
+                y={yScale(point.unidades_vendidas)}
                 width={barWidth - 4}
-                height={height - padding.bottom - yScale(point.total_ventas_periodo)} />
+                height={height - padding.bottom - yScale(point.unidades_vendidas)} />
             {/each}
           </g>
         </svg>

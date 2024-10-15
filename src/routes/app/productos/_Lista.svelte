@@ -95,7 +95,7 @@ $: if($storeWithDebounce  ){
     http_ocupado = true;
     let respuesta = await get_productos(
       $buscadores.productos,
-      $productos.pagina_actual
+      $productos.pagina_actual,
     );
     http_ocupado = false;
     if (respuesta.ok === false) {
@@ -179,12 +179,13 @@ $: if($storeWithDebounce  ){
         reject();
       }
       for (let i = 0; i < lista_completa_para_descarga.length; i++) {
+        console.log(lista_completa_para_descarga[i]);
         const element = lista_completa_para_descarga[i];
         rows.push([
           element.codigo,
           element.nombre,
           element.marca,
-          element.subcategoria.nombre,
+          element.subcategoria ? element.subcategoria.nombre : "",
           element.existencia.actual,
           +element.existencia.actual - +sumar_cantidades(element),
           formato_precio(element.precio),
@@ -296,7 +297,7 @@ $: if($storeWithDebounce  ){
   const fn_obtener_productos_por_pagina2 = async () => {
     let res = await obtener_productos_por_pagina(
       $buscadores.productos,
-      $paginas_actuales.productos
+      $paginas_actuales.productos,
     );
     console.log(res);
   };
@@ -393,7 +394,7 @@ $: if($storeWithDebounce  ){
         {/if}
       </td>
       <td>
-        <div class="centrado " style="width: fit-content;margin: 0 auto;">
+        <div class="centrado" style="width: fit-content;margin: 0 auto;">
           <!--- FLECHAS -->
 
           <Paginacion

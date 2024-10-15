@@ -42,7 +42,7 @@
       url: "/app/productos",
       titulo: "Productos",
       icono: "view_list",
-      roles: ["administrador", "vendedor", "gerente", "diseñador"],
+      roles: ["administrador", "vendedor", "almacen", "gerente", "diseñador"],
     },
 
     {

@@ -444,6 +444,29 @@
     </div>
   </div>
 
+  {#if $usuario_db.rol == "almacen"}
+    <div class="once">
+      <Button
+        icon
+        dense
+        color="darkorange"
+        title="movimientos"
+        on:click={ir_a_movimientos_por_producto}
+      >
+        <i class="material-icons">history</i>
+      </Button>
+      <Button
+        icon
+        dense
+        color="darkorange"
+        title="movimientos"
+        on:click={ir_a_todos_movimientos_por_producto}
+      >
+        <i class="material-icons">details</i>
+      </Button>
+    </div>
+  {/if}
+
   {#if $usuario_db.rol != "vendedor" && $usuario_db.rol != "almacen"}
     <!-- content here -->
     <div class="once">

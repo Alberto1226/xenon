@@ -332,13 +332,16 @@ async function row_en_texto(registro, i, tipo_cambio) {
   return new Promise(async (resolve, reject) => {
     try {
       var folios_texto = await folios_productos(registro.folios);
+      var nombre_producto = registro.producto.nombre.length > 30
+        ? registro.producto.nombre.substring(0, 25) + '<br><span style="margin-bottom: 15px; display: block;">' + registro.producto.nombre.substring(25) + '</span>'
+        : registro.producto.nombre;
       var texto = `<div class="grid-container-row">
       <div class="index indice_row">${i + 1}) </div>
       <div class="cantidad">${registro.cantidad} </div>
       <div class="unidad">${registro.producto.unidad} </div>
       <div class="marca">${registro.producto.marca} </div>
       <div class="codigo">${registro.producto.codigo} </div>
-      <div class="descripcion">${registro.producto.nombre} </div>
+      <div class="descripcion">${nombre_producto} </div>
       <div class="precio">${formato_precio(+registro.producto.precio * tipo_cambio)}</div>
       <div class="importe">${formato_precio(+registro.producto.precio * registro.cantidad / tipo_cambio)}</div>
       </div> ${folios_texto} `;

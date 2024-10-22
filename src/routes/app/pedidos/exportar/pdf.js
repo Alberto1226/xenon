@@ -159,14 +159,14 @@ async function productos_en_pedido(id) {
     const carrito = await consultar_carrito(id)
 
     if (carrito.lista.length === 0) {
-      resolve({ productos: "sin productos", cliente: carrito.cliente, fecha: carrito.fecha, folio: carrito.folio });
+      resolve({ productos: "sin productos", cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
       return
     }
     let lista = await separar_productos(carrito.lista, carrito.tipo_de_cambio);
     // lista = lista.concat(lista)
     //lista = lista.concat(lista)
     const texto = await concatenar_aun_solo_texto(lista, carrito);
-    resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha, folio: carrito.folio });
+    resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
   })
 }
 

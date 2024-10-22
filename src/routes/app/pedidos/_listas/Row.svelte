@@ -467,7 +467,7 @@
                 href={"app/pedidos/exportar/pdf?id=" + pedido._id}
                 target="_blank"
                 on:click={() => {}}
-                title="Ver PDF de pedido, Descargando"
+                title="Ver PDF de pedido, Descargando******"
               >
                 <i class="material-icons">picture_as_pdf</i>
               </a>

@@ -44,7 +44,12 @@
       icono: "view_list",
       roles: ["administrador", "vendedor", "almacen", "gerente", "diseñador"],
     },
-
+    {
+      url: "/app/Catalogos",
+      titulo: "Catalogos",
+      icono: "view_cozy",
+      roles: ["administrador", "gerente"],
+    },
     {
       url: "/app/clientes",
       titulo: "Clientes",

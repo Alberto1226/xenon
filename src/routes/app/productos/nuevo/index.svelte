@@ -36,7 +36,7 @@
     descripcion: "",
     marca: "",
     categoria: "",
-    unidad: "Pieza",
+    unidad: "",
     caracteristicas_tecnicas: [],
     galeria_imagenes: [],
     para_venta_publico: true,
@@ -198,8 +198,8 @@
   }
 </script>
 
-<div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}>
-  <div class="grid-container">
+<div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}> 
+  <div class="grid-container"> 
     <div class="area_info_general margen caja">
       <div class="subtitulo ">Información general</div>
       <div class="contenido_caja">
@@ -225,16 +225,18 @@
           outlined
           bind:value={nuevo_producto.nombre}
           placeholder="Nombre*"
-          message="Nombre*"
+          message={`Nombre* (${30 - nuevo_producto.nombre.length} caracteres restantes)`}
           type="text"
+          maxlength="30"
         />
 
         <Textfield
           outlined
           bind:value={nuevo_producto.descripcion}
           placeholder="Descripción"
-          message="Descripción"
+          message={`Descripción* (${30 - nuevo_producto.descripcion.length} caracteres restantes)`}
           type="text"
+          maxlength="30"
         />
 
         <table>
@@ -393,11 +395,11 @@
   }
   .caja {
     border: 1px gray solid;
-
+    /* overflow: auto !important; */
     border-radius: 8px;
   }
   .contenido_caja {
     padding: 9px;
-    overflow: hidden;
+    /* overflow: hidden; */
   }
 </style>

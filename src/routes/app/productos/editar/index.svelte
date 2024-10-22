@@ -224,7 +224,7 @@
 <div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}>
   <div class="grid-container">
     {#if $usuario_db.rol != "diseñador"}
-      <div class="area_info_general margen caja">
+      <div class="area_info_general margen caja" style="overflow: auto;">
         <div class="subtitulo">Información general</div>
         <div class="contenido_caja">
           <Textfield
@@ -249,16 +249,18 @@
             outlined
             bind:value={nuevo_producto.nombre}
             placeholder="Nombre*"
-            message="Nombre*"
+            message={`Nombre* (${30 - nuevo_producto.nombre.length} caracteres restantes)`}
             type="text"
+            maxlength="30"
           />
 
           <Textfield
             outlined
             bind:value={nuevo_producto.descripcion}
             placeholder="Descripción"
-            message="Descripción"
+            message={`Descripción* (${60 - nuevo_producto.descripcion.length} caracteres restantes)`}
             type="text"
+            maxlength="30"
           />
 
           <table>
@@ -358,7 +360,6 @@
               </tr>
             </table>
           {/if}
-          
         </div>
       </div>
       <div class="imagenes margen caja">
@@ -451,11 +452,11 @@
   }
   .caja {
     border: 1px gray solid;
-
     border-radius: 8px;
+    /* overflow: auto !important; */
   }
   .contenido_caja {
     padding: 9px;
-    overflow: hidden;
+    /* overflow: hidden; */
   }
 </style>

@@ -30,7 +30,7 @@ export async function post(req, res, next) {
     else {
 
         let query = await arreglo_de_buscando_separado_por_comas(buscando, usuario);
-        
+
         res.send(await consullta_con_texto(query, res, pagina_actual));
     }
 }
@@ -40,7 +40,7 @@ export async function post(req, res, next) {
 const arreglo_de_buscando_separado_por_comas = (buscando, usuario) => {
     return new Promise((resolve, reject) => {
         try {
-           
+
             let buscando_pipes = String(buscando).replace(' ', '|');
             //let palabras_a_buscar = buscando.split(' ');
             //let array_resultado = [];
@@ -52,6 +52,7 @@ const arreglo_de_buscando_separado_por_comas = (buscando, usuario) => {
 
             if (!isNaN(buscando)) {
                 query = { folio: parseInt(buscando) }
+                // console.log('es numero', query);
             }
             else {
 
@@ -72,7 +73,7 @@ const arreglo_de_buscando_separado_por_comas = (buscando, usuario) => {
                 }
             }
             else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
-               // query ={}
+                // query ={}
                 //consulta = {}
             }
 
@@ -102,7 +103,7 @@ function consullta_con_texto(query, res, pagina_actual) {
                         .exec()
                         .then(async (resDB) => {
                             //let lista_filtrada= await filtrar_lista(buscando,resDB);
-                            //console.log(resDB)
+                            console.log(resDB)
                             //console.log(numero_total)
                             let paginas;
                             let coincidencias;

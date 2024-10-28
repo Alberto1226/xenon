@@ -165,10 +165,29 @@ async function productos_en_pedido(id, origen) {
 
     if (carrito.lista.length === 0) {
       if (origen === "pedidos3") {
-        resolve({ productos: "sin productos", cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
+        resolve({
+          productos: "sin productos",
+          cliente: carrito.cliente,
+          fecha: carrito.fecha_creado || carrito.fecha,
+          folio: carrito.folio
+        });
         return
       }
-      resolve({ productos: "sin productos", cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
+      if (origen === "pedidos2") {
+        resolve({
+          productos: "sin productos",
+          cliente: carrito.cliente,
+          fecha: carrito.fecha,
+          folio: carrito.folio
+        });
+        return
+      }
+      resolve({
+        productos: "sin productos",
+        cliente: carrito.cliente,
+        fecha: carrito.fecha_creado || carrito.fecha,
+        folio: carrito.folio
+      });
       return
     }
     let lista = await separar_productos(carrito.lista, carrito.tipo_de_cambio);
@@ -176,10 +195,29 @@ async function productos_en_pedido(id, origen) {
     //lista = lista.concat(lista)
     const texto = await concatenar_aun_solo_texto(lista, carrito);
     if (origen === "pedidos3") {
-      resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
+      resolve({
+        productos: texto,
+        cliente: carrito.cliente,
+        fecha: carrito.fecha_creado || carrito.fecha,
+        folio: carrito.folio
+      });
+      return
+    }
+    if (origen === "pedidos2") {
+      resolve({
+        productos: texto,
+        cliente: carrito.cliente,
+        fecha: carrito.fecha,
+        folio: carrito.folio
+      });
       return
     } else {
-      resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha_creado, folio: carrito.folio });
+      resolve({
+        productos: texto,
+        cliente: carrito.cliente,
+        fecha: carrito.fecha_creado || carrito.fecha,
+        folio: carrito.folio
+      });
     }
 
   })
@@ -267,6 +305,7 @@ async function consultar_carrito(id, origen) {
     if (origen === "pedidos1") {
       Carrito.findById(id)
         .then((resultado) => {
+          console.log(resultado,"pedidos1");
           resolve(resultado)
         })
         .catch((err) => {
@@ -278,6 +317,7 @@ async function consultar_carrito(id, origen) {
     if (origen === "pedidos2") {
       Pedido.findById(id)
         .then((resultado) => {
+          console.log(resultado,"pedidos2");
           resolve(resultado)
         })
         .catch((err) => {
@@ -289,6 +329,7 @@ async function consultar_carrito(id, origen) {
     if (origen === "pedidos3") {
       Carrito_cancelado.findById(id)
         .then((resultado) => {
+          console.log(resultado, "pedidos3");
           resolve(resultado)
         })
         .catch((err) => {

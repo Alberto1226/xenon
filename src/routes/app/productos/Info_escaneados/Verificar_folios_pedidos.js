@@ -18,8 +18,9 @@ export async function post(req, res, next) {
     var existe_en_pedido_resultado = await existe_en_pedido(folio_a_buscar);
     var existe_registro_de_salida = await existe_salida(folio_a_buscar);
     var existe_en_la_bodega_resultado = await existe_en_la_bodega(folio_a_buscar);
+    var buscar_folio_con_regex_resultado = await buscar_folio_con_regex(folio_a_buscar);
     var existe_registro_de_borrado_de_folios = await existe_borrado_de_folios(folio_a_buscar);
-    res.send({ existe_en_carrito_resultado, existe_en_pedido_resultado, existe_registro_de_salida, existe_registro_de_borrado_de_folios, existe_en_la_bodega_resultado });
+    res.send({ existe_en_carrito_resultado, existe_en_pedido_resultado, existe_registro_de_salida, existe_registro_de_borrado_de_folios, existe_en_la_bodega_resultado, buscar_folio_con_regex_resultado });
 }
 
 
@@ -58,4 +59,20 @@ async function existe_en_la_bodega(folio_a_buscar) {
         .then((resultadoDB) => {
             return resultadoDB
         })
+}
+
+async function buscar_folio_con_regex(folio_a_buscar) {
+    return Pedido.findOne({
+        lista: {
+            $elemMatch: {
+                "folios": {
+                    $elemMatch: {
+                        $regex: folio_a_buscar
+                    }
+                }
+            }
+        }
+    }).then((resultadoDB) => {
+        return resultadoDB;
+    });
 }

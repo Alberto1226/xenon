@@ -6,6 +6,7 @@
     import Cargador from "./Cargando.svelte";
     import Productos from "./Productos.svelte";
     import CarritoInfo from "./CarritoInfo.svelte";
+    import Pedido_info from "./Pedido_info.svelte";
     import Inyeccion from "./Inyeccion.svelte";
     import Salida from "./Salida.svelte";
     import Borrado_folio from "./Borrado_de_folios.svelte";
@@ -19,6 +20,7 @@
     var mostrar_no_se_encontraron_resultados = false;
     var buscando = false;
     var buscador_virgen = true; //  despues de la primer busqueda se convierte en false
+    let pedidoRegex = [];
     var inyeccion = {
         hay_registro: false,
         fecha: null,
@@ -101,6 +103,12 @@
             // console.log("Carrito", carrito);
         }
 
+        if (resultado.buscar_folio_con_regex_resultado) {
+            pedidoRegex = resultado.buscar_folio_con_regex_resultado;
+            pedidoRegex.hay_registro = true;
+            // console.log("Carrito", carrito);
+        }
+
         if (resultado.existe_registro_de_inyeccion) {
             inyeccion = resultado.existe_registro_de_inyeccion;
             inyeccion.hay_registro = true;
@@ -161,6 +169,16 @@
                                 folio={carrito.folio}
                                 nombre={carrito.cliente.nombre}
                                 status={carrito.status}
+                                galeria_imagenes={[]}
+                            />
+                        {/if}
+
+                        {#if pedidoRegex.hay_registro}
+                            <Pedido_info
+                                _id={pedidoRegex._id}
+                                folio={pedidoRegex.folio}
+                                nombre={pedidoRegex.cliente.nombre}
+                                status={pedidoRegex.status}
                                 galeria_imagenes={[]}
                             />
                         {/if}

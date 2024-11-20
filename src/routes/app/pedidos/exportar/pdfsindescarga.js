@@ -164,14 +164,62 @@ async function productos_en_pedido(id, origen) {
     const carrito = await consultar_carrito(id, origen)
 
     if (carrito.lista.length === 0) {
-      resolve({ productos: "sin productos", cliente: carrito.cliente, fecha: carrito.fecha, folio: carrito.folio });
+      if (origen === "pedidos3") {
+        resolve({
+          productos: "sin productos",
+          cliente: carrito.cliente,
+          fecha: carrito.fecha_creado || carrito.fecha,
+          folio: carrito.folio
+        });
+        return
+      }
+      if (origen === "pedidos2") {
+        resolve({
+          productos: "sin productos",
+          cliente: carrito.cliente,
+          fecha: carrito.fecha,
+          folio: carrito.folio
+        });
+        return
+      }
+      resolve({
+        productos: "sin productos",
+        cliente: carrito.cliente,
+        fecha: carrito.fecha_creado || carrito.fecha,
+        folio: carrito.folio
+      });
       return
     }
     let lista = await separar_productos(carrito.lista, carrito.tipo_de_cambio);
     // lista = lista.concat(lista)
     //lista = lista.concat(lista)
     const texto = await concatenar_aun_solo_texto(lista, carrito);
-    resolve({ productos: texto, cliente: carrito.cliente, fecha: carrito.fecha, folio: carrito.folio });
+    if (origen === "pedidos3") {
+      resolve({
+        productos: texto,
+        cliente: carrito.cliente,
+        fecha: carrito.fecha_creado || carrito.fecha,
+        folio: carrito.folio
+      });
+      return
+    }
+    if (origen === "pedidos2") {
+      resolve({
+        productos: texto,
+        cliente: carrito.cliente,
+        fecha: carrito.fecha,
+        folio: carrito.folio
+      });
+      return
+    } else {
+      resolve({
+        productos: texto,
+        cliente: carrito.cliente,
+        fecha: carrito.fecha_creado || carrito.fecha,
+        folio: carrito.folio
+      });
+    }
+
   })
 }
 
@@ -257,6 +305,7 @@ async function consultar_carrito(id, origen) {
     if (origen === "pedidos1") {
       Carrito.findById(id)
         .then((resultado) => {
+          console.log(resultado,"pedidos1");
           resolve(resultado)
         })
         .catch((err) => {
@@ -268,6 +317,7 @@ async function consultar_carrito(id, origen) {
     if (origen === "pedidos2") {
       Pedido.findById(id)
         .then((resultado) => {
+          console.log(resultado,"pedidos2");
           resolve(resultado)
         })
         .catch((err) => {
@@ -279,6 +329,7 @@ async function consultar_carrito(id, origen) {
     if (origen === "pedidos3") {
       Carrito_cancelado.findById(id)
         .then((resultado) => {
+          console.log(resultado, "pedidos3");
           resolve(resultado)
         })
         .catch((err) => {
@@ -322,13 +373,16 @@ async function row_en_texto(registro, i, tipo_cambio) {
   return new Promise(async (resolve, reject) => {
     try {
       var folios_texto = await folios_productos(registro.folios);
+      var nombre_producto = registro.producto.nombre.length > 30
+        ? registro.producto.nombre.substring(0, 25) + '<br><span style="margin-bottom: 15px; display: block;">' + registro.producto.nombre.substring(25) + '</span>'
+        : registro.producto.nombre;
       var texto = `<div class="grid-container-row">
       <div class="index indice_row">${i + 1}) </div>
       <div class="cantidad">${registro.cantidad} </div>
       <div class="unidad">${registro.producto.unidad} </div>
       <div class="marca">${registro.producto.marca} </div>
       <div class="codigo">${registro.producto.codigo} </div>
-      <div class="descripcion">${registro.producto.nombre} </div>
+      <div class="descripcion">${nombre_producto} </div>
       <div class="precio">${formato_precio(+registro.producto.precio * tipo_cambio)}</div>
       <div class="importe">${formato_precio(+registro.producto.precio * registro.cantidad / tipo_cambio)}</div>
       </div> ${folios_texto} `;

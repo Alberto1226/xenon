@@ -58,16 +58,16 @@ export async function post(req, res, next) {
 
 
     // console.log("*****Checar folios de salida que aun existan en sus productos respectivos");
-    var asincronos = await los_folios_de_todos_los_productos_estan_disponibles(carrito.lista);
+    // var asincronos = await los_folios_de_todos_los_productos_estan_disponibles(carrito.lista);
     //  DEVUELVE{  todo_bien: (contador_de_exitos == carrito.lista.length),
     //      reporte_de_folios_para_frontend}
-    const { todo_bien, reporte_de_folios_para_frontend } = asincronos
+    // const { todo_bien, reporte_de_folios_para_frontend } = asincronos
     // console.log({ todo_bien });
 
-    if (todo_bien != true) {
-        // console.log("------ no bien folios--------");
-        return res.send({ ok: false, mensaje: 'Algunos de los folios seleccionados no existen ya', reporte_de_folios_para_frontend });
-    }
+    // if (todo_bien != true) {
+    //     // console.log("------ no bien folios--------");
+    //     return res.send({ ok: false, mensaje: 'Algunos de los folios seleccionados no existen ya', reporte_de_folios_para_frontend });
+    // }
 
 
     if (carrito.procesando == true) {

@@ -432,7 +432,8 @@
                 icon
                 dense
                 color={pedido.status !== "Envío" ? "darkorange" : "gray"}
-                disabled={pedido.status === "Envío"}
+                disabled={pedido.status === "Envío" || $usuario_db.rol == "almacen"}
+                hidden={$usuario_db.rol == "almacen"}
                 on:click={() => {
                   visible_cancelar = true;
                 }}
@@ -466,7 +467,7 @@
                 href={"app/pedidos/exportar/pdf?id=" + pedido._id}
                 target="_blank"
                 on:click={() => {}}
-                title="Ver PDF de pedido, Descargando"
+                title="Ver PDF de pedido, Descargando******"
               >
                 <i class="material-icons">picture_as_pdf</i>
               </a>

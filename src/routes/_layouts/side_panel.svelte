@@ -36,7 +36,7 @@
       url: "/app/pedidos",
       titulo: "Pedidos",
       icono: "shopping_cart",
-      roles: ["administrador", "vendedor", "gerente"],
+      roles: ["administrador", "almacen", "vendedor", "gerente"],
     },
     {
       url: "/app/productos",
@@ -44,7 +44,12 @@
       icono: "view_list",
       roles: ["administrador", "vendedor", "almacen", "gerente", "diseñador"],
     },
-
+    {
+      url: "/app/Catalogos",
+      titulo: "Catalogos",
+      icono: "view_cozy",
+      roles: ["administrador", "gerente"],
+    },
     {
       url: "/app/clientes",
       titulo: "Clientes",
@@ -109,6 +114,12 @@
       titulo: "Pedidos públicos",
       icono: "fingerprint",
       roles: ["administrador"],
+    },
+    {
+      url: "/app/Precios",
+      titulo: "Precios",
+      icono: "attach_money",
+      roles: ["administrador", ],
     },
   ];
 

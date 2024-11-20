@@ -12,10 +12,10 @@ export async function post(req, res, next) {
     }
 
     
-    if (accesos.tiene_permisos_gerenciales(req) === false && accesos.tiene_permisos_administrativos(req) === false) {
-        res.send({ ok: false, mensaje: "permisos insuficientes" })
-        return;
-    }
+    // if (accesos.tiene_permisos_gerenciales(req) === false && accesos.tiene_permisos_administrativos(req) === false) {
+    //     res.send({ ok: false, mensaje: "permisos insuficientes" })
+    //     return;
+    // }
     const producto_id = req.body.producto_id;
     const pagina_actual = req.body.pagina_actual;
     const filtros_acciones = req.body.filtros_acciones;

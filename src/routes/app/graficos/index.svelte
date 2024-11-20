@@ -22,21 +22,25 @@
   .tarjeta:hover {
     box-shadow: 0 0 10px gray;
   }
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 25px;
+    padding: 20px;
+  }
 </style>
 
-
 <svelte:head>
-<title>Gráficos</title>
- </svelte:head>
-<Tarjeta  url="app/graficos/Pancake" titulo="x Categorías"  tipo="Pancake" img="imagenes/pancake.webp"></Tarjeta>
+  <title>Gráficos</title>
+</svelte:head>
 
-
-<Tarjeta  url="app/graficos/BarrasProductos" titulo="x Producto"  tipo="Barras" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
-
-
-<Tarjeta  url="app/graficos/BarrasUsuarios" titulo="x Usuario"  tipo="Barras" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
-
-
-<Tarjeta  url="app/graficos/BarrasClientes" titulo="x Clientes"  tipo="Barras" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
+<div class="grid-container">
+  <Tarjeta url="app/graficos/Pancake" titulo="x Categorías" tipo="Pancake" img="imagenes/pancake.webp"></Tarjeta>
+  <Tarjeta url="app/graficos/BarrasProductos" titulo="x Producto" tipo="Barras" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
+  <Tarjeta url="app/graficos/BarrasUsuarios" titulo="x Usuario" tipo="Barras" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
+  <Tarjeta url="app/graficos/BarrasClientes" titulo="x Clientes" tipo="Barras" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
+  <Tarjeta url="app/reporte/general" titulo="Reporte" tipo="Tabla" img="imagenes/grafico_paginado_productos.png"></Tarjeta>
+  <!-- <Tarjeta url="app/reporte/tabla" titulo="Tabla" tipo="Tabla" img="imagenes/grafico_paginado_productos.png"></Tarjeta> -->
+</div>
 
 

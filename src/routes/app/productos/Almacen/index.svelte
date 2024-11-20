@@ -105,14 +105,14 @@
     };
 </script>
 
-{#if $usuario_db.rol == "administrador"}
+<!-- {#if $usuario_db.rol == "administrador"}
     <img
         src="imagenes/ver_almacen.svg"
         class="acceso-icono"
         alt=""
         on:click={toggle}
     />
-{/if}
+{/if} -->
 
 {#if visible == true}
     <div class="contenedor" in:fade={{ duration: 350 }}>

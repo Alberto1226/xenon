@@ -2,7 +2,7 @@
 import { Pedido } from "../../../models/pedido";
 import * as accesos from "../accesos"
 
-import * as mongoose from 'mongoose';
+// import * as mongoose from 'mongoose';
 //  Se EMPLEA EN LISTA DE PEDIDIDOS QUE EN DB SE VE COMO Pedido
 
 import { Cliente } from "../../../models/cliente";
@@ -30,7 +30,7 @@ export async function post(req, res, next) {
     else {
 
         let query = await arreglo_de_buscando_separado_por_comas(buscando, usuario);
-        
+
         res.send(await consullta_con_texto(query, res, pagina_actual));
     }
 }
@@ -40,7 +40,7 @@ export async function post(req, res, next) {
 const arreglo_de_buscando_separado_por_comas = (buscando, usuario) => {
     return new Promise((resolve, reject) => {
         try {
-           
+
             let buscando_pipes = String(buscando).replace(' ', '|');
             //let palabras_a_buscar = buscando.split(' ');
             //let array_resultado = [];
@@ -52,6 +52,7 @@ const arreglo_de_buscando_separado_por_comas = (buscando, usuario) => {
 
             if (!isNaN(buscando)) {
                 query = { folio: parseInt(buscando) }
+                // console.log('es numero', query);
             }
             else {
 
@@ -72,7 +73,7 @@ const arreglo_de_buscando_separado_por_comas = (buscando, usuario) => {
                 }
             }
             else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
-               // query ={}
+                // query ={}
                 //consulta = {}
             }
 
@@ -102,7 +103,7 @@ function consullta_con_texto(query, res, pagina_actual) {
                         .exec()
                         .then(async (resDB) => {
                             //let lista_filtrada= await filtrar_lista(buscando,resDB);
-                            //console.log(resDB)
+                            console.log(resDB)
                             //console.log(numero_total)
                             let paginas;
                             let coincidencias;
@@ -127,6 +128,74 @@ function consullta_con_texto(query, res, pagina_actual) {
 
 
 
+// function consulta(pagina_actual, usuario) {
+//     return new Promise((resolve, reject) => {
+//         let query;
+//         if (usuario.rol === 'vendedor') {
+//             query = {
+//                 $or: [{ "usuario_que_registro.id": usuario._id }, { "agente.id": usuario._id }]
+//             };
+//         } else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
+//             query = {};
+//         }
+
+//         try {
+//             Pedido.countDocuments(query)
+//                 .then((numero_total) => {
+//                     Pedido.find(query)
+//                         .sort({ fecha: -1 })
+//                         .limit(10)
+//                         .skip(pagina_actual * 10)
+//                         .select({
+//                             folio: 1,
+//                             fecha: 1,
+//                             "usuario_que_registro.usuario": 1,
+//                             tenia_ficha: 1,
+//                             moneda: 1,
+//                             descuento: 1,
+//                             total_pedido: 1,
+//                             "cliente.nombre": 1,
+//                             "cliente.correo": 1,
+//                             "agente.nombre": 1,
+//                             "agente.correo": 1,
+//                             mensajeria: 1,
+//                             // lista: {
+//                             //     cantidad: 1,
+//                             //     "producto.nombre": 1,
+//                             //     "producto.descripcion": 1,
+//                             //     "producto.precio": 1,
+//                             // }
+//                         })
+//                         .allowDiskUse(true)
+//                         .exec()
+//                         .then(async (resDB) => {
+//                             resolve({
+//                                 ok: true,
+//                                 lista: resDB,
+//                                 numero_total,
+//                                 paginas: Math.floor((numero_total + 10 - 1) / 10)
+//                             });
+//                         })
+//                         .catch((err) => {
+//                             console.log(err);
+//                             reject({ ok: false, mensaje: "error al buscar resultados.", error: err });
+//                         });
+//                 })
+//                 .catch((err) => {
+//                     console.log(err);
+//                     reject({ ok: false, mensaje: "error al contar documentos.", error: err });
+//                 });
+//         } catch (err) {
+//             console.log(err);
+//             reject({ ok: false, mensaje: "error al buscar resultados.", error: err });
+//         }
+//     });
+// }
+
+
+
+const mongoose = require('mongoose');
+
 function consulta(pagina_actual, usuario) {
     return new Promise((resolve, reject) => {
         let query;
@@ -134,33 +203,41 @@ function consulta(pagina_actual, usuario) {
             query = {
                 $or: [{ "usuario_que_registro.id": usuario._id }, { "agente.id": usuario._id }]
             };
+        } else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
+            query = {};
         }
-        else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
-            query = {}
-        }
-        ////console.log("5e7f8b470382191c8b82897c")
-        ////console.log(usuario._id)
-        //console.log(query)
+
         try {
             Pedido.countDocuments(query)
                 .then((numero_total) => {
-                    Pedido.find(query)
-                        .sort({ folio: -1 })
+                    mongoose.connection.collection('vistaPedidosDatos')
+                        .find(query)
+                        .sort({ fecha: -1 })
                         .limit(10)
                         .skip(pagina_actual * 10)
-                        .exec()
-                        .then(async (resDB) => {
-                            //console.log(pagina_actual)
-                            //console.log(resDB)
-                            //let lista_filtrada= await filtrar_lista(buscando,resDB);
-                            resolve({ ok: true, lista: resDB, numero_total, paginas: Math.floor((numero_total + 10 - 1) / (10)) });
+                        .toArray()
+                        .then((resDB) => {
+                            const ids = resDB.map(doc => doc._id);
+                            resolve({
+                                ok: true,
+                                lista: resDB,
+                                numero_total,
+                                paginas: Math.ceil(numero_total / 10)
+                            });
                         })
+                        .catch((err) => {
+                            console.log(err);
+                            reject({ ok: false, mensaje: "Error al buscar resultados.", error: err });
+                        });
                 })
+                .catch((err) => {
+                    console.log(err);
+                    reject({ ok: false, mensaje: "Error al contar documentos.", error: err });
+                });
         } catch (err) {
             console.log(err);
-            reject({ ok: false, mensaje: "error al buscar resultados." })
+            reject({ ok: false, mensaje: "Error al buscar resultados.", error: err });
         }
-    })
+    });
 }
-
 

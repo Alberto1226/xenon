@@ -61,12 +61,7 @@ if (process.env.DB != "xenon-y-mas-app") {
 }
 
 // mongoose.connect(`mongodb+srv://root:11111@xenon.02uz8yx.mongodb.net/xenon-y-mas-app`, {
-<<<<<<< HEAD
 // mongoose.connect(`mongodb+srv://root:11111@xenon.02uz8yx.mongodb.net/pruebas-xenon-monterrey`, {//base para pruebas locales
-// mongoose.connect(`mongodb+srv://agustinquintanar:JTIYVdKKsGu1A4LN@cluster0.x1bkcvk.mongodb.net/xenonPruebas`, {
-=======
-// mongoose.connect(`mongodb+srv://agustinquintanar:JTIYVdKKsGu1A4LN@cluster0.x1bkcvk.mongodb.net/xenonPruebas`, {//base para pruebas locales
->>>>>>> xenonSanJuan
 mongoose.connect(`mongodb+srv://agustinquintanar:JTIYVdKKsGu1A4LN@cluster0.x1bkcvk.mongodb.net/xenon-y-mas-app`, {
 	useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false
 })

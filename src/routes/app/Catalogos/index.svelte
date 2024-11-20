@@ -12,6 +12,14 @@
     let nuevaUnidad = "";
     let nuevaCuenta = "";
 
+    let banco = "";
+    let cuenta = "";
+    let clabe = "";
+
+    let idCuentaSelect = "";
+
+    let modalEditarCuenta = false;
+
     let idRegistro = "";
     let marcas = [];
     let unidades = [];
@@ -22,9 +30,23 @@
     });
 
     function Clean() {
+        mostrarModal = false;
+        nameCatalogo = "";
+        dato = "";
+
         nuevaMarca = "";
         nuevaUnidad = "";
         nuevaCuenta = "";
+
+        banco = "";
+        cuenta = "";
+        clabe = "";
+
+        idCuentaSelect = "";
+
+        modalEditarCuenta = false;
+
+        idRegistro = "";
     }
 
     function getColeccion() {
@@ -46,6 +68,7 @@
                     }
                     if (res.catalogos.Cuentas.length != 0) {
                         cuentas = res.catalogos.Cuentas;
+                        console.log(cuentas);
                     }
                     resolve(res.ok);
                 }
@@ -63,6 +86,7 @@
                 tipo: "error",
                 mensaje: "El dato no puede estar vacío",
             });
+            $mensajes_app = $mensajes_app;
             return;
         }
         nameCatalogo = nameCat;
@@ -70,7 +94,27 @@
         mostrarModal = true;
     }
 
+    function ConfirmaGuardadoCuenta(nameCat, banco, cuenta, clabe) {
+        if (!banco || !cuenta || !clabe) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "Los campos no pueden estar vacíos",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+        nameCatalogo = nameCat;
+        // dato = `${banco} - ${cuenta} - ${clabe}`;
+        dato = {
+            banco: banco,
+            cuenta: cuenta,
+            clabe: clabe,
+        };
+        mostrarModal = true;
+    }
+
     function guardarCatalogo() {
+        //nameCatalogo == "Cuentas"
         return new Promise((resolve, reject) => {
             postData("app/productos/catalogoConsulta", {
                 tipo: "guardar",
@@ -83,6 +127,7 @@
                         tipo: "exito",
                         mensaje: "Guardado Correctamente",
                     });
+                    $mensajes_app = $mensajes_app;
                     mostrarModal = false;
                     getColeccion();
                     Clean();
@@ -92,6 +137,59 @@
                         tipo: "error",
                         mensaje: res.mensaje || "Error al guardar el catálogo",
                     });
+                    $mensajes_app = $mensajes_app;
+                    resolve(res.ok);
+                }
+            });
+        });
+    }
+
+    function editarCatalogoCuenta() {
+        nameCatalogo = "Cuentas";
+        if (!banco || !cuenta || !clabe) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "Los campos no pueden estar vacíos",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+        // console.log(
+        //     idRegistro,
+        //     nameCatalogo,
+        //     idCuentaSelect,
+        //     banco,
+        //     cuenta,
+        //     clabe,
+        // );
+        return new Promise((resolve, reject) => {
+            postData("app/productos/catalogoConsulta", {
+                tipo: "editarCatalogoCuenta",
+                id: idRegistro,
+                catalogo: nameCatalogo,
+                dato: {
+                    _id: idCuentaSelect,
+                    banco: banco,
+                    cuenta: cuenta,
+                    clabe: clabe,
+                },
+            }).then((res) => {
+                if (res.ok) {
+                    $mensajes_app.push({
+                        tipo: "exito",
+                        mensaje: "Guardado Correctamente",
+                    });
+                    $mensajes_app = $mensajes_app;
+                    modalEditarCuenta = false;
+                    getColeccion();
+                    Clean();
+                    resolve(res.ok);
+                } else {
+                    $mensajes_app.push({
+                        tipo: "error",
+                        mensaje: res.mensaje || "Error al guardar el catálogo",
+                    });
+                    $mensajes_app = $mensajes_app;
                     resolve(res.ok);
                 }
             });
@@ -105,6 +203,20 @@
             columnas.push(lista.slice(i, i + maxItemsPorColumna));
         }
         return columnas;
+    }
+
+    //funcion para editar la cuenta
+    function editarCuenta(id) {
+        console.log(id);
+        idCuentaSelect = id;
+        //se asignan los valores a cuenta clabe y banco dependiendo del id que se recibe
+        const cuentaSeleccionada = cuentas.find((c) => c._id === id);
+        if (cuentaSeleccionada) {
+            banco = cuentaSeleccionada.banco;
+            cuenta = cuentaSeleccionada.cuenta;
+            clabe = cuentaSeleccionada.clabe;
+        }
+        modalEditarCuenta = true;
     }
 </script>
 
@@ -124,12 +236,12 @@
         >
             Unidades
         </div>
-        <!-- <div
+        <div
             class="nav-item {activeTab === 'Cuentas' ? 'active' : ''}"
             on:click={() => (activeTab = "Cuentas")}
         >
             Cuentas
-        </div> -->
+        </div>
     </div>
 
     <!-- Tab Content -->
@@ -199,26 +311,51 @@
                 <h2>Cuentas</h2>
                 <Textfield
                     outlined
+                    id="banco_input"
+                    bind:value={banco}
+                    placeholder="Banco"
+                    message="Banco"
+                    type="text"
+                />
+                <Textfield
+                    outlined
                     id="cuenta_input"
-                    bind:value={nuevaCuenta}
-                    placeholder="Nueva Cuenta"
-                    message="Nueva Cuenta"
+                    bind:value={cuenta}
+                    placeholder="Cuenta"
+                    message="Cuenta"
+                    type="text"
+                />
+                <Textfield
+                    outlined
+                    id="clabe_input"
+                    bind:value={clabe}
+                    placeholder="CLABE"
+                    message="CLABE"
                     type="text"
                 />
                 <button
-                    on:click={() => ConfirmarGuardado("Cuentas", nuevaCuenta)}
+                    on:click={() =>
+                        ConfirmaGuardadoCuenta("Cuentas", banco, cuenta, clabe)}
                 >
                     Agregar Cuenta
                 </button>
                 <div class="lista-scroll">
-                    <div class="columnas">
-                        {#each dividirEnColumnas(cuentas) as columna}
+                    <div class="columnas mt-2">
+                        {#each cuentas as cuenta}
+                            <ul>
+                                <li on:click={() => editarCuenta(cuenta._id)}>
+                                    Banco: {cuenta.banco}, Cuenta: {cuenta.cuenta},
+                                    CLABE: {cuenta.clabe}
+                                </li>
+                            </ul>
+                        {/each}
+                        <!-- {#each dividirEnColumnas(cuentas) as columna}
                             <ul>
                                 {#each columna as cuenta}
                                     <li>{cuenta}</li>
                                 {/each}
                             </ul>
-                        {/each}
+                        {/each} -->
                     </div>
                 </div>
             </div>
@@ -229,14 +366,64 @@
     {#if mostrarModal}
         <div class="modal">
             <div class="modal-content">
-                <p>
+                {#if nameCatalogo == "Cuentas"}
+                    <h2>Confirmar Guardado</h2>
+                    <p>
+                        ¿Confirma el guardado de la cuenta Banco: {banco},
+                        Cuenta: {cuenta}, CLABE: {clabe} en el catálogo "{nameCatalogo}"?
+                    </p>
+                {:else}
+                    <h2>Confirmar Guardado</h2>
+                    <p>
+                        ¿Confirma el guardado de {dato} en el catálogo "{nameCatalogo}"?
+                    </p>
+                {/if}
+                <!-- <p>
                     ¿Confirma el guardado de {dato} en el catálogo "{nameCatalogo}"?
-                </p>
+                </p> -->
                 <button on:click={guardarCatalogo}>Confirmar</button>
                 <button
                     on:click={() => {
                         Clean();
                         mostrarModal = false;
+                    }}>Cancelar</button
+                >
+            </div>
+        </div>
+    {/if}
+    {#if modalEditarCuenta}
+        <div class="modal">
+            <div class="modal-content">
+                <h2>Editar Cuenta</h2>
+                <Textfield
+                    outlined
+                    id="banco_input"
+                    bind:value={banco}
+                    placeholder="Banco"
+                    message="Banco"
+                    type="text"
+                />
+                <Textfield
+                    outlined
+                    id="cuenta_input"
+                    bind:value={cuenta}
+                    placeholder="Cuenta"
+                    message="Cuenta"
+                    type="text"
+                />
+                <Textfield
+                    outlined
+                    id="clabe_input"
+                    bind:value={clabe}
+                    placeholder="CLABE"
+                    message="CLABE"
+                    type="text"
+                />
+                <button on:click={editarCatalogoCuenta}>Confirmar</button>
+                <button
+                    on:click={() => {
+                        Clean();
+                        modalEditarCuenta = false;
                     }}>Cancelar</button
                 >
             </div>

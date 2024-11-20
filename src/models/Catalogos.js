@@ -9,7 +9,18 @@ var schema = new Schema({
     Subcategorias: [String],
     Medidas: [String],
     Unidades: [String],
-    Cuentas: [String]
+    Cuentas: {
+        type: [{
+            banco: { type: String },
+            cuenta: { type: String },
+            clabe: { type: String },
+        }],
+        validate: [arrayLimit, '{PATH} exceeds the limit of 3']
+    }
 });
+
+function arrayLimit(val) {
+    return val.length <= 3;
+}
 
 export var Catalogo = mongoose.model('Catalogo', schema);

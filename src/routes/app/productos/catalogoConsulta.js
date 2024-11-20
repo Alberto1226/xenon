@@ -77,7 +77,13 @@ export async function post(req, res, next) {
                 if (req.body.catalogo == "Cuentas") {
                     let catalogoExistente = await Catalogo.findById(id).exec();
                     if (catalogoExistente) {
-                        catalogoExistente.Cuentas.push(req.body.dato);
+                        console.log("Cuentas:", catalogoExistente.Cuentas.length);
+                        if (catalogoExistente.Cuentas.length < 3) {
+                            catalogoExistente.Cuentas.push(req.body.dato);
+                        } else {
+                            res.send({ ok: false, mensaje: "Se ha alcanzado el límite de cuentas permitidas" });
+                            return;
+                        }
                         await catalogoExistente.save();
                         res.send({ ok: true, mensaje: "Catálogo actualizado exitosamente", catalogoExistente });
                     } else {
@@ -87,6 +93,32 @@ export async function post(req, res, next) {
                     res.send({ ok: false, mensaje: "Tipo de catálogo no reconocido" });
                 }
 
+            }
+        } catch (error) {
+            console.log("Error en la consulta:", error);
+            res.send({ ok: false, mensaje: "Ocurrió un error al guardar los catálogos", error });
+        }
+    }
+
+    if (req.body.tipo = "editarCatalogoCuenta") {
+        console.log("entro a editarCatalogoCuenta");
+        try {
+            let id = req.body.id;
+            let catalogoExistente = await Catalogo.findById(id).exec();
+            if (catalogoExistente) {
+                let cuenta = catalogoExistente.Cuentas.id(req.body.dato._id);
+                // console.log("cuenta=>", cuenta);
+                if (cuenta) {
+                    cuenta.banco = req.body.dato.banco;
+                    cuenta.cuenta = req.body.dato.cuenta;
+                    cuenta.clabe = req.body.dato.clabe;
+                    await catalogoExistente.save();
+                    res.send({ ok: true, mensaje: "Cuenta actualizada exitosamente", catalogoExistente });
+                } else {
+                    res.send({ ok: false, mensaje: "Cuenta no encontrada" });
+                }
+            } else {
+                res.send({ ok: false, mensaje: "Catálogo no encontrado" });
             }
         } catch (error) {
             console.log("Error en la consulta:", error);

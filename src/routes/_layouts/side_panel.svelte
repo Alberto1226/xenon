@@ -115,6 +115,12 @@
       icono: "fingerprint",
       roles: ["administrador"],
     },
+    {
+      url: "/app/Precios",
+      titulo: "Precios",
+      icono: "attach_money",
+      roles: ["administrador", ],
+    },
   ];
 
   function devolver_menu_actual() {

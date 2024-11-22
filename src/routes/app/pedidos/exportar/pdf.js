@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { Carrito } from '../../../../models/carrito';
+import { Catalogo } from '../../../../models/Catalogos';
 import { text } from 'd3';
 import { formato_precio } from '../../../stores';
 import { NumeroALetras } from "./NumeroALetras.js";
@@ -16,6 +17,18 @@ export async function get(req, res, next) {
     month: "numeric",
     year: "numeric"
   };
+
+  let catalogo = await Catalogo.findOne().select('Cuentas').exec();
+  let cuentas = catalogo.Cuentas;
+  let c1 = "";
+  let c2 = "";
+  let c3 = "";
+
+  if (cuentas.length != 0) {
+    c1 = cuentas[0] ? cuentas[0] : "";
+    c2 = cuentas[1] ? cuentas[1] : "";
+    c3 = cuentas[2] ? cuentas[2] : "";
+  }
 
   var id = req.query.id;
   if (!id) return res.send('Consulta no se pudo realizar')
@@ -38,9 +51,9 @@ export async function get(req, res, next) {
     productos_en_pedido(id).then((respuesta) => {
       let texto = data.replace('_contenido', respuesta.productos);
       texto = texto.replace("_xenon", texto_head_xenon());
-      texto = texto.replace("_hsbc", texto_head_hsbc());
-      texto = texto.replace("_bajio", texto_head_bajio());
-      texto = texto.replace("_banamex", texto_head_banamex());
+      texto = texto.replace("_hsbc", texto_head_hsbc(c1));
+      texto = texto.replace("_bajio", texto_head_bajio(c2));
+      texto = texto.replace("_banamex", texto_head_banamex(c3));
       texto = texto.replace('_cliente_nombre', texto_head_cliente_nombre(respuesta.cliente));
       texto = texto.replace('_cliente_domicilio', texto_head_cliente_domicilio(respuesta.cliente));
       //texto = texto.replace('_cliente_domicilio2',texto_head_cliente_domicilio2(respuesta.cliente));
@@ -67,24 +80,42 @@ function texto_head_xenon() {
 }
 
 
-function texto_head_hsbc() {
-  return `BBVA <br>
-  Cuenta: 011 666 50 39<br>
-  CLABE: 012 68 00 01 16 66 50 390`;
+function texto_head_hsbc(c) {
+  if (c !== "") {
+    return `${c.banco} <br>
+    Cuenta: ${c.cuenta}<br>
+    CLABE: ${c.clabe}`;
+  } else {
+    return `BBVA <br>
+    Cuenta: 011 666 50 39<br>
+    CLABE: 012 68 00 01 16 66 50 390`;
+  }
 }
 
 
-function texto_head_bajio() {
-  return `BAJIO <br>
+function texto_head_bajio(c) {
+  if (c !== "") {
+    return `${c.banco} <br>
+    Cuenta: ${c.cuenta}<br>
+    CLABE: ${c.clabe}`;
+  } else {
+    return `BAJIO <br>
   Cuenta: 00 97 44 08 70 201<br>
   CLABE: 03 068 59 00 00 102 10 94`;
+  }
 }
 
 
-function texto_head_banamex() {
-  return `BANAMEX (Sucursal: 7010) <br>
+function texto_head_banamex(c) {
+  if (c !== "") {
+    return `${c.banco} <br>
+    Cuenta: ${c.cuenta}<br>
+    CLABE: ${c.clabe}`;
+  } else {
+    return `BANAMEX (Sucursal: 7010) <br>
   Cuenta: 16 67 578<br>
   CLABE: 002 68 57 01 01 66 75 785 `;
+  }
 }
 
 

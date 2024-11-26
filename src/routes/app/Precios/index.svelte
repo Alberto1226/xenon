@@ -11,6 +11,8 @@
 
     let loading = false;
 
+    let datosError = false;
+
     onMount(() => {
         getProductos()
             .then((res) => {
@@ -43,9 +45,11 @@
         });
     }
 
-    async function Crear_Documento_CSV(datosError = false) {
+    async function Crear_Documento_CSV() {
         try {
-            let rows = await Preparar_Datos_CSV(datosError);
+            // console.log("Crear_Documento_CSV");
+            let rows = await Preparar_Datos_CSV();
+            datosError = false;
             let csvContent =
                 "data:text/csv;charset=utf-8," +
                 rows.map((e) => e.join(",")).join("\n");
@@ -61,27 +65,31 @@
         }
     }
 
-    async function Preparar_Datos_CSV(datosError) {
+    async function Preparar_Datos_CSV() {
+        // console.log("Preparar_Datos_CSV");
         return new Promise((resolve, reject) => {
             let rows = [
                 ["ID", "Codigo", "Nombre", "Precio", "Precio_Anterior"],
             ];
             if (lista.length == 0) {
+                // console.log("rej");
                 reject();
             }
             try {
                 if (!datosError) {
+                    // console.log("false", datosError);
                     lista.forEach((element) => {
                         rows.push([
                             element._id,
                             element.codigo,
                             element.nombre,
-                            element.precio,
                             null,
+                            element.precio,
                         ]);
                     });
                 }
                 if (datosError) {
+                    // console.log("true", datosError);
                     lista.forEach((element) => {
                         rows.push([
                             element.ID,
@@ -175,7 +183,8 @@
                         $mensajes_app = $mensajes_app;
                         if (res.datos.length > 0) {
                             lista = res.datos;
-                            Crear_Documento_CSV(true);
+                            datosError = true;
+                            Crear_Documento_CSV();
                         }
                     }
                     resolve(res);

@@ -3,7 +3,8 @@ import * as accesos from "../../accesos";
 import { loop_guard } from "svelte/internal";
 import * as fs from "fs";
 import { Producto } from "../../../../models/producto";
-import {devolver_producto_db} from './../../pedidos/editar/_server_cambiar_cantidad/devolver_producto_db';
+import { devolver_producto_db } from './../../pedidos/editar/_server_cambiar_cantidad/devolver_producto_db';
+import mongoose from 'mongoose';
 
 //var ba64 = require("ba64")
 //if (id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -16,22 +17,22 @@ export async function post(req, res, next) {
         res.send({ ok: false, mensaje: "sesion expirada" })
         return;
     }
-  
+
     var archivos = req.body.archivos;
     var numero_archivos = archivos.length;
     var producto = req.body;
     const producto_const_proceso = await devolver_producto_db(producto._id);
-    if(producto_const_proceso.ok==false){
-        return res.send({ok:false,message: "El producto ya no existe"})
+    if (producto_const_proceso.ok == false) {
+        return res.send({ ok: false, message: "El producto ya no existe" })
     }
     const producto_const = JSON.parse(JSON.stringify(producto_const_proceso.producto))
     //      evitar sobreescribir existencia actual
     producto.existencia.actual = producto_const.existencia.actual;
-    
-    accesos.logActividad('productos/editar/editar_un_producto='+producto.nombre,req.user,producto,req);
+
+    accesos.logActividad('productos/editar/editar_un_producto=' + producto.nombre, req.user, producto, req);
 
 
-   //console.log("archivos = " + archivos.length)
+    //console.log("archivos = " + archivos.length)
     //var fecha_prefix = new Date();
     //var terminacion = ".png";
 
@@ -52,14 +53,14 @@ export async function post(req, res, next) {
         producto.fh_creado = new Date();
         const id_producto = producto._id;
         delete producto._id;
-//console.log("id_producto"+id_producto);
-  //      console.log("---|||||||||||||||||||||||||||||");
-    //    console.log(producto);            
+        //console.log("id_producto"+id_producto);
+        //      console.log("---|||||||||||||||||||||||||||||");
+        //    console.log(producto);            
         var nuevo_producto = new Producto(producto);
-        Producto.findByIdAndUpdate(id_producto,producto)
+        Producto.findByIdAndUpdate(id_producto, producto)
             .then(() => {
                 res.send({ ok: true, message: "Producto editado", producto: nuevo_producto });
-               //console.log("Todo bien");
+                //console.log("Todo bien");
                 return;
             })
             .catch((err) => {
@@ -68,77 +69,149 @@ export async function post(req, res, next) {
                 res.send({ ok: false, message: "Ocurrio un error al editar el producto.", err: err })
                 return;
             })
-          
+
     }
     else {
-        archivos.forEach((element, i) => {
-            procesar_base64(element, (ok, terminacion, base) => {
-                if (ok == false) {
-                    contador_errores++;
-                }
-                else {
 
-                    var nombre_archivo = new Date().getTime().toString();
-                    //console.log(base.split(0,50));
-                    var nombre = url + nombre_archivo + i + terminacion;
-                    var url_publico = url_pub + nombre_archivo + i + terminacion;
-                    fs.writeFile(nombre, base, { encoding: 'base64' }, (err) => {
-                        if (err) {
-                            contador_errores++;
-                            console.log(err);
+        let b64 = archivos[0].base64.replace(/^data:image\/\w+;base64,/, "");
+
+        let url = "";
+        let db = "";
+        db = mongoose.connection.name;
+        // console.log("------------------------", db);
+
+        await ApiPuente(b64, producto, db);
+
+
+
+
+
+
+
+        // archivos.forEach((element, i) => {
+        //     procesar_base64(element, (ok, terminacion, base) => {
+        //         if (ok == false) {
+        //             contador_errores++;
+        //         }
+        //         else {
+
+        //             var nombre_archivo = new Date().getTime().toString();
+        //             //console.log(base.split(0,50));
+        //             var nombre = url + nombre_archivo + i + terminacion;
+        //             var url_publico = url_pub + nombre_archivo + i + terminacion;
+        //             fs.writeFile(nombre, base, { encoding: 'base64' }, (err) => {
+        //                 if (err) {
+        //                     contador_errores++;
+        //                     console.log(err);
+        //                 }
+        //                 archivos_guardados++;
+        //                 //console.log("archivos_guardados=" + archivos_guardados)
+        //                 //console.log("i = " + i)
+        //                 galeria_imagenes.push(url_publico)
+        //                 //console.log(galeria_imagenes)
+        //                 if ((i + 1) == numero_archivos) {
+        //                     //console.log("Finalizando--------------");
+        //                     // termina el ciclo****************
+        //                     var guardados_todos = archivos_guardados === archivos.length;
+        //                     //console.log("i= " + i);
+
+        //                     //console.log("archivos_guardados=" + archivos_guardados);
+        //                     //console.log("archivos.length=" + archivos.length);
+        //                     //console.log("guardados_todos=" + guardados_todos);
+        //                     //console.log("numero_archivos =" + numero_archivos);
+
+        //                     if (contador_errores > 0) {
+        //                         //error al guardar el archivo
+        //                         //console.log("teta");
+        //                         res.send({ ok: false, message: "Ocurrio un erro al guardar un archivo. archivos_guardados " + archivos_guardados + " archivos length = " + archivos.length });
+        //                         return;
+        //                     }
+        //                     else {
+        //                         producto = req.body
+        //                         delete producto.archivos;
+        //                         //console.log("hola");
+        //                         producto.galeria_imagenes = galeria_imagenes;
+        //                         producto.fh_creado = new Date();
+        //                         let id_original = producto._id
+        //                         delete producto._id;
+        //                         //console.log(producto);
+
+        //                         Producto.findByIdAndUpdate(id_original, producto)
+        //                             .then(() => {
+        //                                 res.send({ ok: true, message: "Producto editado", producto: nuevo_producto });
+        //                                 //console.log("Todo bien");
+        //                                 return;
+        //                             })
+        //                             .catch((err) => {
+        //                                 console.log(err);
+
+        //                                 res.send({ ok: false, message: "Ocurrio un error al editar el producto.", err: err })
+        //                                 return;
+        //                             })
+        //                     }
+        //                 }
+        //             })
+        //         } // else de no error en base64
+        //     });
+        // });
+
+
+    }
+
+    async function ApiPuente(imgBase64, producto, db) {
+        let urlComp = "https://apipuente.isotech.mx/apipuente/public";
+
+        let planta = db;
+
+        const formData = new FormData();
+        formData.append("planta", planta);
+        formData.append("imagenb64", imgBase64);
+
+        const requestOptions = {
+            method: "POST",
+            // headers: myHeaders,
+            body: formData,
+            redirect: "follow",
+        };
+
+        await fetch(
+            "https://apipuente.isotech.mx/apipuente/public/xenon/guardarImagenPlanta",
+            requestOptions,
+        ).then((response) => {
+            if (response.status === 200) {
+                response.json().then((data) => {
+                    let url = urlComp + data.url;
+                    // console.log(url);
+                    // return url;
+
+                    producto.galeria_imagenes[0] = url;
+
+
+                    Producto.findByIdAndUpdate(producto._id, producto).then(() => {
+                        if (url != null) {
+                            res.send({ ok: true, message: "Producto editado api", producto: url });
+                            //console.log("Todo bien");
+                            return;
                         }
-                        archivos_guardados++;
-                       //console.log("archivos_guardados=" + archivos_guardados)
-                       //console.log("i = " + i)
-                        galeria_imagenes.push(url_publico)
-                       //console.log(galeria_imagenes)
-                        if ((i + 1) == numero_archivos) {
-                           //console.log("Finalizando--------------");
-                            // termina el ciclo****************
-                            var guardados_todos = archivos_guardados === archivos.length;
-                           //console.log("i= " + i);
-
-                           //console.log("archivos_guardados=" + archivos_guardados);
-                           //console.log("archivos.length=" + archivos.length);
-                           //console.log("guardados_todos=" + guardados_todos);
-                           //console.log("numero_archivos =" + numero_archivos);
-
-                            if (contador_errores > 0) {
-                                //error al guardar el archivo
-                               //console.log("teta");
-                                res.send({ ok: false, message: "Ocurrio un erro al guardar un archivo. archivos_guardados " + archivos_guardados + " archivos length = " + archivos.length });
-                                return;
-                            }
-                            else {
-                                producto = req.body
-                                delete producto.archivos;
-                               //console.log("hola");
-                                producto.galeria_imagenes = galeria_imagenes;
-                                producto.fh_creado = new Date();
-                                let id_original= producto._id
-                                delete producto._id;
-                               //console.log(producto);
-                                
-                                Producto.findByIdAndUpdate(id_original,producto)
-                                .then(() => {
-                                    res.send({ ok: true, message: "Producto editado", producto: nuevo_producto });
-                                   //console.log("Todo bien");
-                                    return;
-                                })
-                                .catch((err) => {
-                                    console.log(err);
-                    
-                                    res.send({ ok: false, message: "Ocurrio un error al editar el producto.", err: err })
-                                    return;
-                                })
-                            }
+                        if (url == null) {
+                            res.send({ ok: true, message: "Ocurrio un error al guardar la imagen." });
+                            return;
                         }
+
                     })
-                } // else de no error en base64
-            });
+                        .catch((err) => {
+                            console.log(err);
+
+                            res.send({ ok: false, message: "Ocurrio un error al editar el producto.", err: err })
+                            return;
+                        })
+                });
+            } else {
+                throw new Error("Error en la respuesta");
+                console.log("Errorrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
+                return null;
+            }
         });
-
-
     }
 
 
@@ -165,7 +238,7 @@ export async function post(req, res, next) {
             ok = true;
         }
         else {
-           //console.log("No se subio en algun formato compatible")
+            //console.log("No se subio en algun formato compatible")
             ok = false;
             //res.send({ ok: false, message: "Alguna de las imagenes no es compatible, jpg , png y gif se permiten." });
             //return;

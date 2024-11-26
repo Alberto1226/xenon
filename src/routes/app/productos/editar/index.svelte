@@ -31,6 +31,9 @@
       nuevo_producto = $editar_store.producto;
     }, 500);
   });
+  // $: if ($lista_archivos_uploads.length > 0 && !nuevo_producto.urlApi) {
+  //   MandarImagenApiPuente($lista_archivos_uploads);
+  // }
   $: if ($editar_store.producto) {
     nuevo_producto = $editar_store.producto;
   }
@@ -220,15 +223,19 @@
     goto("app/productos");
   };
 
-  async function MandarImagenApiPuente(archivos) {
+  async function MandarImagenApiPuente(archivos = $lista_archivos_uploads) {
+    if (nuevo_producto.urlApi) {
+      return nuevo_producto.urlApi;
+    }
+    let urlComp = "https://apipuente.isotech.mx/apipuente/public";
     console.log("a", archivos[0].base64);
-    let imgBase64 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/";
+    let imgBase64 = archivos[0].base64.replace(/^data:image\/\w+;base64,/, "");
     let planta = "Pruebas";
     // let nameDB = process.env.DB;
 
     const myHeaders = new Headers({
-      'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'multipart/form-data'
+      "Access-Control-Allow-Origin": "*",
+      "Content-Type": "multipart/form-data",
     });
     const formData = new FormData();
     formData.append("planta", planta);
@@ -244,14 +251,21 @@
     await fetch(
       "https://apipuente.isotech.mx/apipuente/public/xenon/guardarImagenPlanta",
       requestOptions,
-    )
-      .then((response) => {
-        if (response.status === 200) {
-          return response.text();
-        } else {
-          throw new Error('Error en la respuesta');
-        }
-      });
+    ).then((response) => {
+      if (response.status === 200) {
+        return response.json().then((data) => {
+          nuevo_producto.urlApi = urlComp + data.url;
+          console.log(urlComp + data.url);
+        });
+      } else {
+        throw new Error("Error en la respuesta");
+        $mensajes_app.push({
+          tipo: "error",
+          mensaje: "Error al guardar la imagen",
+        });
+        $mensajes_app = $mensajes_app;
+      }
+    });
   }
 </script>
 

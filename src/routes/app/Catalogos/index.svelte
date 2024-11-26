@@ -25,6 +25,18 @@
     let unidades = [];
     let cuentas = [];
 
+    let nombre = "";
+    let rfc = "";
+    let telefono = "";
+    let calle = "";
+    let colonia = "";
+    let municipio = "";
+    let estado = "";
+    let cp = "";
+    let email = "";
+
+    let DatosGrals = "";
+
     onMount(() => {
         getColeccion();
     });
@@ -47,6 +59,16 @@
         modalEditarCuenta = false;
 
         idRegistro = "";
+
+        nombre = "";
+        rfc = "";
+        telefono = "";
+        calle = "";
+        colonia = "";
+        municipio = "";
+        estado = "";
+        cp = "";
+        email = "";
     }
 
     function getColeccion() {
@@ -68,7 +90,11 @@
                     }
                     if (res.catalogos.Cuentas.length != 0) {
                         cuentas = res.catalogos.Cuentas;
-                        console.log(cuentas);
+                        // console.log(cuentas);
+                    }
+                    if (res.catalogos.DatosGrals.length != 0) {
+                        DatosGrals = res.catalogos.DatosGrals;
+                        // console.log(DatosGrals);
                     }
                     resolve(res.ok);
                 }
@@ -88,6 +114,28 @@
             });
             $mensajes_app = $mensajes_app;
             return;
+        }
+        // console.log("rr", dato1);
+        if (nameCat == "DatosGrals") {
+            if (
+                !dato1.nombre ||
+                !dato1.rfc ||
+                !dato1.telefono ||
+                !dato1.direccion.calle ||
+                !dato1.direccion.colonia ||
+                !dato1.direccion.municipio ||
+                !dato1.direccion.estado ||
+                !dato1.direccion.cp ||
+                !dato1.email
+            ) {
+                $mensajes_app.push({
+                    tipo: "error",
+                    mensaje:
+                        "Todos los campos de Datos Generales deben estar completos",
+                });
+                $mensajes_app = $mensajes_app;
+                return;
+            }
         }
         nameCatalogo = nameCat;
         dato = dato1;
@@ -207,7 +255,7 @@
 
     //funcion para editar la cuenta
     function editarCuenta(id) {
-        console.log(id);
+        // console.log(id);
         idCuentaSelect = id;
         //se asignan los valores a cuenta clabe y banco dependiendo del id que se recibe
         const cuentaSeleccionada = cuentas.find((c) => c._id === id);
@@ -241,6 +289,12 @@
             on:click={() => (activeTab = "Cuentas")}
         >
             Cuentas
+        </div>
+        <div
+            class="nav-item {activeTab === 'Datos' ? 'active' : ''}"
+            on:click={() => (activeTab = "Datos")}
+        >
+            Datos Generales
         </div>
     </div>
 
@@ -360,19 +414,173 @@
                 </div>
             </div>
         {/if}
+
+        {#if activeTab === "Datos"}
+            <div>
+                <h2>Datos Generales</h2>
+                <div class="row">
+                    <Textfield
+                        outlined
+                        id="nombre_input"
+                        bind:value={nombre}
+                        placeholder="Nombre"
+                        message="Nombre"
+                        type="text"
+                    />
+                    <Textfield
+                        outlined
+                        id="rfc_input"
+                        bind:value={rfc}
+                        placeholder="RFC"
+                        message="RFC"
+                        type="text"
+                    />
+                    <Textfield
+                        outlined
+                        id="telefono_input"
+                        bind:value={telefono}
+                        placeholder="Telefono"
+                        message="Telefono"
+                        type="text"
+                    />
+                </div>
+                <div class="row">
+                    <Textfield
+                        outlined
+                        id="calle_input"
+                        bind:value={calle}
+                        placeholder="Calle"
+                        message="Calle"
+                        type="text"
+                    />
+                    <Textfield
+                        outlined
+                        id="colonia_input"
+                        bind:value={colonia}
+                        placeholder="Colonia"
+                        message="Colonia"
+                        type="text"
+                    />
+                    <Textfield
+                        outlined
+                        id="municipio_input"
+                        bind:value={municipio}
+                        placeholder="Municipio"
+                        message="Municipio"
+                        type="text"
+                    />
+                </div>
+                <div class="row">
+                    <Textfield
+                        outlined
+                        id="estado_input"
+                        bind:value={estado}
+                        placeholder="Estado"
+                        message="Estado"
+                        type="text"
+                    />
+                    <Textfield
+                        outlined
+                        id="cp_input"
+                        bind:value={cp}
+                        placeholder="CP"
+                        message="CP"
+                        type="text"
+                    />
+                    <Textfield
+                        outlined
+                        id="email_input"
+                        bind:value={email}
+                        placeholder="Email"
+                        message="Email"
+                        type="text"
+                    />
+                </div>
+                <button
+                    on:click={() =>
+                        ConfirmarGuardado("DatosGrals", {
+                            nombre: nombre,
+                            rfc: rfc,
+                            direccion: {
+                                calle: calle,
+                                colonia: colonia,
+                                municipio: municipio,
+                                estado: estado,
+                                cp: cp,
+                            },
+                            telefono: telefono,
+                            email: email,
+                        })}
+                >
+                    Agregar Datos
+                </button>
+                <div class="lista-scroll">
+                    <div class="columnas mt-2">
+                        {#if DatosGrals}
+                            <ul>
+                                <li>
+                                    <strong>Nombre:</strong> {DatosGrals.nombre},
+                                    <strong>RFC:</strong> {DatosGrals.rfc},
+                                    <br />
+                                    <strong>Teléfono:</strong> {DatosGrals.telefono},
+                                    <strong>Calle:</strong> {DatosGrals.direccion.calle},
+                                    <br />
+                                    <strong>Colonia:</strong> {DatosGrals.direccion.colonia},
+                                    <strong>Municipio:</strong> {DatosGrals.direccion.municipio},
+                                    <br />
+                                    <strong>Estado:</strong> {DatosGrals.direccion.estado},
+                                    <strong>CP:</strong> {DatosGrals.direccion.cp},
+                                    <strong>Email:</strong> {DatosGrals.email}
+                                </li>
+                            </ul>
+                        {/if}
+                    </div>
+                </div>
+            </div>
+        {/if}
     </div>
 
     <!-- Modal -->
     {#if mostrarModal}
         <div class="modal">
             <div class="modal-content">
+                {#if nameCatalogo == "DatosGrals"}
+                    <h2>Confirmar Guardado</h2>
+
+                    <p>
+                        ¿Confirma el guardado de los datos generales?
+                        <br />
+                        <strong>Nombre:</strong>
+                        {nombre},
+                        <strong>RFC:</strong>
+                        {rfc},
+                        <br />
+                        <strong>Teléfono:</strong>
+                        {telefono},
+                        <strong>Calle:</strong>
+                        {calle},
+                        <br />
+                        <strong>Colonia:</strong>
+                        {colonia},
+                        <strong>Municipio:</strong>
+                        {municipio},
+                        <br />
+                        <strong>Estado:</strong>
+                        {estado},
+                        <strong>CP:</strong>
+                        {cp},
+                        <strong>Email:</strong>
+                        {email}
+                    </p>
+                {/if}
                 {#if nameCatalogo == "Cuentas"}
                     <h2>Confirmar Guardado</h2>
                     <p>
                         ¿Confirma el guardado de la cuenta Banco: {banco},
                         Cuenta: {cuenta}, CLABE: {clabe} en el catálogo "{nameCatalogo}"?
                     </p>
-                {:else}
+                {/if}
+                {#if nameCatalogo != "DatosGrals" && nameCatalogo != "Cuentas"}
                     <h2>Confirmar Guardado</h2>
                     <p>
                         ¿Confirma el guardado de {dato} en el catálogo "{nameCatalogo}"?
@@ -518,5 +726,10 @@
         border-radius: 5px;
         max-width: 500px;
         width: 100%;
+    }
+
+    .row {
+        display: flex;
+        gap: 1rem;
     }
 </style>

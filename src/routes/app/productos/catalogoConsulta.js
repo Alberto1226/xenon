@@ -39,6 +39,9 @@ export async function post(req, res, next) {
                 if (req.body.catalogo == "Cuentas") {
                     catalogos.Cuentas = req.body.dato;
                 }
+                if (req.body.catalogo == "DatosGrals") {
+                    catalogos.DatosGrals = req.body.dato;
+                }
                 console.log("-----", catalogos);
                 let nuevoCatalogo = new Catalogo(catalogos);
 
@@ -68,6 +71,16 @@ export async function post(req, res, next) {
                     let catalogoExistente = await Catalogo.findById(id).exec();
                     if (catalogoExistente) {
                         catalogoExistente.Unidades.push(req.body.dato);
+                        await catalogoExistente.save();
+                        res.send({ ok: true, mensaje: "Catálogo actualizado exitosamente", catalogoExistente });
+                    } else {
+                        res.send({ ok: false, mensaje: "Catálogo no encontrado" });
+                    }
+                }
+                if (req.body.catalogo == "DatosGrals") {
+                    let catalogoExistente = await Catalogo.findById(id).exec();
+                    if (catalogoExistente) {
+                        catalogoExistente.DatosGrals = { ...catalogoExistente.DatosGrals, ...req.body.dato };
                         await catalogoExistente.save();
                         res.send({ ok: true, mensaje: "Catálogo actualizado exitosamente", catalogoExistente });
                     } else {

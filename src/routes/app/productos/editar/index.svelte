@@ -219,6 +219,40 @@
   const cancelar = () => {
     goto("app/productos");
   };
+
+  async function MandarImagenApiPuente(archivos) {
+    console.log("a", archivos[0].base64);
+    let imgBase64 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/";
+    let planta = "Pruebas";
+    // let nameDB = process.env.DB;
+
+    const myHeaders = new Headers({
+      'Access-Control-Allow-Origin': '*',
+      'Content-Type': 'multipart/form-data'
+    });
+    const formData = new FormData();
+    formData.append("planta", planta);
+    formData.append("imagenb64", imgBase64);
+    // formData.append("db", nameDB);
+
+    const requestOptions = {
+      method: "POST",
+      // headers: myHeaders,
+      body: formData,
+      redirect: "follow",
+    };
+    await fetch(
+      "https://apipuente.isotech.mx/apipuente/public/xenon/guardarImagenPlanta",
+      requestOptions,
+    )
+      .then((response) => {
+        if (response.status === 200) {
+          return response.text();
+        } else {
+          throw new Error('Error en la respuesta');
+        }
+      });
+  }
 </script>
 
 <div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}>
@@ -371,6 +405,10 @@
         </div>
       </div>
     {/if}
+
+    <!-- <Button on:click={MandarImagenApiPuente($lista_archivos_uploads)}>
+      <i class="material-icons">arrow_back</i> Enviar Imagen Prueba
+    </Button> -->
 
     {#if $usuario_db.rol == "diseñador"}
       <div class="imagenes margen caja">

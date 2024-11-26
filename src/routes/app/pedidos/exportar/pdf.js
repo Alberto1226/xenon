@@ -18,16 +18,25 @@ export async function get(req, res, next) {
     year: "numeric"
   };
 
-  let catalogo = await Catalogo.findOne().select('Cuentas').exec();
+  let catalogo = await Catalogo.findOne().select({ Cuentas: 1, DatosGrals: 1 }).exec();
+  let DatosGrals = catalogo.DatosGrals;
   let cuentas = catalogo.Cuentas;
   let c1 = "";
   let c2 = "";
   let c3 = "";
 
+  let DR = "";
+  let logDb = "";
+
   if (cuentas.length != 0) {
     c1 = cuentas[0] ? cuentas[0] : "";
     c2 = cuentas[1] ? cuentas[1] : "";
     c3 = cuentas[2] ? cuentas[2] : "";
+  }
+
+  if (DatosGrals.length != 0) {
+    DR = DatosGrals ? DatosGrals : "";
+    logDb = DatosGrals.logo ? DatosGrals.logo : "";
   }
 
   var id = req.query.id;
@@ -50,7 +59,8 @@ export async function get(req, res, next) {
     }
     productos_en_pedido(id).then((respuesta) => {
       let texto = data.replace('_contenido', respuesta.productos);
-      texto = texto.replace("_xenon", texto_head_xenon());
+      texto = texto.replace("_xenon", texto_head_xenon(DR));
+      texto = texto.replace('<img src="/imagenes/logo-xenon.png" class="logo" alt="logotipo" />', `<img src="${logDb}" class="logo" alt="logotipo" />`);
       texto = texto.replace("_hsbc", texto_head_hsbc(c1));
       texto = texto.replace("_bajio", texto_head_bajio(c2));
       texto = texto.replace("_banamex", texto_head_banamex(c3));
@@ -72,11 +82,20 @@ export async function get(req, res, next) {
 }
 
 
-function texto_head_xenon() {
-  return `Comercial de Importaciones Xenon Y Más SA de CV  <br>
+function texto_head_xenon(DR) {
+  if (DR !== "") {
+    return `${DR.nombre} <br>
+    RFC: ${DR.rfc} <br>
+    Calle: ${DR.direccion.calle}, Col.: ${DR.direccion.colonia}, <br>
+    ${DR.direccion.municipio}, ${DR.direccion.estado} <br>
+    CP: ${DR.direccion.cp} Tel: ${DR.telefono} <br>
+    E-mail: ${DR.email} `;
+  } else {
+    return `Comercial de Importaciones Xenon Y Más SA de CV  <br>
   RFC CIX120105CTA <br> Carretera a Amealco KM 0+218 lote 17, Col. Barrio de la Cruz, <br>
   San Juan del Río, Querétaro  <br>
   C.P.76807 Teléfono: 01 800 161 61 59   <br>E-mail: xenonymas@yahoo.com.mx  `;
+  }
 }
 
 

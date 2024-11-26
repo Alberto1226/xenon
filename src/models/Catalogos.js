@@ -16,7 +16,32 @@ var schema = new Schema({
             clabe: { type: String },
         }],
         validate: [arrayLimit, '{PATH} exceeds the limit of 3']
-    }
+    },
+    DatosGrals: {
+        nombre: { type: String },
+        rfc: { type: String },
+        direccion: {
+            calle: { type: String },
+            colonia: { type: String },
+            municipio: { type: String },
+            estado: { type: String },
+            cp: { type: String },
+        },
+        telefono: { type: String },
+        email: { type: String },
+        web: { type: String },
+        logo: {
+            type: String
+        },
+        // colors: type[
+        //     {
+        //         color: { type: String },
+        //         hex: { type: String },
+        //         control: { type: String },
+        //     }
+        // ],
+    },
+    // dbName: { type: String, default: mongoose.connection.name }
 });
 
 function arrayLimit(val) {

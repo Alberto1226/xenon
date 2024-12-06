@@ -2,7 +2,7 @@
   import { Button, Textfield, Menu, Menuitem } from "svelte-mui/src";
   export var rol;
 
-  var roles = ["administrador", "gerente", "vendedor", "almacen", "diseñador"];
+  var roles = ["administrador", "gerente", "vendedor", "almacen", "diseñador", "ComercioExterior"];
   var lista_visible = true;
 </script>
 

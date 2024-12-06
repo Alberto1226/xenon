@@ -113,7 +113,7 @@
               <Info_escaneados />
             </td>
             <td>
-              {#if $usuario_db.rol != "diseñador" && $usuario_db.rol != "vendedor" && $usuario_db.rol != "gerente" && $usuario_db.rol != "almacen"}
+              {#if $usuario_db.rol != "diseñador" && $usuario_db.rol != "vendedor" && $usuario_db.rol != "gerente" && $usuario_db.rol != "almacen" && $usuario_db.rol != "ComercioExterior"}
                 Nuevo
                 <Button
                   on:click={() => {

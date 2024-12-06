@@ -471,7 +471,7 @@
     <!-- content here -->
     <div class="once">
       <ButtonGroup>
-        {#if $usuario_db.rol != "diseñador"}
+        {#if $usuario_db.rol != "diseñador" && $usuario_db.rol != "ComercioExterior"}
           {#if producto.activo}
             <!-- content here -->
             <Button
@@ -503,19 +503,20 @@
 
         {#if $usuario_db.rol != "vendedor"}
           {#if $usuario_db.rol != "diseñador"}
-            <Button
-              icon
-              dense
-              color="green"
-              on:click={() => {
-                $editar_store.producto = producto;
-                goto("/app/productos/editar");
-              }}
-              title="editar"
-            >
-              <i class="material-icons">create</i>
-            </Button>
-
+            {#if $usuario_db.rol != "ComercioExterior"}
+              <Button
+                icon
+                dense
+                color="green"
+                on:click={() => {
+                  $editar_store.producto = producto;
+                  goto("/app/productos/editar");
+                }}
+                title="editar"
+              >
+                <i class="material-icons">create</i>
+              </Button>
+            {/if}
             <Button
               icon
               dense
@@ -554,7 +555,7 @@
       <br />
 
       <ButtonGroup>
-        {#if $usuario_db.rol != "vendedor" && $usuario_db.rol != "diseñador"}
+        {#if $usuario_db.rol != "vendedor" && $usuario_db.rol != "diseñador" && $usuario_db.rol != "ComercioExterior"}
           <Button
             icon
             dense

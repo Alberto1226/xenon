@@ -1,6 +1,11 @@
 <script>
     import { Textfield, Button } from "svelte-mui/src";
-    import { postData, mensajes_app } from "./../../stores";
+    import {
+        postData,
+        usuario_db,
+        mensajes_app,
+        logo_negro,
+    } from "./../../stores";
     import { onMount } from "svelte";
 
     let activeTab = "Marcas"; // La pestaña activa por defecto
@@ -284,18 +289,20 @@
         >
             Unidades
         </div>
-        <div
-            class="nav-item {activeTab === 'Cuentas' ? 'active' : ''}"
-            on:click={() => (activeTab = "Cuentas")}
-        >
-            Cuentas
-        </div>
-        <div
-            class="nav-item {activeTab === 'Datos' ? 'active' : ''}"
-            on:click={() => (activeTab = "Datos")}
-        >
-            Datos Generales
-        </div>
+        {#if $usuario_db.nombre === "Soporte Isotech" || $usuario_db.usuario === "isotech_Xenonymas"}
+            <div
+                class="nav-item {activeTab === 'Cuentas' ? 'active' : ''}"
+                on:click={() => (activeTab = "Cuentas")}
+            >
+                Cuentas
+            </div>
+            <div
+                class="nav-item {activeTab === 'Datos' ? 'active' : ''}"
+                on:click={() => (activeTab = "Datos")}
+            >
+                Datos Generales
+            </div>
+        {/if}
     </div>
 
     <!-- Tab Content -->
@@ -360,183 +367,203 @@
             </div>
         {/if}
 
-        {#if activeTab === "Cuentas"}
-            <div>
-                <h2>Cuentas</h2>
-                <Textfield
-                    outlined
-                    id="banco_input"
-                    bind:value={banco}
-                    placeholder="Banco"
-                    message="Banco"
-                    type="text"
-                />
-                <Textfield
-                    outlined
-                    id="cuenta_input"
-                    bind:value={cuenta}
-                    placeholder="Cuenta"
-                    message="Cuenta"
-                    type="text"
-                />
-                <Textfield
-                    outlined
-                    id="clabe_input"
-                    bind:value={clabe}
-                    placeholder="CLABE"
-                    message="CLABE"
-                    type="text"
-                />
-                <button
-                    on:click={() =>
-                        ConfirmaGuardadoCuenta("Cuentas", banco, cuenta, clabe)}
-                >
-                    Agregar Cuenta
-                </button>
-                <div class="lista-scroll">
-                    <div class="columnas mt-2">
-                        {#each cuentas as cuenta}
-                            <ul>
-                                <li on:click={() => editarCuenta(cuenta._id)}>
-                                    Banco: {cuenta.banco}, Cuenta: {cuenta.cuenta},
-                                    CLABE: {cuenta.clabe}
-                                </li>
-                            </ul>
-                        {/each}
-                        <!-- {#each dividirEnColumnas(cuentas) as columna}
+        {#if $usuario_db.nombre === "Soporte Isotech" || $usuario_db.usuario === "isotech_Xenonymas"}
+            <!-- {console.log($usuario_db)} -->
+            {#if activeTab === "Cuentas"}
+                <div>
+                    <h2>Cuentas</h2>
+                    <Textfield
+                        outlined
+                        id="banco_input"
+                        bind:value={banco}
+                        placeholder="Banco"
+                        message="Banco"
+                        type="text"
+                    />
+                    <Textfield
+                        outlined
+                        id="cuenta_input"
+                        bind:value={cuenta}
+                        placeholder="Cuenta"
+                        message="Cuenta"
+                        type="text"
+                    />
+                    <Textfield
+                        outlined
+                        id="clabe_input"
+                        bind:value={clabe}
+                        placeholder="CLABE"
+                        message="CLABE"
+                        type="text"
+                    />
+                    <button
+                        on:click={() =>
+                            ConfirmaGuardadoCuenta(
+                                "Cuentas",
+                                banco,
+                                cuenta,
+                                clabe,
+                            )}
+                    >
+                        Agregar Cuenta
+                    </button>
+                    <div class="lista-scroll">
+                        <div class="columnas mt-2">
+                            {#each cuentas as cuenta}
+                                <ul>
+                                    <li
+                                        on:click={() =>
+                                            editarCuenta(cuenta._id)}
+                                    >
+                                        Banco: {cuenta.banco}, Cuenta: {cuenta.cuenta},
+                                        CLABE: {cuenta.clabe}
+                                    </li>
+                                </ul>
+                            {/each}
+                            <!-- {#each dividirEnColumnas(cuentas) as columna}
                             <ul>
                                 {#each columna as cuenta}
                                     <li>{cuenta}</li>
                                 {/each}
                             </ul>
                         {/each} -->
+                        </div>
                     </div>
                 </div>
-            </div>
-        {/if}
+            {/if}
 
-        {#if activeTab === "Datos"}
-            <div>
-                <h2>Datos Generales</h2>
-                <div class="row">
-                    <Textfield
-                        outlined
-                        id="nombre_input"
-                        bind:value={nombre}
-                        placeholder="Nombre"
-                        message="Nombre"
-                        type="text"
-                    />
-                    <Textfield
-                        outlined
-                        id="rfc_input"
-                        bind:value={rfc}
-                        placeholder="RFC"
-                        message="RFC"
-                        type="text"
-                    />
-                    <Textfield
-                        outlined
-                        id="telefono_input"
-                        bind:value={telefono}
-                        placeholder="Telefono"
-                        message="Telefono"
-                        type="text"
-                    />
-                </div>
-                <div class="row">
-                    <Textfield
-                        outlined
-                        id="calle_input"
-                        bind:value={calle}
-                        placeholder="Calle"
-                        message="Calle"
-                        type="text"
-                    />
-                    <Textfield
-                        outlined
-                        id="colonia_input"
-                        bind:value={colonia}
-                        placeholder="Colonia"
-                        message="Colonia"
-                        type="text"
-                    />
-                    <Textfield
-                        outlined
-                        id="municipio_input"
-                        bind:value={municipio}
-                        placeholder="Municipio"
-                        message="Municipio"
-                        type="text"
-                    />
-                </div>
-                <div class="row">
-                    <Textfield
-                        outlined
-                        id="estado_input"
-                        bind:value={estado}
-                        placeholder="Estado"
-                        message="Estado"
-                        type="text"
-                    />
-                    <Textfield
-                        outlined
-                        id="cp_input"
-                        bind:value={cp}
-                        placeholder="CP"
-                        message="CP"
-                        type="text"
-                    />
-                    <Textfield
-                        outlined
-                        id="email_input"
-                        bind:value={email}
-                        placeholder="Email"
-                        message="Email"
-                        type="text"
-                    />
-                </div>
-                <button
-                    on:click={() =>
-                        ConfirmarGuardado("DatosGrals", {
-                            nombre: nombre,
-                            rfc: rfc,
-                            direccion: {
-                                calle: calle,
-                                colonia: colonia,
-                                municipio: municipio,
-                                estado: estado,
-                                cp: cp,
-                            },
-                            telefono: telefono,
-                            email: email,
-                        })}
-                >
-                    Agregar Datos
-                </button>
-                <div class="lista-scroll">
-                    <div class="columnas mt-2">
-                        {#if DatosGrals}
-                            <ul>
-                                <li>
-                                    <strong>Nombre:</strong> {DatosGrals.nombre},
-                                    <strong>RFC:</strong> {DatosGrals.rfc},
-                                    <br />
-                                    <strong>Teléfono:</strong> {DatosGrals.telefono},
-                                    <strong>Calle:</strong> {DatosGrals.direccion.calle},
-                                    <br />
-                                    <strong>Colonia:</strong> {DatosGrals.direccion.colonia},
-                                    <strong>Municipio:</strong> {DatosGrals.direccion.municipio},
-                                    <br />
-                                    <strong>Estado:</strong> {DatosGrals.direccion.estado},
-                                    <strong>CP:</strong> {DatosGrals.direccion.cp},
-                                    <strong>Email:</strong> {DatosGrals.email}
-                                </li>
-                            </ul>
-                        {/if}
+            {#if activeTab === "Datos"}
+                <div>
+                    <h2>Datos Generales</h2>
+                    <div class="row">
+                        <Textfield
+                            outlined
+                            id="nombre_input"
+                            bind:value={nombre}
+                            placeholder="Nombre"
+                            message="Nombre"
+                            type="text"
+                        />
+                        <Textfield
+                            outlined
+                            id="rfc_input"
+                            bind:value={rfc}
+                            placeholder="RFC"
+                            message="RFC"
+                            type="text"
+                        />
+                        <Textfield
+                            outlined
+                            id="telefono_input"
+                            bind:value={telefono}
+                            placeholder="Telefono"
+                            message="Telefono"
+                            type="text"
+                        />
+                    </div>
+                    <div class="row">
+                        <Textfield
+                            outlined
+                            id="calle_input"
+                            bind:value={calle}
+                            placeholder="Calle"
+                            message="Calle"
+                            type="text"
+                        />
+                        <Textfield
+                            outlined
+                            id="colonia_input"
+                            bind:value={colonia}
+                            placeholder="Colonia"
+                            message="Colonia"
+                            type="text"
+                        />
+                        <Textfield
+                            outlined
+                            id="municipio_input"
+                            bind:value={municipio}
+                            placeholder="Municipio"
+                            message="Municipio"
+                            type="text"
+                        />
+                    </div>
+                    <div class="row">
+                        <Textfield
+                            outlined
+                            id="estado_input"
+                            bind:value={estado}
+                            placeholder="Estado"
+                            message="Estado"
+                            type="text"
+                        />
+                        <Textfield
+                            outlined
+                            id="cp_input"
+                            bind:value={cp}
+                            placeholder="CP"
+                            message="CP"
+                            type="text"
+                        />
+                        <Textfield
+                            outlined
+                            id="email_input"
+                            bind:value={email}
+                            placeholder="Email"
+                            message="Email"
+                            type="text"
+                        />
+                    </div>
+                    <button
+                        on:click={() =>
+                            ConfirmarGuardado("DatosGrals", {
+                                nombre: nombre,
+                                rfc: rfc,
+                                direccion: {
+                                    calle: calle,
+                                    colonia: colonia,
+                                    municipio: municipio,
+                                    estado: estado,
+                                    cp: cp,
+                                },
+                                telefono: telefono,
+                                email: email,
+                            })}
+                    >
+                        Agregar Datos
+                    </button>
+                    <div class="lista-scroll">
+                        <div class="columnas mt-2">
+                            {#if DatosGrals}
+                                <ul>
+                                    <li>
+                                        <strong>Nombre:</strong>
+                                        {DatosGrals.nombre},
+                                        <strong>RFC:</strong>
+                                        {DatosGrals.rfc},
+                                        <br />
+                                        <strong>Teléfono:</strong>
+                                        {DatosGrals.telefono},
+                                        <strong>Calle:</strong>
+                                        {DatosGrals.direccion.calle},
+                                        <br />
+                                        <strong>Colonia:</strong>
+                                        {DatosGrals.direccion.colonia},
+                                        <strong>Municipio:</strong>
+                                        {DatosGrals.direccion.municipio},
+                                        <br />
+                                        <strong>Estado:</strong>
+                                        {DatosGrals.direccion.estado},
+                                        <strong>CP:</strong>
+                                        {DatosGrals.direccion.cp},
+                                        <strong>Email:</strong>
+                                        {DatosGrals.email}
+                                    </li>
+                                </ul>
+                            {/if}
+                        </div>
                     </div>
                 </div>
-            </div>
+            {/if}
         {/if}
     </div>
 

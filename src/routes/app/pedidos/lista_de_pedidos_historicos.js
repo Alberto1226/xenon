@@ -200,9 +200,9 @@ function consulta(pagina_actual, usuario) {
     return new Promise((resolve, reject) => {
         let query;
         if (usuario.rol === 'vendedor') {
-            query = {
+            query = JSON.stringify({
                 $or: [{ "usuario_que_registro.id": usuario._id }, { "agente.id": usuario._id }]
-            };
+            });
         } else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
             query = {};
         }

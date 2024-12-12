@@ -8,4 +8,4 @@ src/routes/_importaciones
 src/routes/_importaciones_clientes
 log-especifico.txt
 /nbproject/private/
-/src\server.js
+/src/server.js

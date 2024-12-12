@@ -1,7 +1,7 @@
 <script>
     import { Textfield, Button } from "svelte-mui/src";
     import { fade, scale } from "svelte/transition";
-    import { postData } from "./../../../stores";
+    import { usuario_db, postData } from "./../../../stores";
     import No_se_encontraron_resultados from "./No_se_encontraron_resultados.svelte";
     import Cargador from "./Cargando.svelte";
     import Productos from "./Productos.svelte";
@@ -135,7 +135,9 @@
     };
 </script>
 
-<img src="imagenes/info_escaneados.svg" alt="" on:click={toggle} />
+{#if $usuario_db.rol != "ComercioExterior"}
+    <img src="imagenes/info_escaneados.svg" alt="" on:click={toggle} />
+{/if}
 
 {#if visible == true}
     <div class="contenedor" in:fade={{ duration: 350 }}>

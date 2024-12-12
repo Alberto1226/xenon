@@ -18,27 +18,33 @@
   }
 
   function handleKeydown(evt) {
-    if (evt.key == "p") {
-      //evt.preventDefault();
-      // estado_actual = "creando pedido";
-      letra_p_visible = true;
-      setTimeout(() => {
-        goto("/app/pedidos/");
-      }, 550);
-      return;
-    }
-    if (evt.key == "+") {
-      evt.preventDefault();
-      // estado_actual = "creando pedido";
+    if (
+      $usuario_db.rol != "almacen" &&
+      $usuario_db.rol != "diseñador" &&
+      $usuario_db.rol != "ComercioExterior"
+    ) {
+      if (evt.key == "p") {
+        //evt.preventDefault();
+        // estado_actual = "creando pedido";
+        letra_p_visible = true;
+        setTimeout(() => {
+          goto("/app/pedidos/");
+        }, 550);
+        return;
+      }
+      if (evt.key == "+") {
+        evt.preventDefault();
+        // estado_actual = "creando pedido";
 
-      signo_mas_visible = true;
-      setTimeout(() => {
-        goto("/app/pedidos/nuevo/nuevo");
-      }, 550);
-      return;
-    }
-    if (evt.key == "Escape") {
-      //  estado_actual = "viendo listas"
+        signo_mas_visible = true;
+        setTimeout(() => {
+          goto("/app/pedidos/nuevo/nuevo");
+        }, 550);
+        return;
+      }
+      if (evt.key == "Escape") {
+        //  estado_actual = "viendo listas"
+      }
     }
   }
 </script>
@@ -51,7 +57,7 @@
 <div class="centrado">
   <div class="centrado">Version {$version}</div>
 
-  {#if $usuario_db.rol != "almacen" && $usuario_db.rol != "diseñador"}
+  {#if $usuario_db.rol != "almacen" && $usuario_db.rol != "diseñador" && $usuario_db.rol != "ComercioExterior"}
     <div class="centrado" in:fade={{ duration: 400 }}>
       <Button
         title="Presiona + en tu teclado"

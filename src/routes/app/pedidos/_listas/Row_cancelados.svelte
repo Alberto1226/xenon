@@ -51,7 +51,7 @@
   onMount(() => {});
 
   function ver_lista() {
-    console.log(lista_visible);
+    console.log(pedido);
     lista_visible = true;
   }
 
@@ -199,17 +199,17 @@
     <br />
     {pedido.usuario_que_registro.usuario}
   </div>
-  <div class="dos">
-    <span title="Fecha de cancelación">
+  <div class="dos" style="overflow-y: auto; max-height: 100px;">
+    <span title="Fecha de cancelación" style="color: red;">
       {pedido.fecha_de_cancelacion == undefined
         ? ""
-        : new Date(pedido.fecha).toLocaleDateString("es-MX", options)}
+        : new Date(pedido.fecha_de_cancelacion).toLocaleDateString("es-MX", options)}
       a las {pedido.fecha_de_cancelacion == undefined
         ? ""
         : new Date(pedido.fecha_de_cancelacion).toLocaleTimeString("es-MX")}
     </span> <br />
     <hr />
-    <span title="Fecha de ultima modificación">
+    <span title="Fecha de registro" style="color: blue;">
       {pedido.fecha == undefined
         ? ""
         : new Date(pedido.fecha).toLocaleDateString("es-MX", options)}
@@ -331,7 +331,7 @@
 
 <style>
   .row {
-    height: 76px;
+    height: 90px;
     overflow: hidden;
     padding: 8px;
     border-bottom: 1px solid #e1e1e1;

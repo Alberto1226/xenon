@@ -123,8 +123,12 @@
         type="number" />
     </div>
     <div class="seis espacio">
-
-     
+      {#if nuevo_usuario.rol == 'vendedor'}
+      <label>
+        <input type="checkbox" bind:checked={nuevo_usuario.edit} />
+        Edición de clientes
+      </label>
+      {/if}
     </div>
     <div class="siete espacio">
 

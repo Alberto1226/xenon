@@ -34,7 +34,7 @@
         ? "-"
         : new Date(cliente.fecha_nacimiento).toLocaleDateString(
             "es-MX",
-            options
+            options,
           );
     crear_lista_telefonos();
   });
@@ -74,7 +74,7 @@
         } else {
           mostrar_error("buscando ficha");
         }
-      }
+      },
     );
   }
 
@@ -93,7 +93,7 @@
           });
           $mensajes_app = $mensajes_app;
           var cliente_tmp = $clientes.lista.find(
-            (cliente_t) => cliente_t._id == cliente._id
+            (cliente_t) => cliente_t._id == cliente._id,
           );
           cliente_tmp.activo = status;
           $clientes = $clientes;
@@ -298,7 +298,7 @@
                 <i class="material-icons">cancel</i>
               </Button>
             {/if}
-              {#if cliente.activo==false && $usuario_db.rol == "administrador"}
+            {#if cliente.activo == false && $usuario_db.rol == "administrador"}
               <Button
                 icon
                 dense
@@ -311,19 +311,19 @@
                 <i class="material-icons">check</i>
               </Button>
             {/if}
-            {#if $usuario_db.rol == "administrador"}
-            <Button
-              icon
-              dense
-              color="green"
-              on:click={() => {
-                $editar_store.cliente = cliente;
-                goto("/app/clientes/editar");
-              }}
-              title="editar"
-            >
-              <i class="material-icons">create</i>
-            </Button>
+            {#if ($usuario_db.rol == "administrador" || $usuario_db.edit)}
+              <Button
+                icon
+                dense
+                color="green"
+                on:click={() => {
+                  $editar_store.cliente = cliente;
+                  goto("/app/clientes/editar");
+                }}
+                title="editar"
+              >
+                <i class="material-icons">create</i>
+              </Button>
             {/if}
             {#if $usuario_db.rol == "administrador"}
               <!-- content here -->

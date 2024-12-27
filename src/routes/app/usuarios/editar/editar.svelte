@@ -200,7 +200,14 @@ onMount(()=>{
         message="Comisión"
         type="number" />
     </div>
-    <div class="seis espacio" />
+    <div class="seis espacio">
+      {#if usuario_temp.rol == 'vendedor'}
+      <label>
+        <input type="checkbox" bind:checked={usuario_temp.edit} />
+        Edicion de clientes
+      </label>
+      {/if}
+    </div>
     <div class="siete espacio" />
   </div>
 

@@ -17,6 +17,15 @@
     let nuevaUnidad = "";
     let nuevaCuenta = "";
 
+    let nuevoPais = "";
+    let paisNomenclatura = "";
+    let paisSelect = "1";
+    let paises = [];
+
+    let nuevoEstado = "";
+    let estadoNom = "";
+    let estadosSelect = [];
+
     let banco = "";
     let cuenta = "";
     let clabe = "";
@@ -44,6 +53,7 @@
 
     onMount(() => {
         getColeccion();
+        consultaPaises();
     });
 
     function Clean() {
@@ -115,7 +125,7 @@
         if (!dato1) {
             $mensajes_app.push({
                 tipo: "error",
-                mensaje: "El dato no puede estar vacío",
+                mensaje: "El dato a guardar no puede estar vacío",
             });
             $mensajes_app = $mensajes_app;
             return;
@@ -251,6 +261,7 @@
 
     // Función para dividir los datos en columnas de 15 elementos
     function dividirEnColumnas(lista, maxItemsPorColumna = 15) {
+        // console.log("lista", lista, "max", maxItemsPorColumna);
         let columnas = [];
         for (let i = 0; i < lista.length; i += maxItemsPorColumna) {
             columnas.push(lista.slice(i, i + maxItemsPorColumna));
@@ -271,6 +282,105 @@
         }
         modalEditarCuenta = true;
     }
+
+    function GuardarPais(pais, nom) {
+        // console.log("pais", pais, "nom", nom);
+        if (!pais || !nom) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "Los campos no pueden estar vacíos",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
+        return new Promise((resolve, reject) => {
+            postData("app/Catalogos/CatalogoPaises", {
+                tipo: "guardarPais",
+                dato: {
+                    pais: pais,
+                    nomenclatura: nom,
+                },
+            }).then((res) => {
+                if (res.ok) {
+                    $mensajes_app.push({
+                        tipo: "exito",
+                        mensaje: "Guardado Correctamente",
+                    });
+                    $mensajes_app = $mensajes_app;
+                    mostrarModal = false;
+                    getColeccion();
+                    Clean();
+                    resolve(res.ok);
+                } else {
+                    $mensajes_app.push({
+                        tipo: "error",
+                        mensaje: res.mensaje || "Error al guardar el pais",
+                    });
+                    $mensajes_app = $mensajes_app;
+                    resolve(res.ok);
+                }
+            });
+        });
+    }
+
+    function consultaPaises() {
+        return new Promise((resolve, reject) => {
+            postData("app/Catalogos/CatalogoPaises", {
+                tipo: "consultaPaises",
+            }).then((res) => {
+                if (res.ok) {
+                    // console.log(res);
+                    paises = res.paises;
+                    resolve(res.paises);
+                } else {
+                    $mensajes_app.push({
+                        tipo: "error",
+                        mensaje: res.mensaje || "Error al consultar los paises",
+                    });
+                }
+            });
+        });
+    }
+
+    function guardarEstado(id, estado, nom) {
+        if (!id || !estado) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "Los campos no pueden estar vacíos",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+        // console.log("id", id, "estado ", estado);
+        return new Promise((resolve, reject) => {
+            postData("app/Catalogos/CatalogoPaises", {
+                tipo: "guardarEstado",
+                dato: {
+                    id: id,
+                    estado: estado,
+                    nomenclatura: nom,
+                },
+            }).then((res) => {
+                if (res.ok) {
+                    $mensajes_app.push({
+                        tipo: "exito",
+                        mensaje: "Guardado Correctamente",
+                    });
+                    $mensajes_app = $mensajes_app;
+                    estadosSelect = res.estados;
+                    resolve(res.ok);
+                } else {
+                    $mensajes_app.push({
+                        tipo: "error",
+                        mensaje: res.mensaje || "Error al guardar el estado",
+                    });
+                    $mensajes_app = $mensajes_app;
+                    resolve(res.ok);
+                }
+            });
+        });
+    }
 </script>
 
 <main>
@@ -288,6 +398,18 @@
             on:click={() => (activeTab = "Unidades")}
         >
             Unidades
+        </div>
+        <div
+            class="nav-item {activeTab === 'Paises' ? 'active' : ''}"
+            on:click={() => (activeTab = "Paises")}
+        >
+            Paises
+        </div>
+        <div
+            class="nav-item {activeTab === 'Estados' ? 'active' : ''}"
+            on:click={() => (activeTab = "Estados")}
+        >
+            Estados
         </div>
         {#if $usuario_db.nombre === "Soporte Isotech" || $usuario_db.usuario === "isotech_Xenonymas"}
             <div
@@ -329,6 +451,114 @@
                             <ul>
                                 {#each columna as marca}
                                     <li>{marca}</li>
+                                {/each}
+                            </ul>
+                        {/each}
+                    </div>
+                </div>
+            </div>
+        {/if}
+
+        {#if activeTab === "Paises"}
+            <div>
+                <h2>Paises</h2>
+
+                <div class="row">
+                    <Textfield
+                        outlined
+                        id="pais_input"
+                        bind:value={nuevoPais}
+                        placeholder="Nuevo Pais"
+                        message="Nuevo Pais"
+                        type="text"
+                    />
+                    <Textfield
+                        outlined
+                        id="pais_nom_input"
+                        bind:value={paisNomenclatura}
+                        placeholder="Nomenclatura"
+                        message="Nomenclatura ejemplo: MEX"
+                        type="text"
+                    />
+                </div>
+
+                <button
+                    on:click={() => GuardarPais(nuevoPais, paisNomenclatura)}
+                >
+                    Agregar Pais
+                </button>
+                <div class="lista-scroll">
+                    <div class="columnas">
+                        {#each dividirEnColumnas(paises) as columna}
+                            <ul>
+                                {#each columna as pais, index}
+                                    <li>
+                                        {index + 1}.- {pais.nombre} - {pais.codigo}
+                                    </li>
+                                {/each}
+                            </ul>
+                        {/each}
+                    </div>
+                </div>
+            </div>
+        {/if}
+
+        {#if activeTab === "Estados"}
+            <div>
+                <h2>Estados</h2>
+
+                <select
+                    bind:value={paisSelect}
+                    on:change={() => {
+                        estadosSelect = [];
+                        estadosSelect = paises.find(
+                            (p) => p._id === paisSelect,
+                        ).estados;
+                    }}
+                >
+                    <option value="">Pais</option>
+                    {#each paises as pais}
+                        <option value={pais._id}>{pais.nombre}</option>
+                    {/each}
+                </select>
+
+                {#if paisSelect !== "1"}
+                    <div class="row">
+                        <Textfield
+                            outlined
+                            id="estado_nombre_input"
+                            bind:value={nuevoEstado}
+                            placeholder="Nuevo Estado"
+                            message="Nuevo Estado"
+                            type="text"
+                        />
+                        <Textfield
+                            outlined
+                            id="estado_nom_input"
+                            bind:value={estadoNom}
+                            placeholder="Nombenclatura Estado"
+                            message="Nombenclatura estado ejemplo AGU"
+                            type="text"
+                        />
+                    </div>
+                {/if}
+
+                <br />
+
+                <button
+                    on:click={() =>
+                        guardarEstado(paisSelect, nuevoEstado, estadoNom)}
+                >
+                    Agregar Estado
+                </button>
+                <div class="lista-scroll">
+                    <div class="columnas">
+                        {#each dividirEnColumnas(estadosSelect) as columna}
+                            <ul>
+                                {#each columna as estado, index}
+                                    <li>
+                                        {index + 1}.- {estado.nombreEstado} - {estado.codigoEstado}
+                                    </li>
                                 {/each}
                             </ul>
                         {/each}

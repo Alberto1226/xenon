@@ -26,6 +26,13 @@
     let estadoNom = "";
     let estadosSelect = [];
 
+    let nuevoMuicipio = "";
+    let pMunicipio = "";
+    let eMunicipio = "";
+    let estados = [];
+    let estadoSelect = "";
+    let municipios = [];
+
     let banco = "";
     let cuenta = "";
     let clabe = "";
@@ -84,6 +91,17 @@
         estado = "";
         cp = "";
         email = "";
+
+        nuevoPais = "";
+        paisNomenclatura = "";
+        paisSelect = "1";
+        // paises = [];
+
+        nuevoEstado = "";
+        estadoNom = "";
+        // estadosSelect = [];
+
+        nuevoMuicipio = "";
     }
 
     function getColeccion() {
@@ -368,12 +386,69 @@
                         mensaje: "Guardado Correctamente",
                     });
                     $mensajes_app = $mensajes_app;
+                    paises = paises.map((pais) => {
+                        if (pais._id === id) {
+                            return { ...pais, estados: res.estados };
+                        }
+                        return pais;
+                    });
                     estadosSelect = res.estados;
+                    Clean();
                     resolve(res.ok);
                 } else {
                     $mensajes_app.push({
                         tipo: "error",
                         mensaje: res.mensaje || "Error al guardar el estado",
+                    });
+                    $mensajes_app = $mensajes_app;
+                    resolve(res.ok);
+                }
+            });
+        });
+    }
+
+    function guardarMunicipio(pais, estado, nuevoMuicipio) {
+        // console.log("p", pais, "e", estado, "M", nuevoMuicipio);
+        return new Promise((resolve, reject) => {
+            postData("app/Catalogos/CatalogoPaises", {
+                tipo: "guardarMunicipio",
+                dato: {
+                    pais: pais,
+                    estado: estado,
+                    municipio: nuevoMuicipio,
+                },
+            }).then((res) => {
+                if (res.ok) {
+                    $mensajes_app.push({
+                        tipo: "exito",
+                        mensaje: "Guardado Correctamente",
+                    });
+                    $mensajes_app = $mensajes_app;
+                    municipios = res.municipios;
+                    paises = paises.map((pais) => {
+                        if (pais._id === pMunicipio) {
+                            return {
+                                ...pais,
+                                estados: pais.estados.map((estado) => {
+                                    if (estado._id === estado) {
+                                        return {
+                                            ...estado,
+                                            municipios: res.municipios,
+                                        };
+                                    }
+                                    return estado;
+                                }),
+                            };
+                        }
+                        return pais;
+                    });
+                    // console.log("=>", paises);
+                    Clean();
+                    resolve(res.ok);
+                } else {
+                    $mensajes_app.push({
+                        tipo: "error",
+                        mensaje: res.mensaje || "Error al guardar el municipio",
                     });
                     $mensajes_app = $mensajes_app;
                     resolve(res.ok);
@@ -410,6 +485,12 @@
             on:click={() => (activeTab = "Estados")}
         >
             Estados
+        </div>
+        <div
+            class="nav-item {activeTab === 'Municipios' ? 'active' : ''}"
+            on:click={() => (activeTab = "Municipios")}
+        >
+            Municipios
         </div>
         {#if $usuario_db.nombre === "Soporte Isotech" || $usuario_db.usuario === "isotech_Xenonymas"}
             <div
@@ -558,6 +639,89 @@
                                 {#each columna as estado, index}
                                     <li>
                                         {index + 1}.- {estado.nombreEstado} - {estado.codigoEstado}
+                                    </li>
+                                {/each}
+                            </ul>
+                        {/each}
+                    </div>
+                </div>
+            </div>
+        {/if}
+
+        {#if activeTab === "Municipios"}
+            <div>
+                <h2>Municipios</h2>
+
+                <div class="row">
+                    <select
+                        bind:value={pMunicipio}
+                        on:change={() => {
+                            estados = [];
+                            estados = paises.find(
+                                (p) => p._id === pMunicipio,
+                            ).estados;
+                        }}
+                    >
+                        <option value="">Pais</option>
+                        {#each paises as pais}
+                            <option value={pais._id}>{pais.nombre}</option>
+                        {/each}
+                    </select>
+
+                    <select
+                        class="form-select"
+                        bind:value={eMunicipio}
+                        on:change={() => {
+                            municipios = [];
+                            municipios = paises
+                                .find((p) => p._id === pMunicipio)
+                                .estados.find(
+                                    (e) => e._id === eMunicipio,
+                                ).municipios;
+                        }}
+                    >
+                        <option value="">Estados</option>
+                        {#each estados as estado}
+                            <option value={estado._id}
+                                >{estado.nombreEstado}</option
+                            >
+                        {/each}
+                    </select>
+                </div>
+                <div class="row">
+                    <Textfield
+                        outlined
+                        id="municipio_nombre_input"
+                        bind:value={nuevoMuicipio}
+                        placeholder="Nuevo Municipio"
+                        message="Nuevo Municipio"
+                        type="text"
+                    />
+                    <!-- <Textfield
+                        outlined
+                        id="estado_nom_input"
+                        bind:value={estadoNom}
+                        placeholder="Nombenclatura Estado"
+                        message="Nombenclatura estado ejemplo AGU"
+                        type="text"
+                    /> -->
+                </div>
+
+                <br />
+
+                <button
+                    on:click={() =>
+                        guardarMunicipio(pMunicipio, eMunicipio, nuevoMuicipio)}
+                >
+                    Agregar Municipio
+                </button>
+                <div class="lista-scroll">
+                    <div class="columnas">
+                        {#each dividirEnColumnas(municipios) as columna}
+                            <ul>
+                                {#each columna as municipio, index}
+                                    <li>
+                                        {index + 1}.- {municipio.nombreMunicipio}
                                     </li>
                                 {/each}
                             </ul>

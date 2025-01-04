@@ -9,6 +9,10 @@ var schema = new Schema({
     estados: [{
         nombreEstado: {type: String, required: true},
         codigoEstado: {type: String, required: true},
+        municipios: [{
+            nombreMunicipio: {type: String, required: true},
+            codigoMunicipio: {type: String, required: true, default: '000'},
+        }]
     }]
 });
 

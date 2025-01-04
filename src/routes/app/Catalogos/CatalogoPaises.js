@@ -68,4 +68,45 @@ export async function post(req, res, next) {
         }
 
     }
+
+    if (req.body.tipo === "guardarMunicipio") {
+        // res.send({ ok: true, mensaje: "Guardar municipio", recibe: req.body });
+        try {
+            let idPais = req.body.dato.pais;
+            let IdEstado = req.body.dato.estado;
+            let municipio = req.body.dato.municipio;
+
+            let pais = await Pais.findById(idPais).exec();
+            // let pais = await Pais.findById('idPais').exec();
+            if (!pais) {
+                res.send({ ok: false, mensaje: "No se encontró el país seleccionado" });
+            } else {
+                let estado = pais.estados.id(IdEstado);
+                // let estado = pais.estados.id('IdEstado');
+                if (!estado) {
+                    res.send({ ok: false, mensaje: "No se encontró el estado seleccionado en el pais que selecciono" });
+                } else {
+                    estado.municipios.push({
+                        nombreMunicipio: municipio,
+                    });
+
+                    pais.save()
+                        .then((resultado) => {
+                            res.send({
+                                ok: true, mensaje: "Municipio guardado exitosamente",
+                                municipios: resultado.estados.id(IdEstado).municipios
+                            });
+                        })
+                        .catch((error) => {
+                            console.log("Error al guardar el municipio:", error);
+                            res.send({ ok: false, mensaje: "Ocurrió un error al guardar el municipio", error });
+                        });
+                }
+            }
+        } catch (error) {
+            console.log("Error en la consulta:", error);
+            res.send({ ok: false, mensaje: "Ocurrió un error al obtener el pais al intentar guardar el municipio", error });
+
+        }
+    }
 }

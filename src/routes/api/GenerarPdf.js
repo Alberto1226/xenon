@@ -27,7 +27,7 @@ export async function get(req, res) {
         res.setHeader('Content-Type', 'application/pdf');
         res.end(pdfData);
     }); // Añadir un logotipo (debes asegurarte de que tienes una imagen logo.png en tu directorio) 
-    doc.image('static/imagenes/logo-xenon.png', x, y, {
+    doc.image('static/imagenes/GM GLOW MASTER 1', x, y, {
         width: 380, // ajusta el tamaño a 100 de ancho
         height: 90 // ajusta el tamaño a 100 de alto
     }); // Añadir el encabezado 

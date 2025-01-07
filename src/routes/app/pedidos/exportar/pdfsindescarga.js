@@ -65,7 +65,7 @@ export async function get(req, res, next) {
     productos_en_pedido(id, origen).then((respuesta) => {
       let texto = data.replace('_contenido', respuesta.productos);
       texto = texto.replace("_xenon", texto_head_xenon(DR));
-      texto = texto.replace('<img src="/imagenes/logo-xenon.png" class="logo" alt="logotipo" />', `<img src="${logDb}" class="logo" alt="logotipo" />`);
+      texto = texto.replace('<img src="/imagenes/GM GLOW MASTER 1.png" class="logo" alt="logotipo" />', `<img src="${logDb}" class="logo" alt="logotipo" />`);
       texto = texto.replace("_hsbc", texto_head_hsbc(c1));
       texto = texto.replace("_bajio", texto_head_bajio(c2));
       texto = texto.replace("_banamex", texto_head_banamex(c3));

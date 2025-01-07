@@ -74,7 +74,7 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="centrado contenedor_login ">
-  <img class="logo" src="imagenes/logo_black.png" alt="" />
+  <img class="logo" src="imagenes/GM GLOW MASTER 1.png" alt="" />
 
   {#if logueando}
     <!-- content here -->
@@ -142,8 +142,8 @@
     height: 40vh;
   }
   .logo {
-    width: 34vw;
-    min-width: 350px;
+    width: 16vw;
+    min-width: 230px;
     margin: 11px 0;
   }
   .alerta {

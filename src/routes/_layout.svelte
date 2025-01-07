@@ -87,10 +87,10 @@
         <div class="area_uno">
           {#if ancho_side_panel > 150}
             <!-- content here -->
-            <img src="imagenes/logo_white.png" class="logo_mini" alt="" />
+            <img src="imagenes/GM GLOW MASTER 1.png" class="logo_mini" alt="" />
           {:else}
             <!-- else content here -->
-            <img src="imagenes/logo_min.png" class="logo_mini" alt="" />
+            <img src="imagenes/GM GLOW MASTER 1.png" class="logo_mini" alt="" />
           {/if}
         </div>
         <div class="area_dos">
@@ -214,7 +214,7 @@
 
     background-color: #222d32;
     box-shadow: 2px 0px 6px #222d32;
-    z-index: 2;
+    z-index: 3;
   }
 
   .area_dos {
@@ -252,6 +252,7 @@ background: linear-gradient(351deg, rgba(255,194,0,1) 5%, rgba(230,255,0,1) 100%
   .logo_mini {
     height: 50px;
     padding-top: 4px;
+    margin: 15px;
   }
   .usuario {
     color: #0065ff;

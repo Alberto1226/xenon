@@ -77,6 +77,8 @@ export async function get(req, res, next) {
       // console.log(respuesta.fecha)
       //console.log(respuesta)
       texto = texto.replace('_folio_fecha', folio_fecha_hora(respuesta.folio, respuesta.fecha.toLocaleDateString('es-MX', options), respuesta.fecha.toLocaleTimeString('es-MX')));
+      texto = texto.replace('_id-pedido', idPedido(id));
+      texto = texto.replace('_origen-pedido', OrigenPedido(origen));
       //etexto = texto.replace("_client4",texto_head_xenon())
       res.send(texto);
     })
@@ -336,7 +338,7 @@ function folio_fecha_hora(folio, fecha, hora) {
     <table>
      <tr>
      <td class="folio">Folio: </td>
-     <td>${folio}</td>
+     <td class="folioName">${folio}</td>
      </tr>
      <tr>
      <td class="fecha">Fecha: </td>
@@ -348,6 +350,14 @@ function folio_fecha_hora(folio, fecha, hora) {
      </tr>
     </table>
    </div>`;
+}
+
+function idPedido(id) {
+  return `<div class="id-pedido" style="display: none;">${id}</div>`
+}
+
+function OrigenPedido(origen) {
+  return `<div class="origen-pedido" style="display: none;">${origen}</div>`
 }
 
 

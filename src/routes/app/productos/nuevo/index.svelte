@@ -198,10 +198,10 @@
   }
 </script>
 
-<div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}> 
-  <div class="grid-container"> 
-    <div class="area_info_general margen caja">
-      <div class="subtitulo ">Información general</div>
+<div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}>
+  <div class="grid-container">
+    <div class="area_info_general margen caja" style="overflow: auto;">
+      <div class="subtitulo">Información general</div>
       <div class="contenido_caja">
         <Textfield
           outlined
@@ -256,7 +256,7 @@
       </div>
     </div>
     <div class="area_carac_tecnicas margen caja">
-      <div class="subtitulo ">Características técnicas</div>
+      <div class="subtitulo">Características técnicas</div>
       <div class="contenido_caja">
         <Caracteristicas_tecnicas
           bind:caracteristicas_tecnicas={nuevo_producto.caracteristicas_tecnicas}
@@ -264,7 +264,7 @@
       </div>
     </div>
     <div class="area_precios margen caja">
-      <div class="subtitulo ">Precios</div>
+      <div class="subtitulo">Precios</div>
       <div class="contenido_caja">
         <table style="width: 99%;">
           <tr>
@@ -292,7 +292,7 @@
       </div>
     </div>
     <div class="existencias margen caja">
-      <div class="subtitulo ">Existencias</div>
+      <div class="subtitulo">Existencias</div>
       <div class="contenido_caja">
         <Textfield
           outlined
@@ -326,7 +326,7 @@
       </div>
     </div>
     <div class="imagenes margen caja">
-      <div class="subtitulo ">Imágenes</div>
+      <div class="subtitulo">Imágenes</div>
       <div class="contenido_caja">
         <Uploader />
       </div>

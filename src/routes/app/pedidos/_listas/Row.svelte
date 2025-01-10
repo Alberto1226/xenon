@@ -232,6 +232,20 @@
       });
   }
 
+  async function generateARPDF(id) {
+    var id = id;
+    var origen = "pedidos1";
+    var folio = pedido.folio;
+    const response = await fetch(`/api/GenerarPdf?id=${id}&origen=${origen}`);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Nota-${folio}.pdf`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
   function procesando_cambio_status_a_envio(evt) {
     //console.log("procesando_cambio_status_a_envio ")
     mostrar_cargando("envio");
@@ -322,18 +336,18 @@
       <!-- content here -->
       <div class="fuente-ancha no_select" title={pedido.moneda}>
         $ {formato_precio(pedido.total_pedido / pedido.tipo_de_cambio)} ( {formato_precio(
-          pedido.tipo_de_cambio
+          pedido.tipo_de_cambio,
         )})
       </div>
     {/if}
     <div class="indice_row">{pedido.moneda}</div>
   </div>
 
-  <div class="seis ">
+  <div class="seis">
     <div class="sobresaltar no_select">
       {pedido.cliente == undefined ? "" : pedido.cliente.nombre}
       <br />
-      <div class="indice_row ">
+      <div class="indice_row">
         {pedido.cliente == undefined ? "" : pedido.cliente.correo}
       </div>
     </div>
@@ -432,7 +446,8 @@
                 icon
                 dense
                 color={pedido.status !== "Envío" ? "darkorange" : "gray"}
-                disabled={pedido.status === "Envío" || $usuario_db.rol == "almacen"}
+                disabled={pedido.status === "Envío" ||
+                  $usuario_db.rol == "almacen"}
                 hidden={$usuario_db.rol == "almacen"}
                 on:click={() => {
                   visible_cancelar = true;
@@ -459,18 +474,29 @@
               title="Ver PDF de pedido">
               <i class="material-icons">picture_as_pdf</i>
             </Button> -->
-            <Button icon dense>
+            <!-- <Button icon dense>
               <a
                 icon
                 dense
                 color="#2B78FE"
-                href={"app/pedidos/exportar/pdf?id=" + pedido._id}
+                href={"app/pedidos/exportar/pdf?id=" +
+                  pedido._id +
+                  "&origen=pedidos1"}
                 target="_blank"
                 on:click={() => {}}
                 title="Ver PDF de pedido, Descargando******"
               >
                 <i class="material-icons">picture_as_pdf</i>
               </a>
+            </Button> -->
+            <Button
+              icon
+              dense
+              color="#2B78FE"
+              on:click={generateARPDF(pedido._id)}
+              title="Generar y descargar PDF"
+            >
+              <i class="material-icons">picture_as_pdf</i>
             </Button>
             <Button icon dense>
               <a

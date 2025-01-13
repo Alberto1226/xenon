@@ -148,24 +148,24 @@ export async function get(req, res) {
         doc.fillColor('gray').fontSize(10).font('Helvetica-Bold').text(DatosGrals.nombre, x, y += lineSpacing).font('Helvetica');//nombre
         yTemp = y;
         xTemp = x + 300;
-        doc.fontSize(8).text(`RFC: ${DatosGrals.rfc}`, x, y += lineSpacing);//rfc
-        doc.fontSize(8).text(`Calle: ${DatosGrals.direccion.calle},`, x, y += lineSpacing);
-        doc.fontSize(8).text(`Col.: ${DatosGrals.direccion.colonia},`, x, y += lineSpacing);
-        doc.fontSize(8).text(`${DatosGrals.direccion.municipio}, ${DatosGrals.direccion.estado}`, x, y += lineSpacing);
-        doc.fontSize(8).text(`CP: ${DatosGrals.direccion.cp} Tel: ${DatosGrals.telefono}`, x, y += lineSpacing);
-        doc.fontSize(8).text(`E-mail: ${DatosGrals.email}`, x, y += lineSpacing);
+        doc.fontSize(9).text(`RFC: ${DatosGrals.rfc}`, x, y += lineSpacing);//rfc
+        doc.fontSize(9).text(`Calle: ${DatosGrals.direccion.calle},`, x, y += lineSpacing);
+        doc.fontSize(9).text(`Col.: ${DatosGrals.direccion.colonia},`, x, y += lineSpacing);
+        doc.fontSize(9).text(`${DatosGrals.direccion.municipio}, ${DatosGrals.direccion.estado}`, x, y += lineSpacing);
+        doc.fontSize(9).text(`CP: ${DatosGrals.direccion.cp} Tel: ${DatosGrals.telefono}`, x, y += lineSpacing);
+        doc.fontSize(9).text(`E-mail: ${DatosGrals.email}`, x, y += lineSpacing);
         y += 2;
 
-        doc.fontSize(8).text('Cliente: ', xTemp, yTemp += lineSpacing);
-        doc.fontSize(8).font('Helvetica-Bold').text(cliente.nombre, xTemp + doc.widthOfString('Cliente: '), yTemp).font('Helvetica');
+        doc.fontSize(9).text('Cliente: ', xTemp, yTemp += lineSpacing);
+        doc.fontSize(9).font('Helvetica-Bold').text(cliente.nombre, xTemp + doc.widthOfString('Cliente: '), yTemp).font('Helvetica');
 
-        doc.fontSize(8).text('Domicilio:', xTemp, yTemp += lineSpacing).font('Helvetica-Bold');
+        doc.fontSize(9).text('Domicilio:', xTemp, yTemp += lineSpacing).font('Helvetica-Bold');
 
         xTemp += doc.widthOfString('Domicilio: ');
         const maxWidth = 580 - xTemp;
         const direccion = cliente.direccion;
 
-        doc.fontSize(8).text(direccion, xTemp, yTemp, { width: maxWidth }).font('Helvetica');
+        doc.fontSize(9).text(direccion, xTemp, yTemp, { width: maxWidth }).font('Helvetica');
         yTemp += doc.heightOfString(direccion, { width: maxWidth });
 
         // doc.fontSize(8).text(cliente.direccion.colonia, xTemp + doc.widthOfString(cliente.direccion.calle + ' '), yTemp);
@@ -173,8 +173,8 @@ export async function get(req, res) {
         // doc.fontSize(8).text(`C.P.: ${cliente.direccion.cp} `, xTemp, yTemp);
         // doc.fontSize(8).text(`${cliente.direccion.ciudad}, ${cliente.direccion.estado}`, xTemp += doc.widthOfString(`C.P.: ${cliente.direccion.cp} `), yTemp).font('Helvetica');
         xTemp = 340;
-        doc.fontSize(8).text('Email:', xTemp, yTemp += lineSpacing).font('Helvetica-Bold');
-        doc.fontSize(8).text(cliente.correo, xTemp += doc.widthOfString('Email: '), yTemp).font('Helvetica');
+        doc.fontSize(9).text('Email:', xTemp, yTemp += lineSpacing).font('Helvetica-Bold');
+        doc.fontSize(9).text(cliente.correo, xTemp += doc.widthOfString('Email: '), yTemp).font('Helvetica');
 
         y += lineSpacing;
         yTemp = y;
@@ -196,13 +196,13 @@ export async function get(req, res) {
                 if (index === 2) posX = 420;
             }
 
-            doc.fontSize(8).text(cuenta.banco, posX, y);
+            doc.fontSize(9).text(cuenta.banco, posX, y);
             y += lineSpacing;
-            doc.fontSize(8).text('Cuenta: ', posX, y);
-            doc.fontSize(8).text(cuenta.cuenta, posX + doc.widthOfString('Cuenta: '), y);
+            doc.fontSize(9).text('Cuenta: ', posX, y);
+            doc.fontSize(9).text(cuenta.cuenta, posX + doc.widthOfString('Cuenta: '), y);
             y += lineSpacing;
-            doc.fontSize(8).text('CLABE: ', posX, y);
-            doc.fontSize(8).text(cuenta.clabe, posX + doc.widthOfString('CLABE: '), y);
+            doc.fontSize(9).text('CLABE: ', posX, y);
+            doc.fontSize(9).text(cuenta.clabe, posX + doc.widthOfString('CLABE: '), y);
         });
 
         y += lineSpacing + 2;
@@ -228,7 +228,7 @@ export async function get(req, res) {
     x = 20;
 
     const tableHeaders = ['N°', 'Cantidad', 'Unidad', 'Marca', 'Código', 'Descripción', 'Precio Unitario', 'Importe'];
-    const columnWidths = [15, 40, 50, 60, 75, 180, 80, 80];
+    const columnWidths = [15, 35, 50, 60, 80, 200, 70, 70];
     const startX = 20;
     let currentY = y;
 
@@ -304,24 +304,32 @@ export async function get(req, res) {
         }
 
         const rowY = currentY + 1;
-        doc.fontSize(6.5).fillColor('black').text(`${row.no})`, startX, rowY);
-        doc.fontSize(6.5).text(row.cantidad, startX + columnWidths[0], rowY);
-        doc.fontSize(6.5).text(row.unidad, startX + columnWidths.slice(0, 2).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(6.5).text(row.marca, startX + columnWidths.slice(0, 3).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(6.5).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(6.5).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(6.5).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(6.5).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY);
+        doc.fontSize(9).fillColor('black').text(`${row.no})`, startX, rowY);
+        doc.fontSize(9).text(row.cantidad, startX + columnWidths[0], rowY);
+        doc.fontSize(9).text(row.unidad, startX + columnWidths.slice(0, 2).reduce((a, b) => a + b, 0), rowY);
+        doc.fontSize(9).text(row.marca, startX + columnWidths.slice(0, 3).reduce((a, b) => a + b, 0), rowY);
+        doc.fontSize(9).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY);
+        doc.fontSize(9).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY);
+        doc.fontSize(9).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY);
+        doc.fontSize(9).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY);
 
         if (row.folios && row.folios.length > 0) {
-            const foliosY = rowY + doc.currentLineHeight() + 2;
-            doc.fontSize(6).fillColor('gray').text('Folios:', startX + 10, foliosY);
+            const foliosY = rowY + doc.currentLineHeight() + 10;
             const foliosText = row.folios.join(', ');
-            doc.fontSize(6).text(foliosText, startX + 50, foliosY, { width: 500 });
             const foliosLines = doc.heightOfString(foliosText, { width: 500 }) / doc.currentLineHeight();
-            currentY = foliosY + (foliosLines * doc.currentLineHeight()) + 4; // Adjust y position for the next product
+
+            if (foliosY + (foliosLines * doc.currentLineHeight()) > 690) {
+                doc.addPage();
+                currentY = doc.page.margins.top + 20;
+                addTableHeaders();
+                addTotalsAndFooter();
+            }
+
+            doc.fontSize(8).fillColor('black').text('Folios:', startX + 10, currentY + 10);
+            doc.fontSize(8).fillColor('gray').text(foliosText, startX + 50, currentY + 10, { width: 500 });
+            currentY += (foliosLines * doc.currentLineHeight()) + 20; // Adjust y position for the next product
         } else {
-            currentY = rowY + doc.currentLineHeight() + 2;
+            currentY = rowY + doc.currentLineHeight() + 10;
         }
     });
 

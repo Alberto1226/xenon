@@ -163,7 +163,7 @@ export async function get(req, res) {
 
         xTemp += doc.widthOfString('Domicilio: ');
         const maxWidth = 580 - xTemp;
-        const direccion = cliente.direccion;
+        const direccion = cliente.direccion.replace(/\s+/g, ' ');
 
         doc.fontSize(9).text(direccion, xTemp, yTemp, { width: maxWidth }).font('Courier');
         yTemp += doc.heightOfString(direccion, { width: maxWidth });
@@ -187,13 +187,13 @@ export async function get(req, res) {
         //------------Cuentas----------------------------------------------------------------------------
 
         cuentas.forEach((cuenta, index) => {
-            let posX = x;
+            let posX = x - 10;
             y = yTemp;
             if (cuentas.length === 1) {
                 posX = 230;
             } else {
-                if (index === 1) posX = 230;
-                if (index === 2) posX = 420;
+                if (index === 1) posX = 220;
+                if (index === 2) posX = 410;
             }
 
             doc.fontSize(9).text(cuenta.banco, posX, y);
@@ -305,13 +305,22 @@ export async function get(req, res) {
 
         const rowY = currentY + 1;
         doc.fontSize(9).fillColor('black').text(`${row.no})`, startX, rowY);
-        doc.fontSize(9).text(row.cantidad, startX + columnWidths[0], rowY);
-        doc.fontSize(9).text(row.unidad, startX + columnWidths.slice(0, 2).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(9).text(row.marca, startX + columnWidths.slice(0, 3).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(9).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(9).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(9).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(9).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY);
+        // doc.fontSize(9).text(row.cantidad, startX + columnWidths[0], rowY);
+        doc.fontSize(9).text(row.cantidad, startX + columnWidths[0], rowY, { align: 'center', width: columnWidths[1] });
+
+        const unidadHeight = doc.heightOfString(row.unidad, { width: columnWidths[2] });
+        doc.fontSize(9).text(row.unidad, startX + columnWidths.slice(0, 2).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[2] });
+
+        const marca = row.marca.toUpperCase().replace(/\s+/g, ' ').replace(/\n/g, '').trim();
+        const marcaHeight = doc.heightOfString(marca, { width: columnWidths[3] });
+        doc.fontSize(9).text(marca, startX + columnWidths.slice(0, 3).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[3] });
+
+        doc.fontSize(9).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[4] });
+
+        const descripcionHeight = doc.heightOfString(row.descripcion.replace(/\s+/g, ' '), { width: columnWidths[5] });
+        doc.fontSize(9).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[5] - 1 });
+        doc.fontSize(9).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY/*, { align: 'justify', width: columnWidths[6] }*/);
+        doc.fontSize(9).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY/*, { align: 'justify', width: columnWidths[7] }*/);
 
         if (row.folios && row.folios.length > 0) {
             const foliosY = rowY + doc.currentLineHeight() + 10;
@@ -325,11 +334,14 @@ export async function get(req, res) {
                 addTotalsAndFooter();
             }
 
-            doc.fontSize(8).fillColor('black').text('Folios:', startX + 10, currentY + 10);
-            doc.fontSize(8).fillColor('gray').text(foliosText, startX + 50, currentY + 10, { width: 500 });
+            doc.fontSize(8).fillColor('black').text('Folios:', startX + 10, currentY + doc.currentLineHeight() + 10);
+            doc.fontSize(8).fillColor('gray').text(foliosText, startX + 50, currentY + doc.currentLineHeight() + 10, { width: 500 });
             currentY += (foliosLines * doc.currentLineHeight()) + 20; // Adjust y position for the next product
         } else {
-            currentY = rowY + doc.currentLineHeight() + 10;
+            currentY = rowY + doc.currentLineHeight() + 5;
+
+            const maxHeight = Math.max(descripcionHeight, marcaHeight, unidadHeight);
+            currentY += maxHeight > doc.currentLineHeight() ? maxHeight : doc.currentLineHeight() + 5;
         }
     });
 

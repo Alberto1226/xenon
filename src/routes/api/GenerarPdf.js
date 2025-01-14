@@ -173,7 +173,7 @@ export async function get(req, res) {
         // doc.fontSize(8).text(`C.P.: ${cliente.direccion.cp} `, xTemp, yTemp);
         // doc.fontSize(8).text(`${cliente.direccion.ciudad}, ${cliente.direccion.estado}`, xTemp += doc.widthOfString(`C.P.: ${cliente.direccion.cp} `), yTemp).font('Courier');
         xTemp = 340;
-        doc.fontSize(9).text('Email:', xTemp, yTemp += lineSpacing).font('Courier-Bold');
+        doc.fontSize(9).text('Email:', xTemp, yTemp).font('Courier-Bold');
         doc.fontSize(9).text(cliente.correo, xTemp += doc.widthOfString('Email: '), yTemp).font('Courier');
 
         y += lineSpacing;
@@ -337,7 +337,7 @@ export async function get(req, res) {
 
     for (let i = range.start, end = range.start + range.count; i < end; i++) {
         doc.switchToPage(i);
-        doc.fontSize(8).fillColor('black').text(`Pagina ${i + 1} de ${range.count}`, 535, 760);
+        doc.fontSize(8).fillColor('black').text(`Pagina ${i + 1} de ${range.count}`, 520, 760);
     }
 
     doc.end();

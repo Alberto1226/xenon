@@ -145,7 +145,7 @@ export async function get(req, res) {
     let lineSpacing = doc.currentLineHeight() + 1; // Adding extra space
 
     function addCompanyDetails(cuentas, cliente, DatosGrals) {
-        doc.fillColor('gray').fontSize(10).font('Helvetica-Bold').text(DatosGrals.nombre, x, y += lineSpacing).font('Helvetica');//nombre
+        doc.fillColor('gray').fontSize(10).font('Courier-Bold').text(DatosGrals.nombre, x, y += lineSpacing).font('Courier');//nombre
         yTemp = y;
         xTemp = x + 300;
         doc.fontSize(9).text(`RFC: ${DatosGrals.rfc}`, x, y += lineSpacing);//rfc
@@ -157,24 +157,24 @@ export async function get(req, res) {
         y += 2;
 
         doc.fontSize(9).text('Cliente: ', xTemp, yTemp += lineSpacing);
-        doc.fontSize(9).font('Helvetica-Bold').text(cliente.nombre, xTemp + doc.widthOfString('Cliente: '), yTemp).font('Helvetica');
+        doc.fontSize(9).font('Courier-Bold').text(cliente.nombre, xTemp + doc.widthOfString('Cliente: '), yTemp).font('Courier');
 
-        doc.fontSize(9).text('Domicilio:', xTemp, yTemp += lineSpacing).font('Helvetica-Bold');
+        doc.fontSize(9).text('Domicilio:', xTemp, yTemp += lineSpacing).font('Courier-Bold');
 
         xTemp += doc.widthOfString('Domicilio: ');
         const maxWidth = 580 - xTemp;
         const direccion = cliente.direccion;
 
-        doc.fontSize(9).text(direccion, xTemp, yTemp, { width: maxWidth }).font('Helvetica');
+        doc.fontSize(9).text(direccion, xTemp, yTemp, { width: maxWidth }).font('Courier');
         yTemp += doc.heightOfString(direccion, { width: maxWidth });
 
         // doc.fontSize(8).text(cliente.direccion.colonia, xTemp + doc.widthOfString(cliente.direccion.calle + ' '), yTemp);
         // xTemp = 340;
         // doc.fontSize(8).text(`C.P.: ${cliente.direccion.cp} `, xTemp, yTemp);
-        // doc.fontSize(8).text(`${cliente.direccion.ciudad}, ${cliente.direccion.estado}`, xTemp += doc.widthOfString(`C.P.: ${cliente.direccion.cp} `), yTemp).font('Helvetica');
+        // doc.fontSize(8).text(`${cliente.direccion.ciudad}, ${cliente.direccion.estado}`, xTemp += doc.widthOfString(`C.P.: ${cliente.direccion.cp} `), yTemp).font('Courier');
         xTemp = 340;
-        doc.fontSize(9).text('Email:', xTemp, yTemp += lineSpacing).font('Helvetica-Bold');
-        doc.fontSize(9).text(cliente.correo, xTemp += doc.widthOfString('Email: '), yTemp).font('Helvetica');
+        doc.fontSize(9).text('Email:', xTemp, yTemp += lineSpacing).font('Courier-Bold');
+        doc.fontSize(9).text(cliente.correo, xTemp += doc.widthOfString('Email: '), yTemp).font('Courier');
 
         y += lineSpacing;
         yTemp = y;
@@ -227,17 +227,17 @@ export async function get(req, res) {
     y += 10;
     x = 20;
 
-    const tableHeaders = ['N°', 'Cantidad', 'Unidad', 'Marca', 'Código', 'Descripción', 'Precio Unitario', 'Importe'];
-    const columnWidths = [15, 35, 50, 60, 80, 200, 70, 70];
+    const tableHeaders = ['N°', 'Cant.', 'Unidad', 'Marca', 'Código', 'Descripción', 'P. Unitario', 'Importe'];
+    const columnWidths = [15, 40, 60, 70, 90, 180, 65, 60];
     const startX = 20;
     let currentY = y;
 
     function addTableHeaders() {
-        doc.fillColor('black').fontSize(8).font('Helvetica-Bold');
+        doc.fillColor('black').fontSize(8).font('Courier-Bold');
         tableHeaders.forEach((header, i) => {
             doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), currentY);
         });
-        doc.font('Helvetica');
+        doc.font('Courier');
         doc.moveDown();
         currentY += doc.currentLineHeight() + 5;
         doc.lineWidth(1).moveTo(20, currentY - 3).lineTo(590, currentY - 3).strokeColor('black').stroke();
@@ -287,7 +287,7 @@ export async function get(req, res) {
         const centeredText = 'La paquetería corre a cuenta y riesgo del cliente';
         const textWidth = doc.widthOfString(centeredText);
         const centerX = (doc.page.width - textWidth) / 2;
-        doc.fontSize(8).font('Helvetica-Bold').text(centeredText, centerX, localY).font('Helvetica');
+        doc.fontSize(8).font('Courier-Bold').text(centeredText, centerX, localY).font('Courier');
 
     }
 

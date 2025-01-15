@@ -227,13 +227,13 @@ export async function get(req, res) {
     y += 10;
     x = 20;
 
-    const tableHeaders = ['N°', 'Cant.', 'Unidad', 'Marca', 'Código', 'Descripción', 'P. Unitario', 'Importe'];
+    const tableHeaders = ['N°', 'Cant.', 'Unidad', 'Marca', 'Código', 'Descripción', 'P. Unit.', 'Importe'];
     const columnWidths = [15, 40, 60, 70, 90, 180, 65, 60];
     const startX = 20;
     let currentY = y;
 
     function addTableHeaders() {
-        doc.fillColor('black').fontSize(8).font('Courier-Bold');
+        doc.fillColor('black').fontSize(11).font('Courier-Bold');
         tableHeaders.forEach((header, i) => {
             doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), currentY);
         });
@@ -304,44 +304,48 @@ export async function get(req, res) {
         }
 
         const rowY = currentY + 1;
-        doc.fontSize(9).fillColor('black').text(`${row.no})`, startX, rowY);
+        doc.fontSize(11).fillColor('black').text(`${row.no})`, startX, rowY);
         // doc.fontSize(9).text(row.cantidad, startX + columnWidths[0], rowY);
-        doc.fontSize(9).text(row.cantidad, startX + columnWidths[0], rowY, { align: 'center', width: columnWidths[1] });
+        doc.fontSize(11).text(row.cantidad, startX + columnWidths[0], rowY, { align: 'center', width: columnWidths[1] });
 
         const unidadHeight = doc.heightOfString(row.unidad, { width: columnWidths[2] });
-        doc.fontSize(9).text(row.unidad, startX + columnWidths.slice(0, 2).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[2] });
+        doc.fontSize(11).text(row.unidad, startX + columnWidths.slice(0, 2).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[2] });
 
         const marca = row.marca.toUpperCase().replace(/\s+/g, ' ').replace(/\n/g, '').trim();
         const marcaHeight = doc.heightOfString(marca, { width: columnWidths[3] });
-        doc.fontSize(9).text(marca, startX + columnWidths.slice(0, 3).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[3] });
+        doc.fontSize(11).text(marca, startX + columnWidths.slice(0, 3).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[3] });
 
-        doc.fontSize(9).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[4] });
+        doc.fontSize(11).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[4] });
 
         const descripcionHeight = doc.heightOfString(row.descripcion.replace(/\s+/g, ' '), { width: columnWidths[5] });
-        doc.fontSize(9).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[5] - 1 });
-        doc.fontSize(9).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY/*, { align: 'justify', width: columnWidths[6] }*/);
-        doc.fontSize(9).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY/*, { align: 'justify', width: columnWidths[7] }*/);
+        doc.fontSize(11).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[5] - 1 });
+        doc.fontSize(11).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY/*, { align: 'justify', width: columnWidths[6] }*/);
+        doc.fontSize(11).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY/*, { align: 'justify', width: columnWidths[7] }*/);
 
         if (row.folios && row.folios.length > 0) {
             const foliosY = rowY + doc.currentLineHeight() + 10;
             const foliosText = row.folios.join(', ');
             const foliosLines = doc.heightOfString(foliosText, { width: 500 }) / doc.currentLineHeight();
 
+            var maxHeight = Math.max(descripcionHeight, marcaHeight, unidadHeight);
+            currentY += maxHeight > doc.currentLineHeight() ? maxHeight : doc.currentLineHeight() + 10;
+
             if (foliosY + (foliosLines * doc.currentLineHeight()) > 690) {
                 doc.addPage();
                 currentY = doc.page.margins.top + 20;
-                addTableHeaders();
                 addTotalsAndFooter();
+                addTableHeaders();
+                currentY -= 10;
             }
 
-            doc.fontSize(8).fillColor('black').text('Folios:', startX + 10, currentY + doc.currentLineHeight() + 10);
-            doc.fontSize(8).fillColor('gray').text(foliosText, startX + 50, currentY + doc.currentLineHeight() + 10, { width: 500 });
+            doc.fontSize(11).fillColor('black').text('Folios:', startX + 10, currentY + doc.currentLineHeight() + 10);
+            doc.fontSize(11).fillColor('gray').text(foliosText, startX + 60, currentY + doc.currentLineHeight() + 10, { width: 500 });
             currentY += (foliosLines * doc.currentLineHeight()) + 20; // Adjust y position for the next product
         } else {
             currentY = rowY + doc.currentLineHeight() + 5;
 
             const maxHeight = Math.max(descripcionHeight, marcaHeight, unidadHeight);
-            currentY += maxHeight > doc.currentLineHeight() ? maxHeight : doc.currentLineHeight() + 5;
+            currentY += maxHeight > doc.currentLineHeight() ? maxHeight : doc.currentLineHeight() + 20;
         }
     });
 

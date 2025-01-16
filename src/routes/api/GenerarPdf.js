@@ -47,9 +47,16 @@ export async function get(req, res) {
     let moneda = carrito.moneda;
     let totalPedido = carrito.total;
 
-    let fecha = carrito.fecha_de_cancelacion ? carrito.fecha_de_cancelacion.toLocaleDateString('es-MX', options) : carrito.fecha.toLocaleDateString('es-MX', options);
-    let hora = carrito.fecha_de_cancelacion ? carrito.fecha_de_cancelacion.toLocaleTimeString('es-MX') : carrito.fecha.toLocaleTimeString('es-MX');
+    let fecha = '';
+    let hora = '';
 
+    if (status === "cancelado") {
+        fecha = carrito.fecha_de_cancelacion ? carrito.fecha_de_cancelacion.toLocaleDateString('es-MX', options) : carrito.fecha.toLocaleDateString('es-MX', options);
+        hora = carrito.fecha_de_cancelacion ? carrito.fecha_de_cancelacion.toLocaleTimeString('es-MX') : carrito.fecha.toLocaleTimeString('es-MX');
+    } else {
+        fecha = carrito.fecha_creado ? carrito.fecha_creado.toLocaleDateString('es-MX', options) : carrito.fecha.toLocaleDateString('es-MX', options);
+        hora = carrito.fecha_creado ? carrito.fecha_creado.toLocaleTimeString('es-MX') : carrito.fecha.toLocaleTimeString('es-MX');
+    }
     let cliente = carrito.cliente;
 
     Productos = AcomodarDatosProductos(carrito.lista);

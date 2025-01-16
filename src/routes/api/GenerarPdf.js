@@ -77,6 +77,22 @@ export async function get(req, res) {
 
     let buffers = [];
 
+    /*
+    limites generales del documento
+        doc.moveDown();
+        doc.lineWidth(1).moveTo(10, 10).lineTo(600, 10).strokeColor('red').stroke();
+        doc.lineWidth(1).moveTo(10, 780).lineTo(600, 780).strokeColor('red').stroke();
+        doc.lineWidth(1).moveTo(10, 10).lineTo(10, 780).strokeColor('red').stroke();
+        doc.lineWidth(1).moveTo(600, 780).lineTo(600, 10).strokeColor('red').stroke();
+
+    limites para el logo y el folio
+        doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
+        doc.lineWidth(1).moveTo(15, 85).lineTo(300, 85).strokeColor('blue').stroke();
+        
+        doc.lineWidth(1).moveTo(310, 15).lineTo(590, 15).strokeColor('black').stroke();
+        doc.lineWidth(1).moveTo(310, 85).lineTo(590, 85).strokeColor('black').stroke();
+    */
+
     doc.on('data', buffers.push.bind(buffers));
 
     doc.on('end', () => {

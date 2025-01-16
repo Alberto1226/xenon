@@ -46,16 +46,21 @@ export async function get(req, res) {
     let descuento = carrito.descuento;
     let moneda = carrito.moneda;
     let totalPedido = carrito.total;
+    let notas = carrito.notas;
 
     let fecha = '';
     let hora = '';
 
     if (status === "cancelado") {
-        fecha = carrito.fecha_de_cancelacion ? carrito.fecha_de_cancelacion.toLocaleDateString('es-MX', options) : carrito.fecha.toLocaleDateString('es-MX', options);
-        hora = carrito.fecha_de_cancelacion ? carrito.fecha_de_cancelacion.toLocaleTimeString('es-MX') : carrito.fecha.toLocaleTimeString('es-MX');
+        fecha = carrito.fecha_creado ? carrito.fecha_creado.toLocaleDateString('es-MX', options) : carrito.fecha_de_cancelacion.toLocaleDateString('es-MX', options);
+        hora = carrito.fecha_creado ? carrito.fecha_creado.toLocaleTimeString('es-MX') : carrito.fecha_de_cancelacion.toLocaleTimeString('es-MX');
     } else {
         fecha = carrito.fecha_creado ? carrito.fecha_creado.toLocaleDateString('es-MX', options) : carrito.fecha.toLocaleDateString('es-MX', options);
         hora = carrito.fecha_creado ? carrito.fecha_creado.toLocaleTimeString('es-MX') : carrito.fecha.toLocaleTimeString('es-MX');
+        if (origen === "pedidos2") {
+            fecha = carrito.fecha ? carrito.fecha.toLocaleDateString('es-MX', options) : carrito.fecha_creado.toLocaleDateString('es-MX', options);
+            hora = carrito.fecha ? carrito.fecha.toLocaleTimeString('es-MX') : carrito.fecha_creado.toLocaleTimeString('es-MX');
+        }
     }
     let cliente = carrito.cliente;
 
@@ -274,7 +279,7 @@ export async function get(req, res) {
         doc.moveDown();
         doc.lineWidth(1).moveTo(590, 700).lineTo(590, 770).strokeColor('black').stroke();
 
-        let localY = 710; // Set y position to 700 for each page
+        let localY = 705; // Set y position to 700 for each page
         let localX = 30;
 
         doc.fontSize(10).fillColor('black').text('Descuento: ', localX, localY);
@@ -289,12 +294,30 @@ export async function get(req, res) {
 
         localY += doc.currentLineHeight() + 4; // Add some space before additional information
         doc.fontSize(10).text(`${NumeroALetras(total, moneda)}`, 30, localY);
-        localY += doc.currentLineHeight() + 10;
+        localY += doc.currentLineHeight() + 5;
 
         const centeredText = 'La paquetería corre a cuenta y riesgo del cliente';
         const textWidth = doc.widthOfString(centeredText);
         const centerX = (doc.page.width - textWidth) / 2;
         doc.fontSize(8).font('Courier-Bold').text(centeredText, centerX, localY).font('Courier');
+        //limite anterior substring(0, 567);
+        if (notas) {
+            const maxWidth = 480;
+            const maxHeight = 759;
+            const normalizedNotas = notas.replace(/\s+/g, ' ').trim();
+            const notasHeight = doc.heightOfString(`Notas: ${normalizedNotas}`, { width: maxWidth });
+            const lineHeight = doc.currentLineHeight();
+            const minLines = 2;
+            const minHeight = minLines * lineHeight;
+
+            if (localY + notasHeight <= maxHeight) {
+                doc.fontSize(10).text(`Notas: ${normalizedNotas}`, 30, localY + lineHeight + 2, { width: maxWidth });
+            } else {
+                const availableHeight = maxHeight - localY - lineHeight - 4;
+                const heightToUse = Math.max(minHeight, availableHeight);
+                doc.fontSize(10).text(`Notas: ${normalizedNotas}`, 30, localY + lineHeight + 2, { width: maxWidth, height: heightToUse });
+            }
+        }
 
     }
 

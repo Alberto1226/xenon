@@ -220,8 +220,8 @@ doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
                 });
 
                 // Mostrar las dimensiones calculadas
-                console.log(`Final width: ${finalWidth}`);
-                console.log(`Final height: ${finalHeight}`);
+                // console.log(`Final width: ${finalWidth}`);
+                // console.log(`Final height: ${finalHeight}`);
                 yTemp = finalHeight + 15;
             } else {
                 console.error("Error loading logo image: File does not exist");
@@ -247,11 +247,11 @@ doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
         doc.fontSize(10).text('Hora: ', x, y);
         doc.fontSize(10).text(hora, x + doc.widthOfString('Hora: '), y);
 
-        console.log("yTemp", yTemp, "y", y);
+        // console.log("yTemp", yTemp, "y", y);
 
         y = Math.max(yTemp, y) + doc.currentLineHeight();
 
-        console.log("fff", y);
+        // console.log("fff", y);
     }
 
     logoDatos(logo);
@@ -292,7 +292,7 @@ doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
         doc.fontSize(10).text('Email:', xTemp, yTemp).font('Courier-Bold');
         doc.fontSize(10).text(cliente.correo, xTemp += doc.widthOfString('Email: '), yTemp).font('Courier');
 
-        console.log("yTempff", yTemp, "yff", y);
+        // console.log("yTempff", yTemp, "yff", y);
 
         y = Math.max(y, yTemp);
 
@@ -373,14 +373,16 @@ doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
 
         let footerStartY = 700;
         let footerEndY = 770;
+        controlPie = footerStartY;
 
         if (notas) {
             const maxWidth = 480;
             const normalizedNotas = notas.replace(/\s+/g, ' ').trim();
             const notasHeight = doc.heightOfString(`Notas: ${normalizedNotas}`, { width: maxWidth });
+            // console.log('-----',notasHeight);
             footerStartY -= notasHeight;
             controlPie = footerStartY;
-            console.log("controlPie", controlPie);
+            // console.log("controlPie", controlPie);
             // const maxWidth = 480;
             // const normalizedNotas = notas.replace(/\s+/g, ' ').trim();
             // const lineHeight = doc.currentLineHeight();
@@ -524,7 +526,7 @@ doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
             let maxHeight = Math.max(descripcionHeight, marcaHeight, unidadHeight);
 
             if (currentY + maxHeight > controlPie - 2) {
-                console.log("C", currentY, "P", controlPie, "CP", controlPie - 2);
+                // console.log("C", currentY, "P", controlPie, "CP", controlPie - 2);
                 doc.addPage();
                 currentY = doc.page.margins.top + 20;
                 addTableHeaders();

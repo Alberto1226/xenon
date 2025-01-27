@@ -543,7 +543,7 @@ doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
 
             doc.fontSize(11).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[4] });
 
-            doc.fontSize(11).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[5] - 1 });
+            doc.fontSize(11).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[5] - 8 });
             doc.fontSize(11).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY);
             doc.fontSize(11).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY);
 

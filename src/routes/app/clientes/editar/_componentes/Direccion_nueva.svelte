@@ -7,6 +7,9 @@
     Menuitem,
     Menu,
   } from "svelte-mui/src";
+  import SelectPais from "../../Componentes/SelectPais.svelte";
+  import SelectEstado from "../../Componentes/SelectEstado.svelte";
+  import SelectMunicipios from "../../Componentes/SelectMunicipios.svelte";
   import { onMount } from "svelte";
   import Estado from "./Estado.svelte";
   import Municipio from "./Municipio.svelte";
@@ -21,6 +24,7 @@
     cp: 0,
     entre_calle: "",
     estado: "",
+    idEstado: "",
     localidad: "",
     localidad_nombre: "",
     municipio: "",
@@ -29,6 +33,7 @@
     numero_exterior: "",
     numero_interior: "",
     pais: "",
+    idPais: "",
     y_calle: "",
     rfc: "",
     cfdi: "",
@@ -365,6 +370,20 @@
   function solicitar_actualizacion_de_municipios() {
     actualizar_municipio = true;
   }
+
+  function AsignarIdPais(id) {
+    direccion_nueva.idPais = id;
+    direccion_nueva.estado = "";
+    direccion_nueva.idEstado = "";
+    direccion_nueva.municipio = "";
+    // console.log(id, "ddddddd");
+  }
+
+  function AsignarIdEstado(id) {
+    direccion_nueva.municipio = "";
+    direccion_nueva.idEstado = id;
+    // console.log("esId", id);
+  }
 </script>
 
 <div class="grid-container">
@@ -558,7 +577,35 @@
     </div>
   </div>
   <div class="row-flex">
-    <div class="pais" style="flex:1;">
+    <div
+      class="pais"
+      style="flex:1; display: flex; flex-direction: row; gap: 10px;"
+    >
+      <SelectPais
+        {activar}
+        bind:pais={direccion_nueva.pais}
+        on:pais_cambio={(event) => AsignarIdPais(event.detail.id)}
+        style="flex: 1;"
+      />
+      <SelectEstado
+        {activar}
+        bind:Pais={direccion_nueva.pais}
+        bind:estado={direccion_nueva.estado}
+        bind:IdPais={direccion_nueva.idPais}
+        on:estado_cambio={(event) => AsignarIdEstado(event.detail.id)}
+        style="flex: 1;"
+      />
+      <SelectMunicipios
+        {activar}
+        bind:IdPais={direccion_nueva.idPais}
+        bind:Pais={direccion_nueva.pais}
+        bind:Estado={direccion_nueva.estado}
+        bind:municipio={direccion_nueva.municipio}
+        bind:IdEstado={direccion_nueva.idEstado}
+        style="flex: 1;"
+      />
+    </div>
+    <!-- <div class="pais" style="flex:1;">
       <Textfield
         disabled={!activar}
         bind:value={direccion_nueva.pais}
@@ -581,7 +628,7 @@
         bind:municipio={direccion_nueva.municipio}
         bind:actualizar={actualizar_municipio}
       />
-    </div>
+    </div> -->
   </div>
   <div class="row-flex">
     <div class="cp" style="flex:1;">

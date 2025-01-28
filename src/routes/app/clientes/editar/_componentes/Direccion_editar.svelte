@@ -8,6 +8,9 @@
     Menu,
   } from "svelte-mui/src";
 
+  import SelectPais from "../../Componentes/SelectPais.svelte";
+  import SelectEstado from "../../Componentes/SelectEstado.svelte";
+  import SelectMunicipios from "../../Componentes/SelectMunicipios.svelte";
   import Estado from "./Estado.svelte";
   import Municipio from "./Municipio.svelte";
   import Tipo_direccion from "./Tipo_direccion.svelte";
@@ -17,9 +20,12 @@
   export var direccion_a_editar = {
     calle: "",
     colonia: "",
-    cp: 0,
+    cp: "",
+    telefono: "",
+    correo: "",
     entre_calle: "",
     estado: "",
+    idEstado: "",
     localidad: "",
     localidad_nombre: "",
     municipio: "",
@@ -28,6 +34,7 @@
     numero_exterior: "",
     numero_interior: "",
     pais: "",
+    idPais: "",
     y_calle: "",
     rfc: "",
     cfdi: "",
@@ -390,6 +397,20 @@
   function solicitar_actualizacion_de_municipios() {
     actualizar_municipio = true;
   }
+
+  function AsignarIdPais(id) {
+    direccion_a_editar.idPais = id;
+    direccion_a_editar.estado = "";
+    direccion_a_editar.idEstado = "";
+    direccion_a_editar.municipio = "";
+    // console.log(id, "ddddddd");
+  }
+
+  function AsignarIdEstado(id) {
+    direccion_a_editar.idEstado = id;
+    direccion_a_editar.municipio = "";
+    // console.log("esId", id);
+  }
 </script>
 
 <div class="grid-container">
@@ -557,6 +578,9 @@
   <div class="row-flex">
     <div class="nombre" style="flex:1;">
       <Textfield
+        error={direccion_a_editar.nombre == ""
+          ? "El nombre no puede estar vacío"
+          : ""}
         disabled={!activar}
         bind:value={direccion_a_editar.nombre}
         placeholder="Nombre"
@@ -566,6 +590,9 @@
     </div>
     <div class="telefono" style="flex:1;">
       <Textfield
+        error={direccion_a_editar.telefono == ""
+          ? "El telefono no puede estar vacío"
+          : ""}
         disabled={!activar}
         bind:value={direccion_a_editar.telefono}
         placeholder="Teléfono"
@@ -575,6 +602,9 @@
     </div>
     <div class="correo" style="flex:1;">
       <Textfield
+        error={direccion_a_editar.correo == ""
+          ? "El correo no puede estar vacío"
+          : ""}
         disabled={!activar}
         bind:value={direccion_a_editar.correo}
         placeholder="Correo"
@@ -584,34 +614,54 @@
     </div>
   </div>
   <div class="row-flex">
-    <div class="pais" style="flex:1;">
-      <Textfield
-        disabled={!activar}
-        bind:value={direccion_a_editar.pais}
-        placeholder="País"
-        label="País"
-        type="text"
+    <div
+      class="pais"
+      style="flex:1; display: flex; flex-direction: row; gap: 10px;"
+    >
+      <SelectPais
+        {activar}
+        bind:pais={direccion_a_editar.pais}
+        on:pais_cambio={(event) => AsignarIdPais(event.detail.id)}
+        style="flex: 1;"
+      />
+      <SelectEstado
+        {activar}
+        bind:Pais={direccion_a_editar.pais}
+        bind:estado={direccion_a_editar.estado}
+        bind:IdPais={direccion_a_editar.idPais}
+        on:estado_cambio={(event) => AsignarIdEstado(event.detail.id)}
+        style="flex: 1;"
+      />
+      <SelectMunicipios
+        {activar}
+        bind:IdPais={direccion_a_editar.idPais}
+        bind:Pais={direccion_a_editar.pais}
+        bind:Estado={direccion_a_editar.estado}
+        bind:municipio={direccion_a_editar.municipio}
+        bind:IdEstado={direccion_a_editar.idEstado}
+        style="flex: 1;"
       />
     </div>
-    <div class="estado">
+    <!-- <div class="estado">
       <Estado
         {activar}
         on:estado_cambio={solicitar_actualizacion_de_municipios}
         bind:estado={direccion_a_editar.estado}
       />
-    </div>
-    <div class="municipio">
+    </div> -->
+    <!-- <div class="municipio">
       <Municipio
         {activar}
         bind:estado={direccion_a_editar.estado}
         bind:municipio={direccion_a_editar.municipio}
         bind:actualizar={actualizar_municipio}
       />
-    </div>
+    </div> -->
   </div>
   <div class="row-flex">
     <div class="cp" style="flex:1;">
       <Textfield
+        error={direccion_a_editar.cp == "" ? "El CP no puede estar vacío" : ""}
         disabled={!activar}
         bind:value={direccion_a_editar.cp}
         placeholder="C.P."
@@ -622,6 +672,9 @@
     <div class="row-flex" style="flex:8">
       <div class="localidad" style="flex:1">
         <Textfield
+          error={direccion_a_editar.localidad_nombre == ""
+            ? "La localidad no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_a_editar.localidad_nombre}
           placeholder="Localidad"
@@ -631,6 +684,9 @@
       </div>
       <div class="colonia" style="flex:1">
         <Textfield
+          error={direccion_a_editar.colonia == ""
+            ? "La colonia no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_a_editar.colonia}
           placeholder="Colonia"
@@ -641,6 +697,9 @@
 
       <div class="calle" style="flex:1">
         <Textfield
+          error={direccion_a_editar.calle == ""
+            ? "La calle no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_a_editar.calle}
           placeholder="Calle"
@@ -654,6 +713,9 @@
     <div class="row-flex" style="flex: 1">
       <div class="no_exterior">
         <Textfield
+          error={direccion_a_editar.numero_exterior == ""
+            ? "El numero exteriro no puede estar vacío"
+            : ""}
           disabled={!activar}
           bind:value={direccion_a_editar.numero_exterior}
           placeholder="N° Exterior"
@@ -674,6 +736,9 @@
     <div class="row-flex" style="flex: 4">
       <div class="entre_calle" style="flex: 1">
         <Textfield
+          error={direccion_a_editar.entre_calle == ""
+            ? "La calle no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_a_editar.entre_calle}
           placeholder="Entre calle"
@@ -683,6 +748,9 @@
       </div>
       <div class="y_calle" style="flex: 1">
         <Textfield
+          error={direccion_a_editar.y_calle == ""
+            ? "La calle no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_a_editar.y_calle}
           placeholder="Y calle"

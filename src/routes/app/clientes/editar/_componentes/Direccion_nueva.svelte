@@ -7,6 +7,9 @@
     Menuitem,
     Menu,
   } from "svelte-mui/src";
+  import SelectPais from "../../Componentes/SelectPais.svelte";
+  import SelectEstado from "../../Componentes/SelectEstado.svelte";
+  import SelectMunicipios from "../../Componentes/SelectMunicipios.svelte";
   import { onMount } from "svelte";
   import Estado from "./Estado.svelte";
   import Municipio from "./Municipio.svelte";
@@ -18,9 +21,12 @@
   export var direccion_nueva = {
     calle: "",
     colonia: "",
-    cp: 0,
+    telefono: "",
+    correo: "",
+    cp: "",
     entre_calle: "",
     estado: "",
+    idEstado: "",
     localidad: "",
     localidad_nombre: "",
     municipio: "",
@@ -29,6 +35,7 @@
     numero_exterior: "",
     numero_interior: "",
     pais: "",
+    idPais: "",
     y_calle: "",
     rfc: "",
     cfdi: "",
@@ -365,6 +372,20 @@
   function solicitar_actualizacion_de_municipios() {
     actualizar_municipio = true;
   }
+
+  function AsignarIdPais(id) {
+    direccion_nueva.idPais = id;
+    direccion_nueva.estado = "";
+    direccion_nueva.idEstado = "";
+    direccion_nueva.municipio = "";
+    // console.log(id, "ddddddd");
+  }
+
+  function AsignarIdEstado(id) {
+    direccion_nueva.municipio = "";
+    direccion_nueva.idEstado = id;
+    // console.log("esId", id);
+  }
 </script>
 
 <div class="grid-container">
@@ -531,6 +552,9 @@
   <div class="row-flex">
     <div class="nombre" style="flex:1;">
       <Textfield
+        error={direccion_nueva.nombre == ""
+          ? "El Nombre no puede estar vacío"
+          : ""}
         disabled={!activar}
         bind:value={direccion_nueva.nombre}
         placeholder="Nombre"
@@ -540,6 +564,9 @@
     </div>
     <div class="telefono" style="flex:1;">
       <Textfield
+        error={direccion_nueva.telefono == ""
+          ? "El telefono no puede estar vacío"
+          : ""}
         disabled={!activar}
         bind:value={direccion_nueva.telefono}
         placeholder="Teléfono"
@@ -549,6 +576,9 @@
     </div>
     <div class="correo" style="flex:1;">
       <Textfield
+        error={direccion_nueva.correo == ""
+          ? "El correo no puede estar vacío"
+          : ""}
         disabled={!activar}
         bind:value={direccion_nueva.correo}
         placeholder="Correo"
@@ -558,7 +588,35 @@
     </div>
   </div>
   <div class="row-flex">
-    <div class="pais" style="flex:1;">
+    <div
+      class="pais"
+      style="flex:1; display: flex; flex-direction: row; gap: 10px;"
+    >
+      <SelectPais
+        {activar}
+        bind:pais={direccion_nueva.pais}
+        on:pais_cambio={(event) => AsignarIdPais(event.detail.id)}
+        style="flex: 1;"
+      />
+      <SelectEstado
+        {activar}
+        bind:Pais={direccion_nueva.pais}
+        bind:estado={direccion_nueva.estado}
+        bind:IdPais={direccion_nueva.idPais}
+        on:estado_cambio={(event) => AsignarIdEstado(event.detail.id)}
+        style="flex: 1;"
+      />
+      <SelectMunicipios
+        {activar}
+        bind:IdPais={direccion_nueva.idPais}
+        bind:Pais={direccion_nueva.pais}
+        bind:Estado={direccion_nueva.estado}
+        bind:municipio={direccion_nueva.municipio}
+        bind:IdEstado={direccion_nueva.idEstado}
+        style="flex: 1;"
+      />
+    </div>
+    <!-- <div class="pais" style="flex:1;">
       <Textfield
         disabled={!activar}
         bind:value={direccion_nueva.pais}
@@ -581,11 +639,12 @@
         bind:municipio={direccion_nueva.municipio}
         bind:actualizar={actualizar_municipio}
       />
-    </div>
+    </div> -->
   </div>
   <div class="row-flex">
     <div class="cp" style="flex:1;">
       <Textfield
+        error={direccion_nueva.cp == "" ? "El cp no puede estar vacío" : ""}
         disabled={!activar}
         bind:value={direccion_nueva.cp}
         placeholder="C.P."
@@ -596,6 +655,9 @@
     <div class="row-flex" style="flex:8">
       <div class="localidad" style="flex:1">
         <Textfield
+          error={direccion_nueva.rfc == ""
+            ? "La Localidad no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.localidad_nombre}
           placeholder="Localidad"
@@ -605,6 +667,9 @@
       </div>
       <div class="colonia" style="flex:1">
         <Textfield
+          error={direccion_nueva.colonia == ""
+            ? "La colonia no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.colonia}
           placeholder="Colonia"
@@ -615,6 +680,9 @@
 
       <div class="calle" style="flex:1">
         <Textfield
+          error={direccion_nueva.calle == ""
+            ? "La calle no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.calle}
           placeholder="Calle"
@@ -628,6 +696,9 @@
     <div class="row-flex" style="flex: 1">
       <div class="no_exterior">
         <Textfield
+          error={direccion_nueva.numero_exterior == ""
+            ? "El numero exterior no puede estar vacío"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.numero_exterior}
           placeholder="N° Exterior"
@@ -648,6 +719,9 @@
     <div class="row-flex" style="flex: 4">
       <div class="entre_calle" style="flex: 1">
         <Textfield
+          error={direccion_nueva.entre_calle == ""
+            ? "La calle no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.entre_calle}
           placeholder="Entre calle"
@@ -657,6 +731,9 @@
       </div>
       <div class="y_calle" style="flex: 1">
         <Textfield
+          error={direccion_nueva.y_calle == ""
+            ? "La calle no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.y_calle}
           placeholder="Y calle"

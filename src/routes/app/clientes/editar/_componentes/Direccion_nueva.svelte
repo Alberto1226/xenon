@@ -21,7 +21,9 @@
   export var direccion_nueva = {
     calle: "",
     colonia: "",
-    cp: 0,
+    telefono: "",
+    correo: "",
+    cp: "",
     entre_calle: "",
     estado: "",
     idEstado: "",
@@ -550,6 +552,9 @@
   <div class="row-flex">
     <div class="nombre" style="flex:1;">
       <Textfield
+        error={direccion_nueva.nombre == ""
+          ? "El Nombre no puede estar vacío"
+          : ""}
         disabled={!activar}
         bind:value={direccion_nueva.nombre}
         placeholder="Nombre"
@@ -559,6 +564,9 @@
     </div>
     <div class="telefono" style="flex:1;">
       <Textfield
+        error={direccion_nueva.telefono == ""
+          ? "El telefono no puede estar vacío"
+          : ""}
         disabled={!activar}
         bind:value={direccion_nueva.telefono}
         placeholder="Teléfono"
@@ -568,6 +576,9 @@
     </div>
     <div class="correo" style="flex:1;">
       <Textfield
+        error={direccion_nueva.correo == ""
+          ? "El correo no puede estar vacío"
+          : ""}
         disabled={!activar}
         bind:value={direccion_nueva.correo}
         placeholder="Correo"
@@ -633,6 +644,7 @@
   <div class="row-flex">
     <div class="cp" style="flex:1;">
       <Textfield
+        error={direccion_nueva.cp == "" ? "El cp no puede estar vacío" : ""}
         disabled={!activar}
         bind:value={direccion_nueva.cp}
         placeholder="C.P."
@@ -643,6 +655,9 @@
     <div class="row-flex" style="flex:8">
       <div class="localidad" style="flex:1">
         <Textfield
+          error={direccion_nueva.rfc == ""
+            ? "La Localidad no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.localidad_nombre}
           placeholder="Localidad"
@@ -652,6 +667,9 @@
       </div>
       <div class="colonia" style="flex:1">
         <Textfield
+          error={direccion_nueva.colonia == ""
+            ? "La colonia no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.colonia}
           placeholder="Colonia"
@@ -662,6 +680,9 @@
 
       <div class="calle" style="flex:1">
         <Textfield
+          error={direccion_nueva.calle == ""
+            ? "La calle no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.calle}
           placeholder="Calle"
@@ -675,6 +696,9 @@
     <div class="row-flex" style="flex: 1">
       <div class="no_exterior">
         <Textfield
+          error={direccion_nueva.numero_exterior == ""
+            ? "El numero exterior no puede estar vacío"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.numero_exterior}
           placeholder="N° Exterior"
@@ -695,6 +719,9 @@
     <div class="row-flex" style="flex: 4">
       <div class="entre_calle" style="flex: 1">
         <Textfield
+          error={direccion_nueva.entre_calle == ""
+            ? "La calle no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.entre_calle}
           placeholder="Entre calle"
@@ -704,6 +731,9 @@
       </div>
       <div class="y_calle" style="flex: 1">
         <Textfield
+          error={direccion_nueva.y_calle == ""
+            ? "La calle no puede estar vacía"
+            : ""}
           disabled={!activar}
           bind:value={direccion_nueva.y_calle}
           placeholder="Y calle"

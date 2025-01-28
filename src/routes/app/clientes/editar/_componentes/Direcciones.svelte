@@ -3,7 +3,7 @@
   import { Button, Snackbar } from "svelte-mui/src";
   import Direccion_nueva_formulario from "./Direccion_nueva.svelte";
   import Direccion_editar_formulario from "./Direccion_editar.svelte";
-  import { editar_store } from "./../../../../stores";
+  import { editar_store, mensajes_app } from "./../../../../stores";
   export var direcciones;
   const dispatch = createEventDispatcher();
   let titulo_formulario = "CREAR DIRECCION";
@@ -15,7 +15,7 @@
   var direccion_nueva = {
     calle: "",
     colonia: "",
-    cp: 0,
+    cp: "",
     entre_calle: "",
     estado: "",
     localidad: "",
@@ -24,6 +24,8 @@
     notas: "",
     numero_exterior: "",
     numero_interior: "",
+    telefono: "",
+    correo: "",
     pais: "",
     y_calle: "",
     rfc: "",
@@ -38,8 +40,62 @@
   //comando para aparecer el formualro de edicion
 
   function agregar_direccion() {
-    if (creando) direcciones.push(direccion_nueva);
-    else {
+    // if (creando) direcciones.push(direccion_nueva);
+    if (creando) {
+      if (
+        !direccion_nueva.rfc ||
+        !direccion_nueva.nombre ||
+        !direccion_nueva.pais ||
+        !direccion_nueva.estado ||
+        !direccion_nueva.telefono ||
+        !direccion_nueva.correo ||
+        !direccion_nueva.municipio ||
+        !direccion_nueva.localidad_nombre ||
+        !direccion_nueva.tipo ||
+        !direccion_nueva.colonia ||
+        !direccion_nueva.cp ||
+        !direccion_nueva.calle ||
+        !direccion_nueva.numero_exterior ||
+        !direccion_nueva.entre_calle ||
+        !direccion_nueva.y_calle
+      ) {
+        // console.log(
+        //   "rfc",
+        //   direccion_nueva.rfc,
+        //   "nombre",
+        //   direccion_nueva.nombre,
+        //   "pais",
+        //   direccion_nueva.pais,
+        //   "estado",
+        //   direccion_nueva.estado,
+        //   "municipio",
+        //   direccion_nueva.municipio,
+        //   "localidad_nombre",
+        //   direccion_nueva.localidad_nombre,
+        //   "tipo",
+        //   direccion_nueva.tipo,
+        //   "colonia",
+        //   direccion_nueva.colonia,
+        //   "cp",
+        //   direccion_nueva.cp,
+        //   "calle",
+        //   direccion_nueva.calle,
+        //   "numero_exterior",
+        //   direccion_nueva.numero_exterior,
+        //   "entre_calle",
+        //   direccion_nueva.entre_calle,
+        //   "y_calle",
+        //   direccion_nueva.y_calle,
+        // );
+        $mensajes_app.push({
+          tipo: "error",
+          mensaje: "Todos los campos de la dirección deben estar completos",
+        });
+        $mensajes_app = $mensajes_app;
+      } else {
+        direcciones.push(direccion_nueva);
+      }
+    } else {
       direcciones.push(direccion_a_editar_local);
     }
     direcciones = direcciones;
@@ -49,9 +105,76 @@
     titulo_formulario = "CREAR DIRECCION";
   }
 
+  // function editar_direccion() {
+  //   direcciones[indice_selecto] = direccion_a_editar_local;
+  //   direcciones = direcciones;
+  //   //console.log(indice_selecto);
+
+  //   //restablecer_direccion_nueva();
+  // }
+
   function editar_direccion() {
-    direcciones[indice_selecto] = direccion_a_editar_local;
-    direcciones = direcciones;
+    // console.log("editar", direccion_a_editar_local);
+    if (
+      !direccion_a_editar_local.rfc ||
+      !direccion_a_editar_local.nombre ||
+      !direccion_a_editar_local.pais ||
+      !direccion_a_editar_local.estado ||
+      !direccion_a_editar_local.telefono ||
+      !direccion_a_editar_local.correo ||
+      !direccion_a_editar_local.municipio ||
+      !direccion_a_editar_local.localidad_nombre ||
+      !direccion_a_editar_local.tipo ||
+      !direccion_a_editar_local.colonia ||
+      !direccion_a_editar_local.cp ||
+      !direccion_a_editar_local.calle ||
+      !direccion_a_editar_local.numero_exterior ||
+      !direccion_a_editar_local.entre_calle ||
+      !direccion_a_editar_local.y_calle
+    ) {
+      // console.log(
+      //   "rfc",
+      //   direccion_a_editar_local.rfc,
+      //   "nombre",
+      //   direccion_a_editar_local.nombre,
+      //   "pais",
+      //   direccion_a_editar_local.pais,
+      //   "estado",
+      //   direccion_a_editar_local.estado,
+      //   "municipio",
+      //   direccion_a_editar_local.municipio,
+      //   "localidad_nombre",
+      //   direccion_a_editar_local.localidad_nombre,
+      //   "tipo",
+      //   direccion_a_editar_local.tipo,
+      //   "colonia",
+      //   direccion_a_editar_local.colonia,
+      //   "cp",
+      //   direccion_a_editar_local.cp,
+      //   "calle",
+      //   direccion_a_editar_local.calle,
+      //   "numero_exterior",
+      //   direccion_a_editar_local.numero_exterior,
+      //   "entre_calle",
+      //   direccion_a_editar_local.entre_calle,
+      //   "y_calle",
+      //   direccion_a_editar_local.y_calle,
+      // );
+      $mensajes_app.push({
+        tipo: "error",
+        mensaje: "Todos los campos de la dirección deben estar completos",
+      });
+      $mensajes_app = $mensajes_app;
+    } else {
+      // direcciones.push(direccion_a_editar_local);
+      direcciones[indice_selecto] = direccion_a_editar_local;
+      direcciones = direcciones;
+      $mensajes_app.push({
+        tipo: "exito",
+        mensaje: "Editado",
+      });
+      $mensajes_app = $mensajes_app;
+    }
     //console.log(indice_selecto);
 
     //restablecer_direccion_nueva();
@@ -69,7 +192,9 @@
     direccion_nueva = {
       calle: "",
       colonia: "",
-      cp: 0,
+      cp: "",
+      telefono: "",
+      correo: "",
       entre_calle: "",
       estado: "",
       localidad: "",

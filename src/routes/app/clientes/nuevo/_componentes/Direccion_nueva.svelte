@@ -156,7 +156,9 @@
   </div>
   <div class="localidad">
     <Textfield
-      error={direccion_nueva.rfc == "" ? "El RFC no puede estar vacío" : ""}
+      error={direccion_nueva.rfc == ""
+        ? "La Localidad no puede estar vacía"
+        : ""}
       disbled
       bind:value={direccion_nueva.localidad_nombre}
       placeholder="Localidad"

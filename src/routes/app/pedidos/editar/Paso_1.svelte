@@ -74,17 +74,34 @@
   }
 
   function arreglar_direccion(direccion_param) {
-    direccion = direccion_param.calle;
-    direccion += ", #" + direccion_param.numero_exterior;
-    direccion +=
-      direccion_param.numero_interior == ""
-        ? ""
-        : ", Interior: " + direccion_param.numero_interior;
-    direccion += ", Colonia :" + direccion_param.colonia;
-    direccion += ", CP: " + direccion_param.cp;
-    direccion += ", Localidad: " + direccion_param.localidad;
-    direccion += ", Municipio: " + direccion_param.municipio;
-    direccion += ", Estado: " + direccion_param.estado;
+    if (
+      !direccion_param.calle ||
+      !direccion_param.numero_exterior ||
+      !direccion_param.colonia ||
+      !direccion_param.cp ||
+      !direccion_param.localidad_nombre ||
+      !direccion_param.municipio ||
+      !direccion_param.estado
+    ) {
+      $mensajes_app.push({
+        tipo: "error",
+        mensaje: "Todos los campos de la dirección deben estar completos",
+      });
+      $mensajes_app = $mensajes_app;
+      direccion = "";
+    } else {
+      direccion = direccion_param.calle;
+      direccion += ", #" + direccion_param.numero_exterior;
+      direccion +=
+        direccion_param.numero_interior == ""
+          ? ""
+          : ", Interior: " + direccion_param.numero_interior;
+      direccion += ", Colonia :" + direccion_param.colonia;
+      direccion += ", CP: " + direccion_param.cp;
+      direccion += ", Localidad: " + direccion_param.localidad_nombre;
+      direccion += ", Municipio: " + direccion_param.municipio;
+      direccion += ", Estado: " + direccion_param.estado;
+    }
   }
 
   ///   solo se usa si no se tien la lista de clientes
@@ -308,6 +325,7 @@
             disabled={$usuario_db.rol == "almacen"}
             cols="30"
             rows="3"
+            readonly
             bind:value={direccion}
           />
         </td>

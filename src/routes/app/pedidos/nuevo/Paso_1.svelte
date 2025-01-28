@@ -79,17 +79,34 @@
   }
 
   function arreglar_direccion(direccion_param) {
-    direccion = direccion_param.calle;
-    direccion += ", #" + direccion_param.numero_exterior;
-    direccion +=
-      direccion_param.numero_interior == ""
-        ? ""
-        : ", Interior: " + direccion_param.numero_interior;
-    direccion += ", Colonia :" + direccion_param.colonia;
-    direccion += ", CP: " + direccion_param.cp;
-    direccion += ", Localidad: " + direccion_param.localidad;
-    direccion += ", Municipio: " + direccion_param.municipio;
-    direccion += ", Estado: " + direccion_param.estado;
+    if (
+      !direccion_param.calle ||
+      !direccion_param.numero_exterior ||
+      !direccion_param.colonia ||
+      !direccion_param.cp ||
+      !direccion_param.localidad_nombre ||
+      !direccion_param.municipio ||
+      !direccion_param.estado
+    ) {
+      $mensajes_app.push({
+        tipo: "error",
+        mensaje: "Todos los campos de la dirección deben estar completos",
+      });
+      $mensajes_app = $mensajes_app;
+      direccion = "";
+    } else {
+      direccion = direccion_param.calle;
+      direccion += ", #" + direccion_param.numero_exterior;
+      direccion +=
+        direccion_param.numero_interior == ""
+          ? ""
+          : ", Interior: " + direccion_param.numero_interior;
+      direccion += ", Colonia :" + direccion_param.colonia;
+      direccion += ", CP: " + direccion_param.cp;
+      direccion += ", Localidad: " + direccion_param.localidad_nombre;
+      direccion += ", Municipio: " + direccion_param.municipio;
+      direccion += ", Estado: " + direccion_param.estado;
+    }
   }
 
   function checar_si_tiene_carrito_pendiente(id_cliente) {
@@ -486,13 +503,14 @@
   </div>
   <div class="direccion_de_envio">
     <i class="material-icons" style="vertical-align: top;">location_on</i>
-    Dirección editable
+    Dirección
     <textarea
       class="direccion-box"
       class:borde_rojo={direccion == ""}
       cols="30"
       rows="20"
       bind:value={direccion}
+      readonly
     />
   </div>
   <div class="perfil_del_cliente">
@@ -524,7 +542,9 @@
       </div>
     {:else}
       <div class=" rojo">
-        Escribe una dirección manualmente, <br /> Tip: Agrega una dirección al cliente.
+        <!-- Escribe una dirección manualmente, <br /> Tip: Agrega una dirección al cliente. -->
+        Debe registrar la direccion del cliente antes <br /> de proceder con un
+        pedido<br /> Tip: Agrega una dirección en la configuracion del cliente.
       </div>
     {/if}
   </div>

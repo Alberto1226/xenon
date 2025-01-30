@@ -430,6 +430,9 @@
         <div class="rfc">
           <Textfield
             disabled={!activar}
+            error={direccion_a_editar.rfc == ""
+              ? "El rfc no puede estar vacío"
+              : ""}
             bind:value={direccion_a_editar.rfc}
             placeholder="RFC"
             label="R.F.C."

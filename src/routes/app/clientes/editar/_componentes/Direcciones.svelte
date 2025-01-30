@@ -19,6 +19,7 @@
     entre_calle: "",
     estado: "",
     localidad: "",
+    localidad_nombre: "",
     municipio: "",
     nombre: "",
     notas: "",
@@ -29,6 +30,8 @@
     pais: "",
     y_calle: "",
     rfc: "",
+    cfdi: "",
+    rfiscal: "",
     tipo: "",
   };
   var lista = [];
@@ -40,10 +43,13 @@
   //comando para aparecer el formualro de edicion
 
   function agregar_direccion() {
+    console.log("agregar_direccion", direccion_nueva);
+    let rfcValidado = ValidarTipoDireccion(true);
+
     // if (creando) direcciones.push(direccion_nueva);
     if (creando) {
       if (
-        !direccion_nueva.rfc ||
+        rfcValidado ||
         !direccion_nueva.nombre ||
         !direccion_nueva.pais ||
         !direccion_nueva.estado ||
@@ -51,7 +57,6 @@
         !direccion_nueva.correo ||
         !direccion_nueva.municipio ||
         !direccion_nueva.localidad_nombre ||
-        !direccion_nueva.tipo ||
         !direccion_nueva.colonia ||
         !direccion_nueva.cp ||
         !direccion_nueva.calle ||
@@ -59,34 +64,34 @@
         !direccion_nueva.entre_calle ||
         !direccion_nueva.y_calle
       ) {
-        // console.log(
-        //   "rfc",
-        //   direccion_nueva.rfc,
-        //   "nombre",
-        //   direccion_nueva.nombre,
-        //   "pais",
-        //   direccion_nueva.pais,
-        //   "estado",
-        //   direccion_nueva.estado,
-        //   "municipio",
-        //   direccion_nueva.municipio,
-        //   "localidad_nombre",
-        //   direccion_nueva.localidad_nombre,
-        //   "tipo",
-        //   direccion_nueva.tipo,
-        //   "colonia",
-        //   direccion_nueva.colonia,
-        //   "cp",
-        //   direccion_nueva.cp,
-        //   "calle",
-        //   direccion_nueva.calle,
-        //   "numero_exterior",
-        //   direccion_nueva.numero_exterior,
-        //   "entre_calle",
-        //   direccion_nueva.entre_calle,
-        //   "y_calle",
-        //   direccion_nueva.y_calle,
-        // );
+        console.log(
+          "rfc",
+          direccion_nueva.rfc,
+          "nombre",
+          direccion_nueva.nombre,
+          "pais",
+          direccion_nueva.pais,
+          "estado",
+          direccion_nueva.estado,
+          "municipio",
+          direccion_nueva.municipio,
+          "localidad_nombre",
+          direccion_nueva.localidad_nombre,
+          "tipo",
+          direccion_nueva.tipo,
+          "colonia",
+          direccion_nueva.colonia,
+          "cp",
+          direccion_nueva.cp,
+          "calle",
+          direccion_nueva.calle,
+          "numero_exterior",
+          direccion_nueva.numero_exterior,
+          "entre_calle",
+          direccion_nueva.entre_calle,
+          "y_calle",
+          direccion_nueva.y_calle,
+        );
         $mensajes_app.push({
           tipo: "error",
           mensaje: "Todos los campos de la dirección deben estar completos",
@@ -94,14 +99,16 @@
         $mensajes_app = $mensajes_app;
       } else {
         direcciones.push(direccion_nueva);
+        restablecer_direccion_nueva();
       }
     } else {
+      console.log("direccion_a_editar_local", direccion_a_editar_local);
       direcciones.push(direccion_a_editar_local);
     }
     direcciones = direcciones;
     //console.log(direcciones);
     creando = true;
-    restablecer_direccion_nueva();
+    // restablecer_direccion_nueva();
     titulo_formulario = "CREAR DIRECCION";
   }
 
@@ -114,9 +121,10 @@
   // }
 
   function editar_direccion() {
-    // console.log("editar", direccion_a_editar_local);
+    let rfcValidado = ValidarTipoDireccion();
+    console.log("editar", direccion_a_editar_local);
     if (
-      !direccion_a_editar_local.rfc ||
+      rfcValidado ||
       !direccion_a_editar_local.nombre ||
       !direccion_a_editar_local.pais ||
       !direccion_a_editar_local.estado ||
@@ -132,34 +140,34 @@
       !direccion_a_editar_local.entre_calle ||
       !direccion_a_editar_local.y_calle
     ) {
-      // console.log(
-      //   "rfc",
-      //   direccion_a_editar_local.rfc,
-      //   "nombre",
-      //   direccion_a_editar_local.nombre,
-      //   "pais",
-      //   direccion_a_editar_local.pais,
-      //   "estado",
-      //   direccion_a_editar_local.estado,
-      //   "municipio",
-      //   direccion_a_editar_local.municipio,
-      //   "localidad_nombre",
-      //   direccion_a_editar_local.localidad_nombre,
-      //   "tipo",
-      //   direccion_a_editar_local.tipo,
-      //   "colonia",
-      //   direccion_a_editar_local.colonia,
-      //   "cp",
-      //   direccion_a_editar_local.cp,
-      //   "calle",
-      //   direccion_a_editar_local.calle,
-      //   "numero_exterior",
-      //   direccion_a_editar_local.numero_exterior,
-      //   "entre_calle",
-      //   direccion_a_editar_local.entre_calle,
-      //   "y_calle",
-      //   direccion_a_editar_local.y_calle,
-      // );
+      console.log(
+        "rfc",
+        direccion_a_editar_local.rfc,
+        "nombre",
+        direccion_a_editar_local.nombre,
+        "pais",
+        direccion_a_editar_local.pais,
+        "estado",
+        direccion_a_editar_local.estado,
+        "municipio",
+        direccion_a_editar_local.municipio,
+        "localidad_nombre",
+        direccion_a_editar_local.localidad_nombre,
+        "tipo",
+        direccion_a_editar_local.tipo,
+        "colonia",
+        direccion_a_editar_local.colonia,
+        "cp",
+        direccion_a_editar_local.cp,
+        "calle",
+        direccion_a_editar_local.calle,
+        "numero_exterior",
+        direccion_a_editar_local.numero_exterior,
+        "entre_calle",
+        direccion_a_editar_local.entre_calle,
+        "y_calle",
+        direccion_a_editar_local.y_calle,
+      );
       $mensajes_app.push({
         tipo: "error",
         mensaje: "Todos los campos de la dirección deben estar completos",
@@ -198,6 +206,7 @@
       entre_calle: "",
       estado: "",
       localidad: "",
+      localidad_nombre: "",
       municipio: "",
       nombre: "",
       notas: "",
@@ -210,6 +219,64 @@
       rfiscal: "",
       tipo: "",
     };
+  }
+
+  function ValidarTipoDireccion(d = false) {
+    if (d) {
+      if (
+        direccion_nueva.tipo === "envio/facturacion" ||
+        direccion_nueva.tipo == "facturacion"
+      ) {
+        /*
+      rfc: "",
+      cfdi: "",
+      rfiscal: "",
+      tipo_persona: "",
+      */
+        if (
+          !direccion_nueva.rfc ||
+          !direccion_nueva.cfdi ||
+          !direccion_nueva.rfiscal ||
+          !direccion_nueva.tipo_persona
+        ) {
+          console.log("true");
+          return true;
+        } else {
+          console.log("false");
+          return false;
+        }
+      } else {
+        console.log("false");
+        return false;
+      }
+    } else {
+      if (
+        direccion_a_editar_local.tipo === "envio/facturacion" ||
+        direccion_a_editar_local.tipo == "facturacion"
+      ) {
+        /*
+      rfc: "",
+      cfdi: "",
+      rfiscal: "",
+      tipo_persona: "",
+      */
+        if (
+          !direccion_a_editar_local.rfc ||
+          !direccion_a_editar_local.cfdi ||
+          !direccion_a_editar_local.rfiscal ||
+          !direccion_a_editar_local.tipo_persona
+        ) {
+          console.log("true");
+          return true;
+        } else {
+          console.log("false");
+          return false;
+        }
+      } else {
+        console.log("false");
+        return false;
+      }
+    }
   }
 </script>
 

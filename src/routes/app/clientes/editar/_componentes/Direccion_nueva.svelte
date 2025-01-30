@@ -404,6 +404,9 @@
       >
         <div class="rfc">
           <Textfield
+            error={direccion_nueva.rfc == ""
+              ? "El rfc no puede estar vacío"
+              : ""}
             disabled={!activar}
             bind:value={direccion_nueva.rfc}
             placeholder="RFC"
@@ -655,7 +658,7 @@
     <div class="row-flex" style="flex:8">
       <div class="localidad" style="flex:1">
         <Textfield
-          error={direccion_nueva.rfc == ""
+          error={direccion_nueva.localidad_nombre == ""
             ? "La Localidad no puede estar vacía"
             : ""}
           disabled={!activar}

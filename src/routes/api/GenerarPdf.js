@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
+import sizeOf from 'image-size';
 import { Carrito } from '../../models/carrito';
 import { Pedido } from '../../models/pedido';
 import { Catalogo } from '../../models/Catalogos';
@@ -46,17 +47,40 @@ export async function get(req, res) {
     let descuento = carrito.descuento;
     let moneda = carrito.moneda;
     let totalPedido = carrito.total;
+    let notas = carrito.notas;
 
-    let fecha = carrito.fecha_de_cancelacion ? carrito.fecha_de_cancelacion.toLocaleDateString('es-MX', options) : carrito.fecha.toLocaleDateString('es-MX', options);
-    let hora = carrito.fecha_de_cancelacion ? carrito.fecha_de_cancelacion.toLocaleTimeString('es-MX') : carrito.fecha.toLocaleTimeString('es-MX');
+    let fecha = '';
+    let hora = '';
 
+    if (status === "cancelado") {
+        fecha = carrito.fecha_creado ? carrito.fecha_creado.toLocaleDateString('es-MX', options) : carrito.fecha_de_cancelacion.toLocaleDateString('es-MX', options);
+        hora = carrito.fecha_creado ? carrito.fecha_creado.toLocaleTimeString('es-MX') : carrito.fecha_de_cancelacion.toLocaleTimeString('es-MX');
+    } else {
+        fecha = carrito.fecha_creado ? carrito.fecha_creado.toLocaleDateString('es-MX', options) : carrito.fecha.toLocaleDateString('es-MX', options);
+        hora = carrito.fecha_creado ? carrito.fecha_creado.toLocaleTimeString('es-MX') : carrito.fecha.toLocaleTimeString('es-MX');
+        if (origen === "pedidos2") {
+            fecha = carrito.fecha ? carrito.fecha.toLocaleDateString('es-MX', options) : carrito.fecha_creado.toLocaleDateString('es-MX', options);
+            hora = carrito.fecha ? carrito.fecha.toLocaleTimeString('es-MX') : carrito.fecha_creado.toLocaleTimeString('es-MX');
+        }
+    }
     let cliente = carrito.cliente;
 
     Productos = AcomodarDatosProductos(carrito.lista);
     //--------------------------------------------------------------------------------------------
 
+    let LogoyFolio = false;//esta bariable es para controlar el logo y  el folio, si quieren estos datos en cada pagina ponerla en true
+    let fuente = "Courier";
+    let tamañoFuente = 10;
+
+    let controlPie = 0;
+
     let x = 0;
     let y = 0;
+
+    let yTemp = 0;
+    let xTemp = 0;
+    //el eje y tentra como limites de 10 780
+    //el eje x sus limintes seran de 10 600
 
     const doc = new PDFDocument({
         bufferPages: true,
@@ -64,6 +88,77 @@ export async function get(req, res) {
     });
 
     let buffers = [];
+
+    doc.info.Title = 'Nota de Pedido';
+    doc.info.Author = 'Isotech';
+    doc.info.Subject = 'Nota de Pedido';
+    doc.info.Keywords = '';
+
+    /*
+    limites generales del documento
+        doc.moveDown();
+        doc.lineWidth(1).moveTo(10, 10).lineTo(600, 10).strokeColor('red').stroke();
+        doc.lineWidth(1).moveTo(10, 780).lineTo(600, 780).strokeColor('red').stroke();
+        doc.lineWidth(1).moveTo(10, 10).lineTo(10, 780).strokeColor('red').stroke();
+        doc.lineWidth(1).moveTo(600, 780).lineTo(600, 10).strokeColor('red').stroke();
+
+    limites para el logo y el folio
+        doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
+        doc.lineWidth(1).moveTo(15, 85).lineTo(300, 85).strokeColor('blue').stroke();
+        
+        doc.lineWidth(1).moveTo(310, 15).lineTo(590, 15).strokeColor('black').stroke();
+        doc.lineWidth(1).moveTo(310, 85).lineTo(590, 85).strokeColor('black').stroke();
+
+
+        ---------------Minimos----------------------------------------------------
+        doc.moveDown();
+        doc.lineWidth(1).moveTo(10, 10).lineTo(600, 10).strokeColor('red').stroke();
+        doc.lineWidth(1).moveTo(10, 780).lineTo(600, 780).strokeColor('red').stroke();
+        doc.lineWidth(1).moveTo(10, 10).lineTo(10, 780).strokeColor('red').stroke();
+        doc.lineWidth(1).moveTo(600, 780).lineTo(600, 10).strokeColor('red').stroke();
+
+doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
+        doc.lineWidth(1).moveTo(15, 85).lineTo(300, 85).strokeColor('blue').stroke();
+        
+        doc.lineWidth(1).moveTo(310, 15).lineTo(590, 15).strokeColor('black').stroke();
+        doc.lineWidth(1).moveTo(310, 85).lineTo(590, 85).strokeColor('black').stroke();
+        
+        doc.moveDown();
+        doc.lineWidth(1).moveTo(10, 90).lineTo(600, 90).strokeColor('gray').stroke();
+        doc.lineWidth(1).moveTo(10, 200).lineTo(600, 200).strokeColor('gray').stroke();
+        
+        doc.lineWidth(1).moveTo(10, 210).lineTo(600, 210).strokeColor('orange').stroke();
+        doc.lineWidth(1).moveTo(10, 690).lineTo(600, 690).strokeColor('orange').stroke();
+        
+        doc.lineWidth(1).moveTo(10, 700).lineTo(600, 700).strokeColor('green').stroke();
+        doc.lineWidth(1).moveTo(10, 780).lineTo(600, 780).strokeColor('green').stroke();
+
+    */
+
+    /*
+    --------------Maximos------------------------------
+    doc.moveDown();
+    doc.lineWidth(1).moveTo(10, 10).lineTo(600, 10).strokeColor('red').stroke();
+    doc.lineWidth(1).moveTo(10, 780).lineTo(600, 780).strokeColor('red').stroke();
+    doc.lineWidth(1).moveTo(10, 10).lineTo(10, 780).strokeColor('red').stroke();
+    doc.lineWidth(1).moveTo(600, 780).lineTo(600, 10).strokeColor('red').stroke();
+
+doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
+    doc.lineWidth(1).moveTo(15, 85).lineTo(300, 85).strokeColor('blue').stroke();
+    
+    doc.lineWidth(1).moveTo(310, 15).lineTo(590, 15).strokeColor('black').stroke();
+    doc.lineWidth(1).moveTo(310, 85).lineTo(590, 85).strokeColor('black').stroke();
+    
+    doc.moveDown();
+    doc.lineWidth(1).moveTo(10, 90).lineTo(600, 90).strokeColor('gray').stroke();
+    doc.lineWidth(1).moveTo(10, 250).lineTo(600, 250).strokeColor('gray').stroke();
+    
+    doc.lineWidth(1).moveTo(10, 260).lineTo(600, 260).strokeColor('orange').stroke();
+    doc.lineWidth(1).moveTo(10, 640).lineTo(600, 640).strokeColor('orange').stroke();
+    
+    doc.lineWidth(1).moveTo(10, 650).lineTo(600, 650).strokeColor('green').stroke();
+    doc.lineWidth(1).moveTo(10, 780).lineTo(600, 780).strokeColor('green').stroke();
+    */
 
     doc.on('data', buffers.push.bind(buffers));
 
@@ -92,31 +187,58 @@ export async function get(req, res) {
 
     function logoDatos(logo) {
         var ruta = ('static' + logo);
-        let w = 380;
-        let h = 90;
-        if (logo.includes('GLOW')) {
-            w = 120;
-            h = 40;
-            x = 120;
-            y = 20;
-        }
-        if (logo.includes('Carbon') || logo.includes('Carbon2')) {
-            w = 220;
-            h = 70;
-            x = 50;
-            y = 10;
-        }
-        // doc.fillColor('black').fontSize(12).text(('/static' + logo), x + 50, y = + 30);
+        /*
+        el logo sin importar las dimenciondes de la imagen trndra un espacio asignado den el eje x de 15 a 300
+        y el eje y de 15 a 85 y tendra que ser dinamico el ejuste de la imagen para que no exceda esta dimension
+        */
+
         try {
-            doc.image(ruta, x, y, {
-                width: w,
-                height: h
-            });
+            if (fs.existsSync(ruta)) {
+                const image = fs.readFileSync(ruta);
+                const fitWidth = 280;
+                const fitHeight = 65;
+
+                // Obtener dimensiones originales de la imagen
+                const dimensions = sizeOf(ruta);
+                const originalWidth = dimensions.width;
+                const originalHeight = dimensions.height;
+
+                // Calcular las dimensiones ajustadas proporcionalmente
+                let finalWidth, finalHeight;
+                const aspectRatio = originalWidth / originalHeight;
+
+                if (originalWidth / fitWidth > originalHeight / fitHeight) {
+                    // Ajustar por ancho
+                    finalWidth = fitWidth;
+                    finalHeight = fitWidth / aspectRatio;
+                } else {
+                    // Ajustar por alto
+                    finalWidth = fitHeight * aspectRatio;
+                    finalHeight = fitHeight;
+                }
+
+                // Agregar la imagen ajustada al PDF
+                doc.image(image, x + 15, y + 15, {
+                    fit: [fitWidth, fitHeight], // Limitar el tamaño de la imagen
+                    align: 'center',           // Alinear al centro (opcional)
+                    valign: 'center'           // Alinear verticalmente al centro (opcional)
+                });
+
+                // Mostrar las dimensiones calculadas
+                // console.log(`Final width: ${finalWidth}`);
+                // console.log(`Final height: ${finalHeight}`);
+                yTemp = finalHeight + 15;
+            } else {
+                console.error("Error loading logo image: File does not exist");
+            }
         } catch (error) {
             console.error("Error loading logo image:", error);
-            // Continue without adding the logo
         }
 
+        /*
+        los datos del folio y la fecha se asignaran en el eje x de 310 a 590
+        y el eje y de 15 a 85
+        */
         x = 0;
         y = 0;
 
@@ -129,54 +251,57 @@ export async function get(req, res) {
         y += 15; // Adjust y position for the next text
         doc.fontSize(10).text('Hora: ', x, y);
         doc.fontSize(10).text(hora, x + doc.widthOfString('Hora: '), y);
+
+        // console.log("yTemp", yTemp, "y", y);
+
+        y = Math.max(yTemp, y) + doc.currentLineHeight();
+
+        // console.log("fff", y);
     }
 
     logoDatos(logo);
 
 
-    let cordY = y + doc.currentLineHeight() + 10;
-    let codX = x;
-    y += 15; // Adjust y position for the next text
-    x = 40; // Asignar un margen normal a x
+    let cordY = y;
+    x = 30; // Asignar un margen normal a x
 
-    let yTemp = 0;
-    let xTemp = 0;
+
     // Add company details 
     let lineSpacing = doc.currentLineHeight() + 1; // Adding extra space
 
     function addCompanyDetails(cuentas, cliente, DatosGrals) {
-        doc.fillColor('gray').fontSize(10).font('Helvetica-Bold').text(DatosGrals.nombre, x, y += lineSpacing).font('Helvetica');//nombre
+        doc.fillColor('gray').fontSize(11).font('Courier-Bold').text(DatosGrals.nombre, x, y += lineSpacing).font('Courier');//nombre
+        //el eje x se dividira en 2  desde 20 a 275 y de 297 a 590 
         yTemp = y;
         xTemp = x + 300;
-        doc.fontSize(8).text(`RFC: ${DatosGrals.rfc}`, x, y += lineSpacing);//rfc
-        doc.fontSize(8).text(`Calle: ${DatosGrals.direccion.calle},`, x, y += lineSpacing);
-        doc.fontSize(8).text(`Col.: ${DatosGrals.direccion.colonia},`, x, y += lineSpacing);
-        doc.fontSize(8).text(`${DatosGrals.direccion.municipio}, ${DatosGrals.direccion.estado}`, x, y += lineSpacing);
-        doc.fontSize(8).text(`CP: ${DatosGrals.direccion.cp} Tel: ${DatosGrals.telefono}`, x, y += lineSpacing);
-        doc.fontSize(8).text(`E-mail: ${DatosGrals.email}`, x, y += lineSpacing);
+        doc.fontSize(10).text(`RFC: ${DatosGrals.rfc}`, x, y += lineSpacing);//rfc
+        doc.fontSize(10).text(`Calle: ${DatosGrals.direccion.calle},`, x, y += lineSpacing);
+        doc.fontSize(10).text(`Col.: ${DatosGrals.direccion.colonia},`, x, y += lineSpacing);
+        doc.fontSize(10).text(`${DatosGrals.direccion.municipio}, ${DatosGrals.direccion.estado}`, x, y += lineSpacing);
+        doc.fontSize(10).text(`CP: ${DatosGrals.direccion.cp} Tel: ${DatosGrals.telefono}`, x, y += lineSpacing);
+        doc.fontSize(10).text(`E-mail: ${DatosGrals.email}`, x, y += lineSpacing);
         y += 2;
 
-        doc.fontSize(8).text('Cliente: ', xTemp, yTemp += lineSpacing);
-        doc.fontSize(8).font('Helvetica-Bold').text(cliente.nombre, xTemp + doc.widthOfString('Cliente: '), yTemp).font('Helvetica');
+        doc.fontSize(10).text('Cliente: ', xTemp, yTemp += lineSpacing);
+        doc.fontSize(10).font('Courier-Bold').text(cliente.nombre, xTemp + doc.widthOfString('Cliente: '), yTemp).font('Courier');
 
-        doc.fontSize(8).text('Domicilio:', xTemp, yTemp += lineSpacing).font('Helvetica-Bold');
+        doc.fontSize(10).text('Domicilio:', xTemp, yTemp += lineSpacing).font('Courier-Bold');
 
         xTemp += doc.widthOfString('Domicilio: ');
-        const maxWidth = 580 - xTemp;
-        const direccion = cliente.direccion;
+        const maxWidth = 590 - xTemp;
+        const direccion = cliente.direccion.replace(/\s+/g, ' ');
 
-        doc.fontSize(8).text(direccion, xTemp, yTemp, { width: maxWidth }).font('Helvetica');
+        doc.fontSize(10).text(direccion, xTemp, yTemp, { width: maxWidth }).font('Courier');
         yTemp += doc.heightOfString(direccion, { width: maxWidth });
-
-        // doc.fontSize(8).text(cliente.direccion.colonia, xTemp + doc.widthOfString(cliente.direccion.calle + ' '), yTemp);
-        // xTemp = 340;
-        // doc.fontSize(8).text(`C.P.: ${cliente.direccion.cp} `, xTemp, yTemp);
-        // doc.fontSize(8).text(`${cliente.direccion.ciudad}, ${cliente.direccion.estado}`, xTemp += doc.widthOfString(`C.P.: ${cliente.direccion.cp} `), yTemp).font('Helvetica');
         xTemp = 340;
-        doc.fontSize(8).text('Email:', xTemp, yTemp += lineSpacing).font('Helvetica-Bold');
-        doc.fontSize(8).text(cliente.correo, xTemp += doc.widthOfString('Email: '), yTemp).font('Helvetica');
+        doc.fontSize(10).text('Email:', xTemp, yTemp).font('Courier-Bold');
+        doc.fontSize(10).text(cliente.correo, xTemp += doc.widthOfString('Email: '), yTemp).font('Courier');
 
-        y += lineSpacing;
+        // console.log("yTempff", yTemp, "yff", y);
+
+        y = Math.max(y, yTemp);
+
+        y += lineSpacing + 2;
         yTemp = y;
 
         // doc.moveDown();
@@ -187,57 +312,59 @@ export async function get(req, res) {
         //------------Cuentas----------------------------------------------------------------------------
 
         cuentas.forEach((cuenta, index) => {
-            let posX = x;
+            let posX = x - 10;
             y = yTemp;
             if (cuentas.length === 1) {
                 posX = 230;
             } else {
-                if (index === 1) posX = 230;
-                if (index === 2) posX = 420;
+                if (index === 1) posX = 220;
+                if (index === 2) posX = 410;
             }
 
-            doc.fontSize(8).text(cuenta.banco, posX, y);
+            doc.fontSize(9).text(cuenta.banco, posX, y);
             y += lineSpacing;
-            doc.fontSize(8).text('Cuenta: ', posX, y);
-            doc.fontSize(8).text(cuenta.cuenta, posX + doc.widthOfString('Cuenta: '), y);
+            doc.fontSize(9).text('Cuenta: ', posX, y);
+            doc.fontSize(9).text(cuenta.cuenta, posX + doc.widthOfString('Cuenta: '), y);
             y += lineSpacing;
-            doc.fontSize(8).text('CLABE: ', posX, y);
-            doc.fontSize(8).text(cuenta.clabe, posX + doc.widthOfString('CLABE: '), y);
+            doc.fontSize(9).text('CLABE: ', posX, y);
+            doc.fontSize(9).text(cuenta.clabe, posX + doc.widthOfString('CLABE: '), y);
         });
 
         y += lineSpacing + 2;
 
         //-----------------------------------------------------------------------------------------------
         //----------lineas-----------------------------------
+        // doc.moveDown();
+        // doc.lineWidth(1).moveTo(10, 74.25).lineTo(600, 74.25).strokeColor('red').stroke();
+
+        doc.lineWidth(1).moveTo(10, cordY).lineTo(600, cordY).strokeColor('gray').stroke();
         doc.moveDown();
-        doc.lineWidth(1).moveTo(20, cordY).lineTo(590, cordY).strokeColor('gray').stroke();
-        doc.moveDown();
-        doc.lineWidth(1).moveTo(20, cordY).lineTo(20, y).strokeColor('gray').stroke();
+        doc.lineWidth(1).moveTo(10, cordY).lineTo(10, y).strokeColor('gray').stroke();
 
         // Add a line break 
         doc.moveDown();
-        doc.lineWidth(1).moveTo(590, cordY).lineTo(590, y).strokeColor('gray').stroke();
+        doc.lineWidth(1).moveTo(600, cordY).lineTo(600, y).strokeColor('gray').stroke();
         doc.moveDown();
-        doc.lineWidth(1).moveTo(20, y).lineTo(590, y).strokeColor('gray').stroke();
+        doc.lineWidth(1).moveTo(10, y).lineTo(600, y).strokeColor('gray').stroke();
     }
 
     addCompanyDetails(cuentas, cliente, DatosGrals);
 
 
     y += 10;
-    x = 20;
+    x = 10;
 
-    const tableHeaders = ['N°', 'Cantidad', 'Unidad', 'Marca', 'Código', 'Descripción', 'Precio Unitario', 'Importe'];
-    const columnWidths = [15, 40, 50, 60, 75, 180, 80, 80];
+    const tableHeaders = ['N°', 'Cant.', 'Unidad', 'Marca', 'Código', 'Descripción', 'P. Unit.', 'Importe'];
+    const columnWidths = [15, 40, 60, 70, 90, 175, 60, 65];
     const startX = 20;
     let currentY = y;
 
     function addTableHeaders() {
-        doc.fillColor('black').fontSize(8).font('Helvetica-Bold');
+        doc.fillColor('black').fontSize(11).font('Courier-Bold');
         tableHeaders.forEach((header, i) => {
             doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), currentY);
         });
-        doc.font('Helvetica');
+        doc.font('Courier');
         doc.moveDown();
         currentY += doc.currentLineHeight() + 5;
         doc.lineWidth(1).moveTo(20, currentY - 3).lineTo(590, currentY - 3).strokeColor('black').stroke();
@@ -245,30 +372,44 @@ export async function get(req, res) {
 
     // Add totals and additional information at the end of each page
     function addTotalsAndFooter() {
-        // if (currentY + doc.currentLineHeight() > 700) {
-        //     doc.addPage();
-        //     currentY = doc.page.margins.top;
-        //     addTableHeaders();
-        // }
-
         if (status === "Cancelado") {
             cancelado();
         }
 
-        doc.moveDown();
-        doc.lineWidth(1).moveTo(20, 700).lineTo(590, 700).strokeColor('black').stroke();
+        let footerStartY = 700;
+        let footerEndY = 770;
+        controlPie = footerStartY;
+
+        if (notas) {
+            const maxWidth = 480;
+            const normalizedNotas = notas.replace(/\s+/g, ' ').trim();
+            const notasHeight = doc.heightOfString(`Notas: ${normalizedNotas}`, { width: maxWidth });
+            // console.log('-----',notasHeight);
+            footerStartY -= notasHeight;
+            controlPie = footerStartY;
+            // console.log("controlPie", controlPie);
+            // const maxWidth = 480;
+            // const normalizedNotas = notas.replace(/\s+/g, ' ').trim();
+            // const lineHeight = doc.currentLineHeight();
+            // const minFooterStartY = 650;
+            // footerStartY = Math.min(minFooterStartY, 770 - doc.heightOfString(`Notas: ${normalizedNotas}`, { width: maxWidth }) - doc.currentLineHeight() - 10);
+            // console.log("footerStartY2", footerStartY2);
+        }
 
         doc.moveDown();
-        doc.lineWidth(1).moveTo(20, 770).lineTo(590, 770).strokeColor('black').stroke();
+        doc.lineWidth(1).moveTo(10, footerStartY).lineTo(600, footerStartY).strokeColor('black').stroke();
 
         doc.moveDown();
-        doc.lineWidth(1).moveTo(20, 700).lineTo(20, 770).strokeColor('black').stroke();
+        doc.lineWidth(1).moveTo(10, footerEndY).lineTo(600, footerEndY).strokeColor('black').stroke();
 
         doc.moveDown();
-        doc.lineWidth(1).moveTo(590, 700).lineTo(590, 770).strokeColor('black').stroke();
+        doc.lineWidth(1).moveTo(10, footerStartY).lineTo(10, footerEndY).strokeColor('black').stroke();
 
-        let localY = 710; // Set y position to 700 for each page
-        let localX = 30;
+        doc.moveDown();
+        doc.lineWidth(1).moveTo(600, footerStartY).lineTo(600, footerEndY).strokeColor('black').stroke();
+
+        let localY = footerStartY + 10;
+        let localX = 25;
 
         doc.fontSize(10).fillColor('black').text('Descuento: ', localX, localY);
         doc.fontSize(10).fillColor('black').text(`${descuento}%  - `, localX += doc.widthOfString('Descuento: '), localY);
@@ -280,56 +421,179 @@ export async function get(req, res) {
         const t = `Total: ${formato_precio(total)} MXN`;
         doc.fontSize(10).text(t, 579 - doc.widthOfString(t), localY);
 
-        localY += doc.currentLineHeight() + 4; // Add some space before additional information
+        localY += doc.currentLineHeight() + 7;
         doc.fontSize(10).text(`${NumeroALetras(total, moneda)}`, 30, localY);
-        localY += doc.currentLineHeight() + 10;
+        localY += doc.currentLineHeight() + 7;
 
         const centeredText = 'La paquetería corre a cuenta y riesgo del cliente';
         const textWidth = doc.widthOfString(centeredText);
         const centerX = (doc.page.width - textWidth) / 2;
-        doc.fontSize(8).font('Helvetica-Bold').text(centeredText, centerX, localY).font('Helvetica');
+        doc.fontSize(10).font('Courier-Bold').text(centeredText, centerX, localY).font('Courier');
 
+        localY += doc.currentLineHeight() + 2;
+
+        if (notas) {
+            const maxHeight = footerEndY - localY;
+            const maxWidth = 480;
+            const normalizedNotas = notas.replace(/\s+/g, ' ').trim();
+            const notasHeight = doc.heightOfString(`Notas: ${normalizedNotas}`, { width: maxWidth });
+            // console.log("notasHeight", notasHeight);
+            const lineHeight = doc.currentLineHeight();
+            const minLines = 2;
+            const minHeight = minLines * lineHeight;
+
+            // doc.lineWidth(1).moveTo(10, localY + lineHeight + 2).lineTo(490, localY + lineHeight + 2).strokeColor('green').stroke();
+            // doc.lineWidth(1).moveTo(10, localY + notasHeight + lineHeight + 2).lineTo(490, localY + notasHeight + lineHeight + 2).strokeColor('green').stroke();
+
+            const availableHeight = footerEndY - localY - lineHeight - 4;
+            const heightToUse = Math.max(minHeight, availableHeight);
+            doc.fontSize(10).text(`Notas: ${normalizedNotas}`, 20, localY + lineHeight + 2, { width: maxWidth, height: heightToUse, ellipsis: true });
+        }
+
+        yTemp = footerStartY; // Asignar en yTemp la coordenada mínima de y que se tomó
+    }
+
+    function splitTextByWidth(text, width, doc) {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+
+        words.forEach((word) => {
+            const testLine = currentLine ? `${currentLine} ${word}` : word;
+            const lineWidth = doc.widthOfString(testLine);
+            if (lineWidth <= width) {
+                currentLine = testLine;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        });
+
+        if (currentLine) {
+            lines.push(currentLine);
+        }
+
+        return lines;
+    }
+
+
+    function FoliosLista(lista) {
+        // Determina el ancho máximo para los folios
+        const maxWidth = 500; // Ajusta según el diseño
+        const foliosText = lista.join(', ');
+
+        // Divide el texto en líneas usando una función personalizada
+        const foliosLines = splitTextByWidth(foliosText, maxWidth, doc);
+
+        // Calcula el espacio necesario para imprimir todas las líneas
+        const totalFoliosHeight = foliosLines.length * doc.currentLineHeight();
+
+        // Verifica si hay espacio suficiente para imprimir los folios
+        // if (currentY + totalFoliosHeight + doc.currentLineHeight() > controlPie - 2) {
+        //     // Si no hay espacio, agrega una nueva página
+        //     doc.addPage();
+        //     currentY = doc.page.margins.top + 20; // Restablece el margen superior
+        //     addTableHeaders(); // Si hay encabezados, agrégalos
+        //     addTotalsAndFooter(); // Si hay un pie de página, agrégalo
+        // }
+
+        // Imprime las líneas de folios
+        doc.fontSize(11).fillColor('black').text('Folios: ', startX + 10, currentY + 10); // Etiqueta "Folios"
+        // let foliosY = currentY + doc.currentLineHeight() + 10;
+        let foliosY = currentY + 10;
+
+        foliosLines.forEach((line) => {
+            // Antes de imprimir cada línea, verifica si hay espacio
+            if (foliosY + doc.currentLineHeight() > controlPie - 2) {
+                doc.addPage();
+                currentY = 20;
+                addTableHeaders(); // Encabezados
+                addTotalsAndFooter(); // Pie de página
+                foliosY = currentY + 5; // Reinicia la posición en la nueva página
+            }
+            doc.fontSize(11).fillColor('gray').text(line, startX + 60, foliosY, { width: maxWidth });
+            foliosY += doc.currentLineHeight();
+        });
+
+        // Ajusta currentY para la siguiente sección
+        currentY = foliosY + 10; // Espacio adicional después de los folios
+    }
+
+
+
+
+    function addProductsPedido() {
+        Productos.forEach((row) => {
+            const marca = row.marca.toUpperCase().replace(/\s+/g, ' ').replace(/\n/g, '').trim();
+
+            const unidadHeight = doc.heightOfString(row.unidad, { width: columnWidths[2] });
+            const descripcionHeight = doc.heightOfString(row.descripcion.replace(/\s+/g, ' '), { width: columnWidths[5] });
+            const marcaHeight = doc.heightOfString(marca, { width: columnWidths[3] });
+
+            let maxHeight = Math.max(descripcionHeight, marcaHeight, unidadHeight);
+
+            if (currentY + maxHeight > controlPie - 2) {
+                // console.log("C", currentY, "P", controlPie, "CP", controlPie - 2);
+                doc.addPage();
+                currentY = doc.page.margins.top + 20;
+                addTableHeaders();
+                addTotalsAndFooter();
+            }
+
+            const rowY = currentY + 1;
+            doc.fontSize(11).fillColor('black').text(`${row.no})`, startX, rowY);
+            doc.fontSize(11).text(row.cantidad, startX + columnWidths[0], rowY, { align: 'center', width: columnWidths[1] });
+
+            doc.fontSize(11).text(row.unidad, startX + columnWidths.slice(0, 2).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[2] });
+
+            doc.fontSize(11).text(marca, startX + columnWidths.slice(0, 3).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[3] });
+
+            doc.fontSize(11).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[4] });
+
+            doc.fontSize(11).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[5] - 8 });
+            doc.fontSize(11).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY);
+            doc.fontSize(11).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY);
+
+            if (row.folios && row.folios.length > 0) {
+                currentY += maxHeight > doc.currentLineHeight() ? maxHeight : doc.currentLineHeight() + 10;
+                FoliosLista(row.folios);
+                // const foliosY = rowY + doc.currentLineHeight() + 10;
+                // const foliosText = row.folios.join(', ');
+                // const foliosLines = doc.heightOfString(foliosText, { width: 500 }) / doc.currentLineHeight();
+
+
+                // if (foliosY + (foliosLines * doc.currentLineHeight()) > controlPie - 2) {
+                //     doc.addPage();
+                //     currentY = doc.page.margins.top + 20;
+                //     addTotalsAndFooter();
+                //     addTableHeaders();
+                //     currentY -= 10;
+                // }
+
+                // doc.fontSize(11).fillColor('black').text('Folios:', startX + 10, currentY + doc.currentLineHeight() + 10);
+                // doc.fontSize(11).fillColor('gray').text(foliosText, startX + 60, currentY + doc.currentLineHeight() + 10, { width: 500 });
+                // currentY += (foliosLines * doc.currentLineHeight()) + 20; // Adjust y position for the next product
+            } else {
+                // currentY = rowY + doc.currentLineHeight() + 5;
+                currentY = rowY + doc.currentLineHeight() + 12;
+
+                // const maxHeight = Math.max(descripcionHeight, marcaHeight, unidadHeight);
+                currentY += maxHeight > doc.currentLineHeight() ? maxHeight : doc.currentLineHeight() + 20;
+            }
+        });
     }
 
     addTableHeaders();
 
     addTotalsAndFooter();
 
-    Productos.forEach((row) => {
-        if (currentY + doc.currentLineHeight() > 690) {
-            doc.addPage();
-            currentY = doc.page.margins.top + 20;
-            addTableHeaders();
-            addTotalsAndFooter();
-        }
-
-        const rowY = currentY + 1;
-        doc.fontSize(6.5).fillColor('black').text(`${row.no})`, startX, rowY);
-        doc.fontSize(6.5).text(row.cantidad, startX + columnWidths[0], rowY);
-        doc.fontSize(6.5).text(row.unidad, startX + columnWidths.slice(0, 2).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(6.5).text(row.marca, startX + columnWidths.slice(0, 3).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(6.5).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(6.5).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(6.5).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY);
-        doc.fontSize(6.5).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY);
-
-        if (row.folios && row.folios.length > 0) {
-            const foliosY = rowY + doc.currentLineHeight() + 2;
-            doc.fontSize(6).fillColor('gray').text('Folios:', startX + 10, foliosY);
-            const foliosText = row.folios.join(', ');
-            doc.fontSize(6).text(foliosText, startX + 50, foliosY, { width: 500 });
-            const foliosLines = doc.heightOfString(foliosText, { width: 500 }) / doc.currentLineHeight();
-            currentY = foliosY + (foliosLines * doc.currentLineHeight()) + 4; // Adjust y position for the next product
-        } else {
-            currentY = rowY + doc.currentLineHeight() + 2;
-        }
-    });
+    addProductsPedido();
 
     const range = doc.bufferedPageRange(); // => { start: 0, count: 2 }
 
     for (let i = range.start, end = range.start + range.count; i < end; i++) {
         doc.switchToPage(i);
-        doc.fontSize(8).fillColor('black').text(`Pagina ${i + 1} de ${range.count}`, 535, 760);
+        doc.fontSize(8).fillColor('black').text(`Pagina ${i + 1} de ${range.count}`, 520, 760);
     }
 
     doc.end();

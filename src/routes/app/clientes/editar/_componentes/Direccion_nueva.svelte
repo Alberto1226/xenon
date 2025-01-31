@@ -318,6 +318,17 @@
     updateRfisOptions();
   }
 
+  $: if (direccion_nueva.tipo === "envio") {
+    // console.log(direccion_nueva);
+    showCfdiMenu = false;
+    showRfisMenu = false;
+    direccion_nueva.rfc = "";
+    direccion_nueva.tipo_persona = "";
+    direccion_nueva.cfdi = "";
+    direccion_nueva.rfiscal = "";
+    // console.log(direccion_nueva);
+  }
+
   function updateCfdiOptions() {
     if (direccion_nueva.tipo_persona === "FISICA") {
       cfdiOptions = cfdi_pf.map((item) => ({
@@ -419,15 +430,13 @@
           <Menu origin="top left" style="width:250px;">
             <div slot="activator">
               <Button
-                color={direccion_nueva.tipo_persona == undefined
-                  ? "red"
-                  : "primary"}
+                color={direccion_nueva.tipo_persona == "" ? "red" : "primary"}
                 raised
                 ripple={false}
                 style="padding-right: 4px;width:100%;"
               >
                 <span>
-                  {direccion_nueva.tipo_persona === undefined
+                  {direccion_nueva.tipo_persona === ""
                     ? "FISICA/MORAL"
                     : direccion_nueva.tipo_persona}
                 </span>

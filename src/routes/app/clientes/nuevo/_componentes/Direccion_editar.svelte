@@ -340,6 +340,17 @@
     updateRfisOptions();
   }
 
+  $: if (direccion_a_editar.tipo === "envio") {
+    // console.log(direccion_a_editar);
+    showCfdiMenu = false;
+    showRfisMenu = false;
+    direccion_a_editar.rfc = "";
+    direccion_a_editar.tipo_persona = "";
+    direccion_a_editar.cfdi = "";
+    direccion_a_editar.rfiscal = "";
+    // console.log(direccion_a_editar);
+  }
+
   function updateCfdiOptions() {
     if (direccion_a_editar.tipo_persona === "FISICA") {
       cfdiOptions = cfdi_pf.map((item) => ({
@@ -445,7 +456,7 @@
           <Menu origin="top left" style="width:250px;">
             <div slot="activator">
               <Button
-                color={direccion_a_editar.tipo_persona == undefined
+                color={direccion_a_editar.tipo_persona == ""
                   ? "red"
                   : "primary"}
                 raised
@@ -453,7 +464,7 @@
                 style="padding-right: 4px;width:100%;"
               >
                 <span>
-                  {direccion_a_editar.tipo_persona === undefined
+                  {direccion_a_editar.tipo_persona === ""
                     ? "FISICA/MORAL"
                     : direccion_a_editar.tipo_persona}
                 </span>

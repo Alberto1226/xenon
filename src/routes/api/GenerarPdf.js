@@ -89,6 +89,11 @@ export async function get(req, res) {
 
     let buffers = [];
 
+    doc.info.Title = 'Nota de Pedido';
+    doc.info.Author = 'Isotech';
+    doc.info.Subject = 'Nota de Pedido';
+    doc.info.Keywords = '';
+
     /*
     limites generales del documento
         doc.moveDown();
@@ -484,25 +489,27 @@ doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
         const totalFoliosHeight = foliosLines.length * doc.currentLineHeight();
 
         // Verifica si hay espacio suficiente para imprimir los folios
-        if (currentY + totalFoliosHeight + doc.currentLineHeight() > controlPie - 2) {
-            // Si no hay espacio, agrega una nueva página
-            doc.addPage();
-            currentY = doc.page.margins.top + 20; // Restablece el margen superior
-            addTableHeaders(); // Si hay encabezados, agrégalos
-            addTotalsAndFooter(); // Si hay un pie de página, agrégalo
-        }
+        // if (currentY + totalFoliosHeight + doc.currentLineHeight() > controlPie - 2) {
+        //     // Si no hay espacio, agrega una nueva página
+        //     doc.addPage();
+        //     currentY = doc.page.margins.top + 20; // Restablece el margen superior
+        //     addTableHeaders(); // Si hay encabezados, agrégalos
+        //     addTotalsAndFooter(); // Si hay un pie de página, agrégalo
+        // }
 
         // Imprime las líneas de folios
         doc.fontSize(11).fillColor('black').text('Folios: ', startX + 10, currentY + 10); // Etiqueta "Folios"
-        let foliosY = currentY + doc.currentLineHeight() + 10;
+        // let foliosY = currentY + doc.currentLineHeight() + 10;
+        let foliosY = currentY + 10;
 
         foliosLines.forEach((line) => {
             // Antes de imprimir cada línea, verifica si hay espacio
             if (foliosY + doc.currentLineHeight() > controlPie - 2) {
                 doc.addPage();
-                foliosY = doc.page.margins.top + 20; // Reinicia la posición en la nueva página
+                currentY = 20;
                 addTableHeaders(); // Encabezados
                 addTotalsAndFooter(); // Pie de página
+                foliosY = currentY + 5; // Reinicia la posición en la nueva página
             }
             doc.fontSize(11).fillColor('gray').text(line, startX + 60, foliosY, { width: maxWidth });
             foliosY += doc.currentLineHeight();

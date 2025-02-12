@@ -79,22 +79,22 @@
   }
 
   function arreglar_direccion(direccion_param) {
-    if (
-      !direccion_param.calle ||
-      !direccion_param.numero_exterior ||
-      !direccion_param.colonia ||
-      !direccion_param.cp ||
-      !direccion_param.localidad_nombre ||
-      !direccion_param.municipio ||
-      !direccion_param.estado
-    ) {
-      $mensajes_app.push({
-        tipo: "error",
-        mensaje: "Todos los campos de la dirección deben estar completos",
-      });
-      $mensajes_app = $mensajes_app;
-      direccion = "";
-    } else {
+    // if (
+    //   !direccion_param.calle ||
+    //   !direccion_param.numero_exterior ||
+    //   !direccion_param.colonia ||
+    //   !direccion_param.cp ||
+    //   !direccion_param.localidad_nombre ||
+    //   !direccion_param.municipio ||
+    //   !direccion_param.estado
+    // ) {
+    //   $mensajes_app.push({
+    //     tipo: "error",
+    //     mensaje: "Todos los campos de la dirección deben estar completos",
+    //   });
+    //   $mensajes_app = $mensajes_app;
+    //   direccion = "";
+    // } else {
       direccion = direccion_param.calle;
       direccion += ", #" + direccion_param.numero_exterior;
       direccion +=
@@ -106,7 +106,7 @@
       direccion += ", Localidad: " + direccion_param.localidad_nombre;
       direccion += ", Municipio: " + direccion_param.municipio;
       direccion += ", Estado: " + direccion_param.estado;
-    }
+    // }
   }
 
   function checar_si_tiene_carrito_pendiente(id_cliente) {
@@ -510,7 +510,6 @@
       cols="30"
       rows="20"
       bind:value={direccion}
-      readonly
     />
   </div>
   <div class="perfil_del_cliente">

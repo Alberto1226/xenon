@@ -101,6 +101,17 @@
               <Button
                 on:click={() => {
                   estado_actual = 'creando cliente';
+                  goto('app/clientes/DatosCliente');
+                }}
+                icon
+                raised
+                outlined
+                title="crear cliente nuevo (Ctrl + u)">
+                <i class="material-icons">add</i>
+              </Button>
+              <Button
+                on:click={() => {
+                  estado_actual = 'creando cliente';
                   goto('app/clientes/nuevo');
                 }}
                 icon

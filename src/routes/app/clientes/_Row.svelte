@@ -8,6 +8,7 @@
     usuario_db,
     postData,
     editar_store,
+    donde,
   } from "./../../stores";
   import { onMount, createEventDispatcher } from "svelte";
   import { Button, ButtonGroup, Dialog, Textfield } from "svelte-mui/src";
@@ -311,19 +312,33 @@
                 <i class="material-icons">check</i>
               </Button>
             {/if}
-            {#if ($usuario_db.rol == "administrador" || $usuario_db.edit)}
+            {#if $usuario_db.rol == "administrador" || $usuario_db.edit}
               <Button
                 icon
                 dense
                 color="green"
                 on:click={() => {
                   $editar_store.cliente = cliente;
-                  goto("/app/clientes/editar");
+                  donde.set("editar");
+                  goto("/app/clientes/DatosCliente");
                 }}
                 title="editar"
               >
                 <i class="material-icons">create</i>
               </Button>
+              <!-- <Button
+                icon
+                dense
+                color="green"
+                on:click={() => {
+                  $editar_store.cliente = cliente;
+                  // donde.set("editar");
+                  goto("/app/clientes/editar");
+                }}
+                title="editar"
+              >
+                <i class="material-icons">create</i>
+              </Button> -->
             {/if}
             {#if $usuario_db.rol == "administrador"}
               <!-- content here -->

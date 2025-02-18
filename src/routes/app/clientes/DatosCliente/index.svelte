@@ -1,5 +1,6 @@
 <script>
     import { onMount } from "svelte";
+    import { goto } from "@sapper/app";
     import SelectPaisBs5 from "../Componentes/SelectPaisBS5.svelte";
     import SelectEstadoBs5 from "../Componentes/SelectEstadoBS5.svelte";
     import SelectMunicipiosBS5 from "../Componentes/SelectMunicipiosBS5.svelte";

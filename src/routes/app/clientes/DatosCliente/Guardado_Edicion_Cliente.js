@@ -58,9 +58,9 @@ function AcomodarCliente(cliente, direccion, usuario) {
     direccion.rfiscal = cliente_nuevo_tmp.datos_fiscales.rfiscal;
     direccion.telefono = cliente_nuevo_tmp.telefono;
     direccion.correo = cliente_nuevo_tmp.correo;
-    direccion.idPais = cliente_nuevo_tmp.direccion.idPais;
-    direccion.idEstado = cliente_nuevo_tmp.direccion.idEstado;
-    direccion.idMunicipio = cliente_nuevo_tmp.direccion.idMunicipio;
+    direccion.idPais = direccion.idPais;
+    direccion.idEstado = direccion.idEstado;
+    direccion.idMunicipio = direccion.idMunicipio;
 
     cliente_nuevo_tmp.direcciones_asociadas.push(direccion);
 

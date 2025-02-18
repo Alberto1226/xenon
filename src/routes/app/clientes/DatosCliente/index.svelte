@@ -10,10 +10,12 @@
         usuario_db,
         usuarios,
         donde,
+        editar_store,
     } from "../../../stores";
     // import { Cliente } from './path-to-your-model'; // Adjust the import path as necessary
 
     let cliente = {
+        newData: true,
         activo: true,
         agente: {
             nombre: "",
@@ -358,6 +360,8 @@
                 false,
             );
         });
+
+        console.log("asdawdawe", $editar_store.cliente);
     });
 
     function DatosAgenteSelect() {

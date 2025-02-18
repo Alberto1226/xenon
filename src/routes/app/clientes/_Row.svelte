@@ -233,10 +233,17 @@
   class:inactivo={cliente.activo === false}
 >
   <div class="uno">
-    <i style="vertical-align:middle;" class="material-icons">account_circle</i>
+    <i
+      style="vertical-align:middle; color: {cliente.newData ? 'black' : 'red'};"
+      class="material-icons"
+    >
+      account_circle
+    </i>
+
     {#if cliente.activo === false}
       <i
         class="material-icons icono_bloqueado no_select"
+        style="color: {cliente.newData ? 'red' : 'orange'};"
         title="Cliente no activo para ser seleccionado por usuarios para pedidos"
         >block</i
       >
@@ -268,6 +275,9 @@
       ></span
     >
     <br />
+    {#if !cliente.newData}
+      <span style="color: red; font-size: 0.8rem;">Faltan datos</span>
+    {/if}
   </div>
   <div class="tres">
     {#each telefonos_lista as telefono, i}

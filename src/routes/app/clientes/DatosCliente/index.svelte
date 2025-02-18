@@ -3,8 +3,15 @@
     import SelectPaisBs5 from "../Componentes/SelectPaisBS5.svelte";
     import SelectEstadoBs5 from "../Componentes/SelectEstadoBS5.svelte";
     import SelectMunicipiosBS5 from "../Componentes/SelectMunicipiosBS5.svelte";
-    import { postData, usuario_db, usuarios } from "../../../stores";
+    import {
+        postData,
+        mensajes_app,
+        usuario_db,
+        usuarios,
+    } from "../../../stores";
     // import { Cliente } from './path-to-your-model'; // Adjust the import path as necessary
+
+    export var donde;
 
     let cliente = {
         activo: true,
@@ -55,6 +62,7 @@
         localidad: "",
         localidad_nombre: "",
         municipio: "",
+        idMunicipio: "",
         nombre: "",
         notas: "",
         numero_exterior: "",
@@ -368,9 +376,9 @@
     }
 
     function updateCfdiOptions() {
-        cliente.cfdi = "";
-        cliente.rfiscal = "";
-        if (cliente.tipo_persona === "FISICA") {
+        cliente.datos_fiscales.cfdi = "";
+        cliente.datos_fiscales.rfiscal = "";
+        if (cliente.datos_fiscales.tipo_persona === "FISICA") {
             cfdiOptions = cfdi_pf.map((item) => ({
                 value: item.CFDI,
                 label: `${item.CFDI} - ${item.DES}`,
@@ -384,9 +392,12 @@
     }
 
     function updateRfisOptions() {
-        if (!cliente.cfdi == "" && cliente.tipo_persona == "MORAL") {
+        if (
+            !cliente.datos_fiscales.cfdi == "" &&
+            cliente.datos_fiscales.tipo_persona == "MORAL"
+        ) {
             const currentCfdi = cfdi_pm.find(
-                (item) => item.CFDI === cliente.cfdi,
+                (item) => item.CFDI === cliente.datos_fiscales.cfdi,
             );
             if (currentCfdi) {
                 rfOptions2 = rf.filter((item) =>
@@ -398,9 +409,12 @@
                 }));
             }
         }
-        if (!cliente.cfdi == "" && cliente.tipo_persona == "FISICA") {
+        if (
+            !cliente.datos_fiscales.cfdi == "" &&
+            cliente.datos_fiscales.tipo_persona == "FISICA"
+        ) {
             const currentCfdi = cfdi_pf.find(
-                (item) => item.CFDI === cliente.cfdi,
+                (item) => item.CFDI === cliente.datos_fiscales.cfdi,
             );
             if (currentCfdi) {
                 rfOptions2 = rf.filter((item) =>
@@ -414,12 +428,13 @@
         }
     }
 
-    function AsignarIdPais(id) {
+    function AsignarIdPais(id, nombre) {
         direccion.idPais = id;
+        direccion.pais = nombre;
         direccion.estado = "";
         direccion.idEstado = "";
         direccion.municipio = "";
-        console.log(id, "ddddddd");
+        console.log(id, "ddddddd", nombre);
     }
 
     function actualizarAgente(event) {
@@ -436,10 +451,17 @@
         console.log(cliente.agente);
     }
 
-    function AsignarIdEstado(id) {
+    function AsignarIdEstado(id, nombre) {
         direccion.idEstado = id;
+        direccion.estado = nombre;
         direccion.municipio = "";
-        console.log("esId", id);
+        console.log(nombre, "esId", id);
+    }
+
+    function AsignarMunicipio(id, nombre) {
+        direccion.idMunicipio = id;
+        direccion.municipio = nombre;
+        console.log(id, "eadqw", nombre);
     }
 
     function handleSubmit(event) {
@@ -449,12 +471,28 @@
         if (event.target.checkValidity()) {
             console.log("envio");
             return new Promise((resolve, reject) => {
+                console.log("Enviar data");
                 postData("app/clientes/DatosCliente/Guardado_Edicion_Cliente", {
                     cliente: cliente,
                     direccion: direccion,
+                    // accion: donde,
+                    accion: "crear",
                 }).then((res) => {
                     if (res.ok) {
+                        $mensajes_app.push({
+                            tipo: "exito",
+                            mensaje: res.mensaje,
+                        });
+                        $mensajes_app = $mensajes_app;
+                        resolve(res.ok);
+                        goto("app/clientes");
                     } else {
+                        $mensajes_app.push({
+                            tipo: "error",
+                            mensaje: res.mensaje,
+                        });
+                        $mensajes_app = $mensajes_app;
+                        resolve(res.ok);
                     }
                 });
             });
@@ -513,7 +551,7 @@
         <div class="col-md-4">
             <div class="form-floating mb-3">
                 <input
-                    type="tel"
+                    type="number"
                     class="form-control"
                     bind:value={cliente.telefono}
                     id="inputTelefono"
@@ -661,7 +699,7 @@
                         class="form-control"
                         id="floatingInput"
                         required
-                        bind:value={cliente.rfc}
+                        bind:value={cliente.datos_fiscales.rfc}
                     />
                     <label for="floatingInput">RFC</label>
                 </div>
@@ -673,7 +711,7 @@
                         id="floatingSelectRegion"
                         aria-label="Floating label select example"
                         required
-                        bind:value={cliente.tipo_persona}
+                        bind:value={cliente.datos_fiscales.tipo_persona}
                         on:change={updateCfdiOptions}
                     >
                         <option value="" selected>Tipo de Persona</option>
@@ -693,7 +731,7 @@
                         required
                         disabled={cfdiOptions.length === 0 ||
                             cliente.tipo_persona === ""}
-                        bind:value={cliente.cfdi}
+                        bind:value={cliente.datos_fiscales.cfdi}
                         on:change={updateRfisOptions}
                     >
                         <option value="" selected>Uso del CFDI</option>
@@ -714,7 +752,7 @@
                         aria-label="Floating label select example"
                         required
                         disabled={rfOptions.length === 0 || cliente.cfdi === ""}
-                        bind:value={cliente.rfiscal}
+                        bind:value={cliente.datos_fiscales.rfiscal}
                     >
                         <option value="" selected>Regimen Fiscal</option>
                         {#each rfOptions as item}
@@ -728,14 +766,16 @@
         <hr />
         <SelectPaisBs5
             bind:pais={direccion.pais}
-            on:pais_cambio={(event) => AsignarIdPais(event.detail.id)}
+            on:pais_cambio={(event) =>
+                AsignarIdPais(event.detail.id, event.detail.nombre)}
             size="col-md-4"
         />
         <SelectEstadoBs5
             bind:Pais={direccion.pais}
             bind:estado={direccion.estado}
             bind:IdPais={direccion.idPais}
-            on:estado_cambio={(event) => AsignarIdEstado(event.detail.id)}
+            on:estado_cambio={(event) =>
+                AsignarIdEstado(event.detail.id, event.detail.nombre)}
             size="col-md-4"
         />
         <SelectMunicipiosBS5
@@ -744,6 +784,8 @@
             bind:Estado={direccion.estado}
             bind:municipio={direccion.municipio}
             bind:IdEstado={direccion.idEstado}
+            on:municipio_cambio={(event) =>
+                AsignarMunicipio(event.detail.id, event.detail.nombre)}
             size="col-md-4"
         />
         <div class="col-md-3">
@@ -785,7 +827,7 @@
         <div class="col-md-3">
             <form class="form-floating">
                 <input
-                    type=""
+                    type="text"
                     class="form-control"
                     id="floatingInputValueCalle"
                     bind:value={direccion.calle}
@@ -797,7 +839,7 @@
         <div class="col-md-2">
             <form class="form-floating">
                 <input
-                    type=""
+                    type="text"
                     class="form-control"
                     id="floatingInputValueInterior"
                     bind:value={direccion.numero_interior}
@@ -809,7 +851,7 @@
         <div class="col-md-2">
             <form class="form-floating">
                 <input
-                    type=""
+                    type="text"
                     class="form-control"
                     id="floatingInputValueExterior"
                     bind:value={direccion.numero_exterior}
@@ -820,7 +862,7 @@
         <div class="col-md-4">
             <form class="form-floating">
                 <input
-                    type=""
+                    type="text"
                     class="form-control"
                     id="floatingInputValueEntreC"
                     bind:value={direccion.entre_calle}
@@ -832,7 +874,7 @@
         <div class="col-md-4">
             <form class="form-floating">
                 <input
-                    type=""
+                    type="text"
                     class="form-control"
                     id="floatingInputValueYCalle"
                     bind:value={direccion.y_calle}
@@ -857,7 +899,7 @@
         <div class="col-md-10">
             <form class="form-floating">
                 <input
-                    type=""
+                    type="text"
                     class="form-control"
                     id="floatingInputValueIndicaciones"
                     value=""

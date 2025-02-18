@@ -65,7 +65,11 @@
             bind:value={pais}
             on:change={() => {
                 actualizar = true;
-                dispatch("pais_cambio", { id: event.target.value });
+                dispatch("pais_cambio", {
+                    id: event.target.value,
+                    nombre: event.target.options[event.target.selectedIndex]
+                        .text,
+                });
             }}
             aria-label="Floating label select example"
             required

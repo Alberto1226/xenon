@@ -85,7 +85,11 @@
             disabled={!Estado}
             on:change={() => {
                 actualizar = true;
-                dispatch("estado_cambio", { id: event.target.value });
+                dispatch("municipio_cambio", {
+                    id: event.target.value,
+                    nombre: event.target.options[event.target.selectedIndex]
+                        .text,
+                });
             }}
             aria-label="Floating label select example"
             required

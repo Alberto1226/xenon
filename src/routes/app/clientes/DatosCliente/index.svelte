@@ -9,10 +9,9 @@
         mensajes_app,
         usuario_db,
         usuarios,
+        donde,
     } from "../../../stores";
     // import { Cliente } from './path-to-your-model'; // Adjust the import path as necessary
-
-    export var donde;
 
     let cliente = {
         activo: true,
@@ -467,6 +466,7 @@
 
     function handleSubmit(event) {
         // Handle form submission
+        console.log("dddonde", $donde);
         console.log(cliente);
         console.log(direccion);
         if (event.target.checkValidity()) {
@@ -479,6 +479,7 @@
                     // accion: donde,
                     accion: "crear",
                 }).then((res) => {
+                    console.log(donde, "*********");
                     if (res.ok) {
                         $mensajes_app.push({
                             tipo: "exito",

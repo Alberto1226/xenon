@@ -285,7 +285,7 @@ $mensajes_app = $mensajes_app;
 export var mensajes_app = writable([]);
 
 
-
+export const donde = writable(null);
 
 
 /// Post asyn usado en muchas partes

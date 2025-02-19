@@ -9,9 +9,11 @@
     export var Estado;
 
     export var municipio;
-    export var activar;
+    export var donde;
     export var actualizar;
     export var size;
+
+    let R = true;
 
     let lista = [];
     let listaSelect = [];
@@ -31,6 +33,10 @@
             // console.log("if Estado");
             ObtenerMunicipios(true);
         }
+    }
+
+    $: if (donde === "editar" && municipio) {
+        R = false;
     }
 
     async function ObtenerMunicipios(control) {
@@ -92,9 +98,13 @@
                 });
             }}
             aria-label="Floating label select example"
-            required
+            required={R}
         >
-            <option selected disabled value="">Seleccione</option>
+            {#if donde === "editar" && municipio}
+                <option selected disabled value="">{municipio}</option>
+            {:else}
+                <option selected disabled value="">Seleccione</option>
+            {/if}
             {#each listaSelect as item}
                 <option value={item._id}>{item.nombreMunicipio}</option>
             {/each}

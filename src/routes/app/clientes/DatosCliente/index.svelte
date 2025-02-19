@@ -14,6 +14,8 @@
     } from "../../../stores";
     // import { Cliente } from './path-to-your-model'; // Adjust the import path as necessary
 
+    let IdClientSelect = "";
+
     let cliente = {
         newData: true,
         activo: true,
@@ -33,6 +35,9 @@
             razon_social: "",
             rfc: "",
             nombre: "",
+            rfiscal: "",
+            tipo_persona: "",
+            cfdi: "",
         },
         localidad: "",
         localidad_nombre: "",
@@ -362,7 +367,43 @@
         });
 
         console.log("asdawdawe", $editar_store.cliente);
+        console.log("-------", $donde);
+        if ($donde === "editar") {
+            asignarDatosClienteSelecto();
+            IdClientSelect = $editar_store.cliente._id;
+        }
     });
+
+    $: if (listaAgente.length > 0) {
+        console.log("Lista de agentes no está vacía", listaAgente);
+        if ($donde === "editar") {
+            console.log("555555555");
+            let clientSelect = cliente;
+            // cliente.agente.id = clientSelect.agente.id;
+            // cliente.agente.nombre = clientSelect.agente.nombre;
+            // cliente.agente.correo = clientSelect.agente.correo;
+            const idSeleccionado = clientSelect.agente.id;
+            const agenteSeleccionado = listaAgente.find(
+                (item) => item._id === idSeleccionado,
+            );
+
+            if (agenteSeleccionado) {
+                cliente.agente.id = agenteSeleccionado._id;
+                cliente.agente.nombre = agenteSeleccionado.nombre;
+            }
+        }
+    }
+
+    $: if (cliente.datos_fiscales.tipo_persona != "") {
+        if ($donde === "editar") {
+            updateCfdiOptions();
+            updateRfisOptions();
+        }
+    }
+
+    $: if (direccion.idPais != "") {
+        console.log("pais", direccion.pais);
+    }
 
     function DatosAgenteSelect() {
         postData("app/usuarios/lista_de_usuarios")
@@ -380,8 +421,11 @@
     }
 
     function updateCfdiOptions() {
-        cliente.datos_fiscales.cfdi = "";
-        cliente.datos_fiscales.rfiscal = "";
+        if ($donde != "editar") {
+            cliente.datos_fiscales.cfdi = "";
+            cliente.datos_fiscales.rfiscal = "";
+        }
+
         if (cliente.datos_fiscales.tipo_persona === "FISICA") {
             cfdiOptions = cfdi_pf.map((item) => ({
                 value: item.CFDI,
@@ -442,12 +486,16 @@
     }
 
     function actualizarAgente(event) {
+        console.log("agenteEntro");
         const idSeleccionado = event.target.value;
         const agenteSeleccionado = listaAgente.find(
             (item) => item._id === idSeleccionado,
         );
 
+        console.log("][][][][", agenteSeleccionado);
+
         if (agenteSeleccionado) {
+            console.log("agenteAsignar");
             cliente.agente.id = agenteSeleccionado._id;
             cliente.agente.nombre = agenteSeleccionado.nombre;
         }
@@ -480,10 +528,10 @@
                 postData("app/clientes/DatosCliente/Guardado_Edicion_Cliente", {
                     cliente: cliente,
                     direccion: direccion,
-                    // accion: donde,
-                    accion: "crear",
+                    accion: $donde,
+                    IdClientSelect: IdClientSelect,
                 }).then((res) => {
-                    console.log(donde, "*********");
+                    console.log($donde, "*********");
                     if (res.ok) {
                         $mensajes_app.push({
                             tipo: "exito",
@@ -506,6 +554,73 @@
         }
     }
 
+    function asignarDatosClienteSelecto() {
+        let clientSelect = $editar_store.cliente;
+        let direccionCliSelect = clientSelect.direcciones_asociadas[0];
+        direccion.calle = direccionCliSelect.calle;
+        direccion.colonia = direccionCliSelect.colonia;
+        direccion.cp = direccionCliSelect.cp;
+        direccion.entre_calle = direccionCliSelect.entre_calle;
+        direccion.estado = direccionCliSelect.estado;
+        direccion.idEstado = direccionCliSelect.idEstado;
+        direccion.localidad = direccionCliSelect.localidad;
+        direccion.localidad_nombre = direccionCliSelect.localidad_nombre;
+        direccion.municipio = direccionCliSelect.municipio;
+        direccion.idMunicipio = direccionCliSelect.idMunicipio;
+        direccion.nombre = direccionCliSelect.nombre;
+        direccion.notas = direccionCliSelect.notas;
+        direccion.numero_exterior = direccionCliSelect.numero_exterior;
+        direccion.numero_interior = direccionCliSelect.numero_interior;
+        direccion.pais = direccionCliSelect.pais;
+        direccion.idPais = direccionCliSelect.idPais;
+        direccion.y_calle = direccionCliSelect.y_calle;
+        direccion.tipo = direccionCliSelect.tipo;
+        direccion.rfc = direccionCliSelect.rfc;
+        direccion.cfdi = direccionCliSelect.cfdi;
+        direccion.rfiscal = direccionCliSelect.rfiscal;
+        direccion.tipo_persona = direccionCliSelect.tipo_persona;
+        direccion.telefono = direccionCliSelect.telefono;
+        direccion.correo = direccionCliSelect.correo;
+        direccion.predeterminada = direccionCliSelect.predeterminada;
+
+        cliente.nombre = clientSelect.nombre;
+        cliente.alias = clientSelect.alias;
+        cliente.correo = clientSelect.correo;
+        cliente.direcciones_asociadas = clientSelect.direcciones_asociadas;
+        cliente.fecha_nacimiento = new Date(clientSelect.fecha_nacimiento)
+            .toISOString()
+            .split("T")[0];
+        cliente.fecha_creacion = new Date(clientSelect.fecha_creacion);
+        cliente.fecha_update = new Date(clientSelect.fecha_update);
+        cliente.fecha_desactivacion = new Date(
+            clientSelect.fecha_desactivacion,
+        );
+        cliente.datos_fiscales.razon_social =
+            clientSelect.datos_fiscales.razon_social;
+        cliente.datos_fiscales.rfc = clientSelect.datos_fiscales.rfc;
+        cliente.datos_fiscales.nombre = clientSelect.datos_fiscales.nombre;
+        cliente.datos_fiscales.rfiscal = clientSelect.datos_fiscales.rfiscal;
+        cliente.datos_fiscales.tipo_persona =
+            clientSelect.datos_fiscales.tipo_persona;
+        cliente.datos_fiscales.cfdi = clientSelect.datos_fiscales.cfdi;
+        cliente.localidad = clientSelect.localidad;
+        cliente.localidad_nombre = clientSelect.localidad_nombre;
+        cliente.location.lat = clientSelect.location.lat;
+        cliente.location.lng = clientSelect.location.lng;
+        cliente.perfil.perfil = clientSelect.perfil.perfil;
+        cliente.perfil.porcentaje = clientSelect.perfil.porcentaje;
+        cliente.plataforma = clientSelect.plataforma;
+        cliente.push_token = clientSelect.push_token;
+        cliente.region = clientSelect.region;
+        cliente.telefono = clientSelect.telefono;
+        cliente.uid = clientSelect.uid;
+        cliente.password = clientSelect.password;
+        cliente.observaciones = clientSelect.observaciones;
+        cliente.agente.id = clientSelect.agente.id;
+        // cliente.agente.nombre = clientSelect.agente.nombre;
+        // cliente.agente.correo = clientSelect.agente.correo;
+    }
+
     function FuncTest() {
         console.log(direccion);
     }
@@ -521,8 +636,11 @@
 />
 
 <div class="form-container">
-    <h2>Registro de Cliente</h2>
-
+    {#if $donde === "editar"}
+        <h2>Editar Cliente</h2>
+    {:else}
+        <h2>Registro de Cliente</h2>
+    {/if}
     <form
         on:submit|preventDefault={handleSubmit}
         class="row g-3 needs-validation"
@@ -581,18 +699,22 @@
             </div>
         </div>
         <div class="col-md-6">
-            <div class="form-floating mb-3">
-                <input
-                    type="password"
-                    class="form-control"
-                    bind:value={cliente.password}
-                    id="inputContra"
-                    aria-describedby="passwordHelpBlock"
-                    required
-                />
-                <label for="inputContra" class="form-label">Contraseña</label>
-                <div class="valid-feedback">¡Se ve bien!</div>
-            </div>
+            {#if $donde != "editar"}
+                <div class="form-floating mb-3">
+                    <input
+                        type="password"
+                        class="form-control"
+                        bind:value={cliente.password}
+                        id="inputContra"
+                        aria-describedby="passwordHelpBlock"
+                        required
+                    />
+                    <label for="inputContra" class="form-label"
+                        >Contraseña</label
+                    >
+                    <div class="valid-feedback">¡Se ve bien!</div>
+                </div>
+            {/if}
         </div>
         <div class="col-md-3">
             <div class="form-floating mb-3">
@@ -771,12 +893,15 @@
         {/if}
         <hr />
         <SelectPaisBs5
+            bind:donde={$donde}
             bind:pais={direccion.pais}
+            bind:idPais={direccion.idPais}
             on:pais_cambio={(event) =>
                 AsignarIdPais(event.detail.id, event.detail.nombre)}
             size="col-md-4"
         />
         <SelectEstadoBs5
+            bind:donde={$donde}
             bind:Pais={direccion.pais}
             bind:estado={direccion.estado}
             bind:IdPais={direccion.idPais}
@@ -785,6 +910,7 @@
             size="col-md-4"
         />
         <SelectMunicipiosBS5
+            bind:donde={$donde}
             bind:IdPais={direccion.idPais}
             bind:Pais={direccion.pais}
             bind:Estado={direccion.estado}
@@ -908,7 +1034,7 @@
                     type="text"
                     class="form-control"
                     id="floatingInputValueIndicaciones"
-                    value=""
+                    bind:value={direccion.notas}
                 />
                 <label for="floatingInputValueIndicaciones">Indicaciones</label>
             </form>

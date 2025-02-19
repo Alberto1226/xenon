@@ -336,7 +336,7 @@
               >
                 <i class="material-icons">create</i>
               </Button>
-              <!-- <Button
+              <Button
                 icon
                 dense
                 color="green"
@@ -348,7 +348,7 @@
                 title="editar"
               >
                 <i class="material-icons">create</i>
-              </Button> -->
+              </Button>
             {/if}
             {#if $usuario_db.rol == "administrador"}
               <!-- content here -->

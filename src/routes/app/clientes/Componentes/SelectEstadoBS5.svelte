@@ -13,13 +13,14 @@
     export var Pais;
 
     export var estado;
-    export var activar;
+    export var donde;
     export var actualizar;
     export var size;
 
     let lista = [];
     let listaSelect = [];
     var busqueda = "";
+    let R = true;
 
     const dispatch = createEventDispatcher();
 
@@ -44,6 +45,10 @@
                 console.log(data, data.mensaje);
             }
         });
+    }
+
+    $: if (donde === "editar" && estado) {
+        R = false;
     }
 
     function filtrar_nuevo_arreglo() {
@@ -88,9 +93,13 @@
                 });
             }}
             aria-label="Floating label select example"
-            required
+            required={R}
         >
-            <option selected disabled value="">Seleccione</option>
+            {#if donde === "editar" && estado}
+                <option selected disabled value="">{estado}</option>
+            {:else}
+                <option selected disabled value="">Seleccione</option>
+            {/if}
             {#each listaSelect as item}
                 <option value={item._id}>{item.nombreEstado}</option>
             {/each}

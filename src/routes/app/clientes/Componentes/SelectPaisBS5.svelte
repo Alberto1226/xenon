@@ -5,10 +5,13 @@
 
     const dispatch = createEventDispatcher();
 
-    export var pais;
+    export let pais;
+    export let donde;
+    export var idPais;
     // export const activar;
     export var actualizar;
     export var size;
+    let R = true;
 
     let lista = [];
     let listaSelect = [];
@@ -48,6 +51,10 @@
             return normalizedItem.includes(normalizedBusqueda);
         });
     }
+
+    $: if (donde === "editar" && pais) {
+        R = false;
+    }
 </script>
 
 <link
@@ -62,7 +69,7 @@
         <select
             class="form-select"
             id="floatingSelectGrid"
-            bind:value={pais}
+            bind:value={idPais}
             on:change={() => {
                 actualizar = true;
                 dispatch("pais_cambio", {
@@ -72,7 +79,7 @@
                 });
             }}
             aria-label="Floating label select example"
-            required
+            required={R}
         >
             <!-- {#if pais}
                 {#each listaSelect as item}
@@ -87,7 +94,11 @@
                     <option value={item._id}>{item.nombre}</option>
                 {/each}
             {/if} -->
-            <option selected disabled value="">Seleccione</option>
+            {#if donde === "editar" && pais}
+                <option selected disabled value="">{pais}</option>
+            {:else}
+                <option selected disabled value="">Seleccione</option>
+            {/if}
             {#each listaSelect as item}
                 <option value={item._id}>{item.nombre}</option>
             {/each}

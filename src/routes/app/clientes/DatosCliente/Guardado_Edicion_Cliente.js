@@ -1,6 +1,21 @@
 import { Cliente } from "../../../../models/cliente";
 import * as accesos from "../../accesos";
 
+/**
+ * Maneja la solicitud POST para crear o editar un cliente.
+ *
+ * @param {Object} req - El objeto de solicitud.
+ * @param {Object} req.body - El cuerpo de la solicitud.
+ * @param {string} req.body.accion - La acción a realizar, ya sea "crear" o "editar".
+ * @param {Object} req.body.cliente - Los datos del cliente para la creación.
+ * @param {string} req.body.cliente.correo - El correo electrónico del cliente.
+ * @param {Object} req.body.direccion - La dirección del cliente.
+ * @param {Object} req.body.cliMod - Los datos modificados del cliente para la edición.
+ * @param {string} req.body.IdClientSelect - El ID del cliente a editar.
+ * @param {Object} req.user - El usuario que realiza la solicitud.
+ * @param {Object} res - El objeto de respuesta.
+ * @param {Function} next - La siguiente función de middleware.
+ */
 export function post(req, res, next) {
 
     if (accesos.esta_logueado(req) === false) {
@@ -41,89 +56,23 @@ export function post(req, res, next) {
     }
 
     if (req.body.accion === "editar") {
-        let cliente_Acomodado = AcomodarCliente(req.body.cliente, req.body.direccion, req.user, req.body.accion);
         const mongoose = require('mongoose');
-        let idCliente = new mongoose.Types.ObjectId(req.body.IdClientSelected);
-        Cliente.findByIdAndUpdate(idCliente, { $set: 
-            { 
-                newData:true,
-                agente: cliente_Acomodado.agente,
-                datos_fiscales: cliente_Acomodado.datos_fiscales,
-                perfil: cliente_Acomodado.perfil,
-                alias: cliente_Acomodado.alias,
-                nombre: cliente_Acomodado.nombre,
-                correo: cliente_Acomodado.correo,
-                telefono: cliente_Acomodado.telefono,
-                fecha_nacimiento: cliente_Acomodado.fecha_nacimiento,
-                fecha_update: new Date(),
-                region: cliente_Acomodado.region,
-                direcciones_asociadas: cliente_Acomodado.direcciones_asociadas,
 
-             } 
-        }, { new: true })
-            .then((updatedCliente) => {
-                if (!updatedCliente) {
+        let idCliente = new mongoose.Types.ObjectId(req.body.IdClientSelect);
+        let nuevo_cliente = req.body.cliMod;
+
+        Cliente.findByIdAndUpdate(idCliente, { $set: nuevo_cliente }, { new: true })
+            .then((data) => {
+                if (!data) {
                     return res.send({ ok: false, mensaje: "Cliente no encontrado" });
                 }
-                res.send({ ok: true, mensaje: "cliente editado", cliente: updatedCliente });
+                res.send({ ok: true, mensaje: "Cliente editado", data: data });
             })
             .catch((err) => {
-                console.log(err);
-                res.send({ ok: false, mensaje: "No se pudo editar" });
+                console.error("Error al actualizar cliente:", err);
+                res.send({ ok: false, mensaje: "No se pudo editar el cliente" });
             });
     }
-
-    // if (req.body.accion === "editar") {
-    //     //editar cliente
-    //     // res.send({ ok: false, mensaje: "editar cliente" });
-    //     const mongoose = require('mongoose');
-    //     let idCliente = new mongoose.Types.ObjectId(req.body.IdClientSelected);
-    //     console.log("idCliente", idCliente);
-    //     if (!mongoose.Types.ObjectId.isValid(idCliente)) {
-    //         return res.send({ ok: false, mensaje: "ID de cliente no válido" });
-    //     }
-    //     let cliente = {};
-
-    //     let cliente_Acomodado = AcomodarCliente(req.body.cliente, req.body.direccion, req.user, req.body.accion);
-
-    //     try {
-    //         cliente.newData = cliente_Acomodado.newData;
-    //         cliente.nombre = cliente_Acomodado.nombre;
-    //         cliente.alias = cliente_Acomodado.alias;
-    //         cliente.correo = cliente_Acomodado.correo;
-    //         cliente.direcciones_asociadas = cliente_Acomodado.direcciones_asociadas;
-    //         cliente.fecha_nacimiento = cliente_Acomodado.fecha_nacimiento;
-    //         cliente.fecha_update = new Date();
-    //         cliente.datos_fiscales = cliente_Acomodado.datos_fiscales;
-    //         cliente.localidad = cliente_Acomodado.localidad;
-    //         cliente.localidad_nombre = cliente_Acomodado.localidad_nombre;
-    //         cliente.location = cliente_Acomodado.location;
-    //         cliente.perfil = cliente_Acomodado.perfil;
-    //         cliente.plataforma = cliente_Acomodado.plataforma;
-    //         cliente.push_token = cliente_Acomodado.push_token;
-    //         cliente.region = cliente_Acomodado.region;
-    //         cliente.telefono = cliente_Acomodado.telefono;
-    //         cliente.uid = cliente_Acomodado.uid;
-    //         cliente.password = cliente_Acomodado.password;
-    //         cliente.observaciones = cliente_Acomodado.observaciones;
-    //         cliente.agente = cliente_Acomodado.agente;
-    //     } catch (error) {
-    //         console.log(error);
-    //         res.send({ ok: false, mensaje: "No se pudo editar" });
-    //     }
-
-    //     // Cliente.findByIdAndUpdate(idCliente, { $set: cliente }, { new: true })
-    //     Cliente.updateOne({ _id: idCliente }, { $set: cliente })
-    //         .then((updatedCliente) => {
-    //             if (updatedCliente.matchedCount === 0) {
-    //                 return res.send({ ok: false, mensaje: "Cliente no encontrado", cliente: updatedCliente });
-    //             }
-    //             res.send({ ok: true, mensaje: "cliente editado", cliente: updatedCliente });
-    //         }).catch((err) => {
-    //             console.log(err);
-    //             res.send({ ok: false, mensaje: "No se pudo editar" });
-    //         });
-    // }
 }
 
 function AcomodarCliente(cliente, direccion, usuario, accion) {
@@ -145,7 +94,7 @@ function AcomodarCliente(cliente, direccion, usuario, accion) {
     direccion.idEstado = direccion.idEstado;
     direccion.idMunicipio = direccion.idMunicipio;
     direccion.nombre = cliente_nuevo_tmp.nombre;
-    direccion.notas = cliente_nuevo_tmp.notas;
+    direccion.notas = direccion.notas;
 
     if (accion === "crear") {
         cliente_nuevo_tmp.direcciones_asociadas.push(direccion);

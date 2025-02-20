@@ -9,6 +9,7 @@ var schema = new Schema({
     cp: { type: String, default: '' },
     entre_calle: { type: String, default: '' },
     estado: { type: String, default: '' },
+    predeterminada: { type: Boolean, default: false },
     idEstado: { type: String, default: '' },
     localidad: { type: String, default: '' },
     localidad_nombre: { type: String, default: '' },

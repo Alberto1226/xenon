@@ -1,3 +1,10 @@
+<!--
+
+    Este componente Svelte es parte del módulo "DatosCliente" dentro de la sección "clientes" de la aplicación.
+    Se encuentra en el directorio "routes/app/clientes/DatosCliente".
+    El componente es responsable de manejar y mostrar los datos del cliente.
+-->
+
 <script>
     import { onMount } from "svelte";
     import { goto } from "@sapper/app";
@@ -366,8 +373,8 @@
             );
         });
 
-        console.log("asdawdawe", $editar_store.cliente);
-        console.log("-------", $donde);
+        // console.log("asdawdawe", $editar_store.cliente);
+        // console.log("-------", $donde);
         if ($donde === "editar") {
             asignarDatosClienteSelecto();
             IdClientSelect = $editar_store.cliente._id;
@@ -375,9 +382,9 @@
     });
 
     $: if (listaAgente.length > 0) {
-        console.log("Lista de agentes no está vacía", listaAgente);
+        // console.log("Lista de agentes no está vacía", listaAgente);
         if ($donde === "editar") {
-            console.log("555555555");
+            // console.log("555555555");
             let clientSelect = cliente;
             // cliente.agente.id = clientSelect.agente.id;
             // cliente.agente.nombre = clientSelect.agente.nombre;
@@ -401,9 +408,9 @@
         }
     }
 
-    $: if (direccion.idPais != "") {
-        console.log("pais", direccion.pais);
-    }
+    // $: if (direccion.idPais != "") {
+    //     console.log("pais", direccion.pais);
+    // }
 
     function DatosAgenteSelect() {
         postData("app/usuarios/lista_de_usuarios")
@@ -482,56 +489,62 @@
         direccion.estado = "";
         direccion.idEstado = "";
         direccion.municipio = "";
-        console.log(id, "ddddddd", nombre);
+        // console.log(id, "ddddddd", nombre);
     }
 
     function actualizarAgente(event) {
-        console.log("agenteEntro");
+        // console.log("agenteEntro");
         const idSeleccionado = event.target.value;
         const agenteSeleccionado = listaAgente.find(
             (item) => item._id === idSeleccionado,
         );
 
-        console.log("][][][][", agenteSeleccionado);
+        // console.log("][][][][", agenteSeleccionado);
 
         if (agenteSeleccionado) {
-            console.log("agenteAsignar");
+            // console.log("agenteAsignar");
             cliente.agente.id = agenteSeleccionado._id;
             cliente.agente.nombre = agenteSeleccionado.nombre;
         }
 
-        console.log(cliente.agente);
+        // console.log(cliente.agente);
     }
 
     function AsignarIdEstado(id, nombre) {
         direccion.idEstado = id;
         direccion.estado = nombre;
         direccion.municipio = "";
-        console.log(nombre, "esId", id);
+        // console.log(nombre, "esId", id);
     }
 
     function AsignarMunicipio(id, nombre) {
         direccion.idMunicipio = id;
         direccion.municipio = nombre;
-        console.log(id, "eadqw", nombre);
+        // console.log(id, "eadqw", nombre);
     }
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         // Handle form submission
-        console.log("dddonde", $donde);
-        console.log(cliente);
-        console.log(direccion);
+
+        if ($donde === "editar") {
+            await EditarClienteSelecto();
+        }
+
+        // console.log("dddonde", $donde);
+        // console.log(cliente);
+        // console.log(direccion);
         if (event.target.checkValidity()) {
-            console.log("envio");
+            // console.log("envio");
             return new Promise((resolve, reject) => {
-                console.log("Enviar data");
+                // console.log("Enviar data");
                 postData("app/clientes/DatosCliente/Guardado_Edicion_Cliente", {
                     cliente: cliente,
                     direccion: direccion,
                     accion: $donde,
                     IdClientSelect: IdClientSelect,
+                    cliMod: $editar_store.cliente,
                 }).then((res) => {
-                    console.log($donde, "*********");
+                    // console.log($donde, "*********");
                     if (res.ok) {
                         $mensajes_app.push({
                             tipo: "exito",
@@ -621,8 +634,57 @@
         // cliente.agente.correo = clientSelect.agente.correo;
     }
 
-    function FuncTest() {
-        console.log(direccion);
+    async function EditarClienteSelecto() {
+        $editar_store.cliente.newData = true;
+        $editar_store.cliente.nombre = cliente.nombre;
+        $editar_store.cliente.alias = cliente.alias;
+        $editar_store.cliente.telefono = cliente.telefono;
+        $editar_store.cliente.correo = cliente.correo;
+        $editar_store.cliente.fecha_nacimiento = cliente.fecha_nacimiento;
+        $editar_store.cliente.region = cliente.region;
+        $editar_store.cliente.perfil.perfil = cliente.perfil.perfil;
+        $editar_store.cliente.observaciones = cliente.observaciones;
+        $editar_store.cliente.datos_fiscales.rfc = cliente.datos_fiscales.rfc;
+        $editar_store.cliente.datos_fiscales.tipo_persona =
+            cliente.datos_fiscales.tipo_persona;
+        $editar_store.cliente.datos_fiscales.cfdi = cliente.datos_fiscales.cfdi;
+        $editar_store.cliente.datos_fiscales.rfiscal =
+            cliente.datos_fiscales.rfiscal;
+        $editar_store.cliente.direcciones_asociadas[0] = {
+            calle: direccion.calle,
+            colonia: direccion.colonia,
+            cp: direccion.cp,
+            entre_calle: direccion.entre_calle,
+            estado: direccion.estado,
+            idEstado: direccion.idEstado,
+            localidad: direccion.localidad,
+            localidad_nombre: direccion.localidad_nombre,
+            municipio: direccion.municipio,
+            idMunicipio: direccion.idMunicipio,
+            nombre: direccion.nombre,
+            notas: direccion.notas,
+            numero_exterior: direccion.numero_exterior,
+            numero_interior: direccion.numero_interior,
+            pais: direccion.pais,
+            idPais: direccion.idPais,
+            y_calle: direccion.y_calle,
+            tipo: direccion.tipo,
+            rfc: direccion.rfc,
+            cfdi: direccion.cfdi,
+            rfiscal: direccion.rfiscal,
+            tipo_persona: direccion.tipo_persona,
+            telefono: direccion.telefono,
+            correo: direccion.correo,
+            predeterminada: direccion.predeterminada,
+        };
+
+        if (
+            $usuario_db.rol === "administrador" ||
+            $usuario_db.rol === "gerente"
+        ) {
+            $editar_store.cliente.agente.id = cliente.agente.id;
+            $editar_store.cliente.agente.nombre = cliente.agente.nombre;
+        }
     }
 
     // Example starter JavaScript for disabling form submissions if there are invalid fields
@@ -809,7 +871,6 @@
                     aria-label="Floating label select example"
                     required
                     bind:value={direccion.tipo}
-                    on:change={FuncTest}
                 >
                     <option value="" selected>Tipo de direccion</option>
                     <option value="Envio">Envio</option>
@@ -1039,25 +1100,32 @@
                 <label for="floatingInputValueIndicaciones">Indicaciones</label>
             </form>
         </div>
-        <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-dark">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    fill="currentColor"
-                    class="bi bi-floppy-fill"
-                    viewBox="0 0 16 16"
-                >
-                    <path
-                        d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"
-                    />
-                    <path
-                        d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"
-                    />
-                </svg>
-                Guardar</button
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end w-100">
+            <button type="submit" class="btn btn-dark me-md-2 w-100">
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-floppy-fill"
+                viewBox="0 0 16 16"
             >
+                <path
+                d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"
+                />
+                <path
+                d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"
+                />
+            </svg>
+            Guardar
+            </button>
+            <button
+            type="button"
+            class="btn btn-danger w-100"
+            on:click={() => goto("app/clientes")}
+            >
+            Cancelar
+            </button>
         </div>
     </form>
 </div>

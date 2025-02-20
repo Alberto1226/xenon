@@ -51,7 +51,7 @@
             if (data.ok) {
                 lista = data.municipios;
                 listaSelect = lista;
-                console.log(data, data.mensaje);
+                // console.log(data, data.mensaje);
             }
         });
     }

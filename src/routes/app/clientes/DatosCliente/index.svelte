@@ -786,6 +786,7 @@
                     bind:value={cliente.fecha_nacimiento}
                     id="inputCumple"
                     required
+                    max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
                 />
                 <label for="inputCumple" class="form-label">Cumpleaños</label>
                 <div class="valid-feedback">¡Se ve bien!</div>
@@ -984,7 +985,7 @@
         <div class="col-md-3">
             <form class="form-floating">
                 <input
-                    type="text"
+                    type="number"
                     class="form-control"
                     id="floatingInputValueZip"
                     bind:value={direccion.cp}

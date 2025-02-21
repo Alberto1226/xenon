@@ -112,7 +112,7 @@
               >
                 <i class="material-icons">add</i>
               </Button>
-              <Button
+              <!-- <Button
                 on:click={() => {
                   estado_actual = "creando cliente";
                   goto("app/clientes/nuevo");
@@ -123,7 +123,7 @@
                 title="crear cliente nuevo (Ctrl + u)"
               >
                 <i class="material-icons">add</i>
-              </Button>
+              </Button> -->
             </td>
           </tr>
         </table>

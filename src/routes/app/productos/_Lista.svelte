@@ -115,7 +115,8 @@ $: if($storeWithDebounce  ){
     return new Promise((resolve, reject) => {
       if (http_ocupado_archivo) return;
       http_ocupado = true;
-      postData("app/productos/lista_de_todos_los_productos", {})
+      // postData("app/productos/lista_de_todos_los_productos", {})
+      postData("app/productos/Listar_Poductos_Descargar", {})
         .then(async (res) => {
           setTimeout(() => {
             //console.log(res);

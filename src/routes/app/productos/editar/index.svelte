@@ -58,7 +58,7 @@
     galeria_imagenes: [],
     para_venta_publico: true,
     aplicar_descuento_distribuidor: true,
-    existencia: { actual: 0, minimo: 0, maximo: 0 },
+    existencia: { actual: 0, minimo: 0, maximo: 0, masterBox: 0 },
     carritos: [],
     activo: true,
   };
@@ -228,7 +228,7 @@
       return nuevo_producto.urlApi;
     }
     let urlComp = "https://apipuente.isotech.mx/apipuente/public";
-    console.log("a", archivos[0].base64);
+    // console.log("a", archivos[0].base64);
     let imgBase64 = archivos[0].base64.replace(/^data:image\/\w+;base64,/, "");
     let planta = "Pruebas";
     // let nameDB = process.env.DB;
@@ -404,6 +404,19 @@
                     message="Máximo"
                     type="number"
                   />
+                </td>
+              </tr>
+              <tr>
+                <td style="display: flex; align-items: center;">
+                  <i class="material-icons" style="margin-right: 8px;">inventory_2</i>
+                  <Textfield
+                  outlined
+                  bind:value={nuevo_producto.existencia.masterBox}
+                  placeholder="Master Box"
+                  message="Master Box"
+                  type="number"
+                  />
+                    <span style="margin-left: 8px;">Cantidad por MasterBox</span>
                 </td>
               </tr>
             </table>

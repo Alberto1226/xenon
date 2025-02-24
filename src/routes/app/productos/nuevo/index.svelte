@@ -41,7 +41,7 @@
     galeria_imagenes: [],
     para_venta_publico: true,
     aplicar_descuento_distribuidor: true,
-    existencia: { actual: 0, minimo: 0, maximo: 0 },
+    existencia: { actual: 0, minimo: 0, maximo: 0, masterBox: 0 },
     carritos: [],
     activo: true,
   };
@@ -320,6 +320,21 @@
                 message="Máximo"
                 type="number"
               />
+            </td>
+          </tr>
+          <tr>
+            <td style="display: flex; align-items: center;">
+              <i class="material-icons" style="margin-right: 8px;"
+                >inventory_2</i
+              >
+              <Textfield
+                outlined
+                bind:value={nuevo_producto.existencia.masterBox}
+                placeholder="Master Box"
+                message="Master Box"
+                type="number"
+              />
+              <span style="margin-left: 8px;">Cantidad por MasterBox</span>
             </td>
           </tr>
         </table>

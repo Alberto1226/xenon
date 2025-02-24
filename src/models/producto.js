@@ -28,7 +28,8 @@ var schema = new Schema({
         actual: { type: Number, default: 0 },
         minimo: { type: Number, default: 0 },
         maximo: { type: Number, default: 0 },
-        folios: []
+        folios: [],
+        masterBox: { type: Number, default: 0 }//se agrega este campo para poder hacer ventas de cajas de los productos
     },
     promo: {
         tiene_promo: { type: Boolean, default: false },

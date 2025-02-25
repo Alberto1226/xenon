@@ -281,6 +281,20 @@
               />
             </td>
           </tr>
+          <tr>
+            <td>
+              <span class="indice_row">$</span>
+            </td>
+            <td>
+              <Textfield
+                outlined
+                bind:value={nuevo_producto.precio_compra}
+                placeholder="Precio Compra*"
+                message="Precio Compra*"
+                type="number"
+              />
+            </td>
+          </tr>
         </table>
         <Checkbox
           {...props}

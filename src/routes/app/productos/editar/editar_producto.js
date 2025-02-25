@@ -21,6 +21,7 @@ export async function post(req, res, next) {
     var archivos = req.body.archivos;
     var numero_archivos = archivos.length;
     var producto = req.body;
+    // console.log(producto.precio_compra);
     const producto_const_proceso = await devolver_producto_db(producto._id);
     if (producto_const_proceso.ok == false) {
         return res.send({ ok: false, message: "El producto ya no existe" })
@@ -46,6 +47,8 @@ export async function post(req, res, next) {
 
 
     if (archivos.length == 0) {
+
+        // console.log("===",producto.precio_compra);
 
         delete producto.archivos;
         //  //console.log("hola");
@@ -208,7 +211,7 @@ export async function post(req, res, next) {
                 });
             } else {
                 throw new Error("Error en la respuesta");
-                console.log("Errorrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
+                // console.log("Errorrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
                 return null;
             }
         });

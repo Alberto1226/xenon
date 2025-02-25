@@ -50,6 +50,7 @@
     codigo: "",
     nombre: "",
     precio: 0,
+    precio_compra:0,
     descripcion: "",
     marca: "",
 
@@ -255,7 +256,7 @@
       if (response.status === 200) {
         return response.json().then((data) => {
           nuevo_producto.urlApi = urlComp + data.url;
-          console.log(urlComp + data.url);
+          // console.log(urlComp + data.url);
         });
       } else {
         throw new Error("Error en la respuesta");
@@ -350,6 +351,22 @@
                     bind:value={nuevo_producto.precio}
                     placeholder="Precio público*"
                     message="Precio público*"
+                    type="number"
+                  />
+                {/if}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span class="indice_row">$</span>
+              </td>
+              <td>
+                {#if $usuario_db.rol === "administrador"}
+                  <Textfield
+                    outlined
+                    bind:value={nuevo_producto.precio_compra}
+                    placeholder="Precio Compra*"
+                    message="Precio Compra*"
                     type="number"
                   />
                 {/if}

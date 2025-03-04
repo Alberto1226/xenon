@@ -30,7 +30,10 @@ export async function post(req, res, next) {
     //      evitar sobreescribir existencia actual
     producto.existencia.actual = producto_const.existencia.actual;
 
-    accesos.logActividad('productos/editar/editar_un_producto=' + producto.nombre, req.user, producto, req);
+    //se quita el arreglo de archivos para que no se guarde en los logs el archivo en base 64 y sature el registro
+    let productoSinB64 = { ...producto, archivos: undefined };
+
+    accesos.logActividad('productos/editar/editar_un_producto=' + producto.nombre, req.user, productoSinB64, req);
 
 
     //console.log("archivos = " + archivos.length)

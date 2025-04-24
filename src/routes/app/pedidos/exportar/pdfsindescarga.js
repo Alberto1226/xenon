@@ -63,6 +63,7 @@ export async function get(req, res, next) {
       return;
     }
     productos_en_pedido(id, origen).then((respuesta) => {
+      // console.log("--------->", respuesta.fecha);
       let texto = data.replace('_contenido', respuesta.productos);
       texto = texto.replace("_xenon", texto_head_xenon(DR));
       texto = texto.replace('<img src="/imagenes/logo-xenon.png" class="logo" alt="logotipo" />', `<img src="${logDb}" class="logo" alt="logotipo" />`);
@@ -161,7 +162,7 @@ function texto_head_cliente_domicilio(cliente) {
 }
 function texto_head_footer_total(footer, final, unidades) {
   ///   Notas de pedido
-  console.log(footer)
+  // console.log(footer)
   let notas = ""
   if (footer.notas != "") {
     const texto_limitado = footer.notas.substring(0, 567);
@@ -215,6 +216,7 @@ function sumar_cantidades_unidades(lista) {
 async function productos_en_pedido(id, origen) {
   return new Promise(async (resolve, reject) => {
     const carrito = await consultar_carrito(id, origen)
+    // console.log("|->", carrito.fecha_creado);
 
     if (carrito.lista.length === 0) {
       if (origen === "pedidos3") {
@@ -230,7 +232,7 @@ async function productos_en_pedido(id, origen) {
         resolve({
           productos: "sin productos",
           cliente: carrito.cliente,
-          fecha: carrito.fecha,
+          fecha: carrito.fecha_creado || carrito.fecha,
           folio: carrito.folio
         });
         return
@@ -260,7 +262,7 @@ async function productos_en_pedido(id, origen) {
       resolve({
         productos: texto,
         cliente: carrito.cliente,
-        fecha: carrito.fecha,
+        fecha: carrito.fecha_creado || carrito.fecha,
         folio: carrito.folio
       });
       return
@@ -366,7 +368,7 @@ async function consultar_carrito(id, origen) {
     if (origen === "pedidos1") {
       Carrito.findById(id)
         .then((resultado) => {
-          console.log(resultado, "pedidos1");
+          // console.log(resultado, "pedidos1");
           resolve(resultado)
         })
         .catch((err) => {
@@ -378,7 +380,7 @@ async function consultar_carrito(id, origen) {
     if (origen === "pedidos2") {
       Pedido.findById(id)
         .then((resultado) => {
-          console.log(resultado, "pedidos2");
+          // console.log(resultado, "pedidos2");
           resolve(resultado)
         })
         .catch((err) => {
@@ -390,7 +392,7 @@ async function consultar_carrito(id, origen) {
     if (origen === "pedidos3") {
       Carrito_cancelado.findById(id)
         .then((resultado) => {
-          console.log(resultado, "pedidos3");
+          // console.log(resultado, "pedidos3");
           resolve(resultado)
         })
         .catch((err) => {

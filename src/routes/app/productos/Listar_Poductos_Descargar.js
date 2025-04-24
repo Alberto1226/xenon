@@ -16,7 +16,7 @@ function consulta() {
     const mongoose = require('mongoose');
     return new Promise((resolve, reject) => {
         try {
-            mongoose.connection.collection('vistaProductosDescarga2').find({}).toArray().then((resDB) => {
+            mongoose.connection.collection('vistaProductosDescarga').find({}).toArray().then((resDB) => {
                 resolve({ ok: true, lista: resDB });
             }).catch((err) => {
                 console.log(err);

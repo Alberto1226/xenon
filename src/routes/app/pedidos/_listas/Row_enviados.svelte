@@ -232,13 +232,13 @@
   </div>
   <div class="dos" />
   <div class="tres">
-    {pedido.fecha == undefined
+    {pedido.fecha_creado == undefined
       ? ""
-      : new Date(pedido.fecha).toLocaleDateString("es-MX", options)}
+      : new Date(pedido.fecha_creado).toLocaleDateString("es-MX", options)}
     <br />
-    {pedido.fecha == undefined
+    {pedido.fecha_creado == undefined
       ? ""
-      : new Date(pedido.fecha).toLocaleTimeString("es-MX")}
+      : new Date(pedido.fecha_creado).toLocaleTimeString("es-MX")}
     <br />
     <span class="indice_row">{pedido.usuario_que_registro.usuario}</span>
   </div>

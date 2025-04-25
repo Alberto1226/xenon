@@ -355,14 +355,15 @@ doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
     x = 10;
 
     const tableHeaders = ['N°', 'Cant.', 'Unidad', 'Marca', 'Código', 'Descripción', 'P. Unit.', 'Importe'];
-    const columnWidths = [15, 40, 60, 70, 90, 175, 60, 65];
+    const columnWidths = [10, 35, 55, 70, 90, 170, 70, 75];
     const startX = 20;
     let currentY = y;
 
     function addTableHeaders() {
         doc.fillColor('black').fontSize(11).font('Courier-Bold');
         tableHeaders.forEach((header, i) => {
-            doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), currentY);
+            // doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0), currentY);
+            doc.text(header, startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0) + (columnWidths[i] - doc.widthOfString(header)) / 2, currentY);
         });
         doc.font('Courier');
         doc.moveDown();
@@ -548,11 +549,15 @@ doc.lineWidth(1).moveTo(15, 15).lineTo(300, 15).strokeColor('blue').stroke();
 
             doc.fontSize(11).text(marca, startX + columnWidths.slice(0, 3).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[3] });
 
+            // doc.fontSize(11).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[4] });
             doc.fontSize(11).text(row.codigo, startX + columnWidths.slice(0, 4).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[4] });
 
-            doc.fontSize(11).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[5] - 8 });
-            doc.fontSize(11).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY);
-            doc.fontSize(11).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY);
+            // doc.fontSize(11).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY, { align: 'justify', width: columnWidths[5] - 8 });
+            doc.fontSize(11).text(row.descripcion.replace(/\s+/g, ' '), startX + columnWidths.slice(0, 5).reduce((a, b) => a + b, 0), rowY, { align: 'left', width: columnWidths[5] - 8 });
+            // doc.fontSize(11).text(formato_precio(row.precioUnitario), startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY);
+            doc.fontSize(11).text(`$${formato_precio(row.precioUnitario)}`, startX + columnWidths.slice(0, 6).reduce((a, b) => a + b, 0), rowY, { align: 'right', width: columnWidths[6] });
+            // doc.fontSize(11).text(formato_precio(row.importe), startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY);
+            doc.fontSize(11).text(`$${formato_precio(row.importe)}`, startX + columnWidths.slice(0, 7).reduce((a, b) => a + b, 0), rowY, { align: 'right', width: columnWidths[7] });
 
             if (row.folios && row.folios.length > 0) {
                 currentY += maxHeight > doc.currentLineHeight() ? maxHeight : doc.currentLineHeight() + 10;

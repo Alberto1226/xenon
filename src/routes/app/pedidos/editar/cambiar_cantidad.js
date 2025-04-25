@@ -83,14 +83,14 @@ export async function post(req, res, next) {
             registro.promo = { con_promo: false }
         }
         //  PRECIO con PROMO ? , puede reescribir el precio del producto, si fue solicitado y cuenta con una promocion
-        //console.log({tiene:producto_seguro.promo.tiene_promo , con_promo :registro.promo.con_promo});
+        // console.log({ tiene: producto_seguro.promo.tiene_promo, con_promo: registro.promo.con_promo });
         if (producto_seguro.promo.tiene_promo == true && registro.promo.con_promo == true) {
             //  Si, fue solicitada la promo y si, cuenta el producto con una promo
             var devolver_promocionDB_proceso = await devolver_promocionDB(producto_seguro.promo.id_promocion);
             //  si el resultado fue correcto y se encunetra activo
             if (devolver_promocionDB_proceso.ok == true) {
                 if (devolver_promocionDB_proceso.promocion.activa == true) {
-                    console.log("--------------------PRODUCTO CON PROMO");
+                    // console.log("--------------------PRODUCTO CON PROMO");
                     producto_seguro.precio = devolver_promocionDB_proceso.promocion.precio;
                     //console.log(producto_seguro.precio);
                     promo.con_promo = true;
@@ -98,7 +98,7 @@ export async function post(req, res, next) {
             }
         }
         else {
-            console.log("-***************************PRODUCTO sin PROMO");
+            // console.log("-***************************PRODUCTO sin PROMO");
         }
 
         let registro_seguro = { cantidad: registro.cantidad, producto: producto_seguro, promo, canMB: canMB };
@@ -124,7 +124,7 @@ export async function post(req, res, next) {
             //   > a cero
             if (registro.cantidad > 0 && donde == "agregar") {
                 producto_temp.cantidad = registro.cantidad;
-                producto_temp.canMB = cantMB;
+                producto_temp.canMB = canMB;
                 producto_temp.promo = registro.promo;
                 producto_temp.producto.precio = producto_seguro.precio;
                 snap_tipo_Accion = "4b"; //    4b:cambio_cantidad
@@ -144,7 +144,7 @@ export async function post(req, res, next) {
         }
         else {
             const registrar = await devolver_prod_snap_log_fixBug(carritoDB.folio, carritoDB.cliente.id, registro.producto._id);
-            console.log('================', registrar);
+            // console.log('================', registrar);
             // res.send({ ok: false, mensaje: '================' , registrar})
 
             // if (registrar && donde == "agregar") {    
@@ -373,7 +373,7 @@ async function apartar_producto(registro, cliente, folio) {
     })
         .then((resultadodb) => {
             // Volver a poner en lista si es > 0
-            console.log({ resultado_primer: resultadodb });
+            // console.log({ resultado_primer: resultadodb });
             if (registro.cantidad === 0) {
                 // aqui es cuando se borra un producto
                 return { ok: true }

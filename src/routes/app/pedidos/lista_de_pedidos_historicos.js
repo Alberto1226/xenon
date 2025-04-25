@@ -212,7 +212,8 @@ function consulta(pagina_actual, usuario) {
                 .then((numero_total) => {
                     mongoose.connection.collection('vistaPedidosDatos')
                         .find(query)
-                        .sort({ fecha: -1 })
+                        // .sort({ fecha: -1 })
+                        .sort({ folio: -1 })
                         .limit(10)
                         .skip(pagina_actual * 10)
                         .toArray()

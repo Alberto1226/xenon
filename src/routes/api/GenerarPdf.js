@@ -58,10 +58,10 @@ export async function get(req, res) {
     } else {
         fecha = carrito.fecha_creado ? carrito.fecha_creado.toLocaleDateString('es-MX', options) : carrito.fecha.toLocaleDateString('es-MX', options);
         hora = carrito.fecha_creado ? carrito.fecha_creado.toLocaleTimeString('es-MX') : carrito.fecha.toLocaleTimeString('es-MX');
-        if (origen === "pedidos2") {
-            fecha = carrito.fecha ? carrito.fecha.toLocaleDateString('es-MX', options) : carrito.fecha_creado.toLocaleDateString('es-MX', options);
-            hora = carrito.fecha ? carrito.fecha.toLocaleTimeString('es-MX') : carrito.fecha_creado.toLocaleTimeString('es-MX');
-        }
+        // if (origen === "pedidos2") {
+        //     fecha = carrito.fecha ? carrito.fecha.toLocaleDateString('es-MX', options) : carrito.fecha_creado.toLocaleDateString('es-MX', options);
+        //     hora = carrito.fecha ? carrito.fecha.toLocaleTimeString('es-MX') : carrito.fecha_creado.toLocaleTimeString('es-MX');
+        // }
     }
     let cliente = carrito.cliente;
 

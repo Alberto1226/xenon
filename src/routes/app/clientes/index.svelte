@@ -1,6 +1,6 @@
 <script>
   import { Button, Textfield } from "svelte-mui/src";
-  import { ui, clientes, postData, buscadores } from "./../../stores";
+  import { ui, clientes, postData, buscadores, donde } from "./../../stores";
   import { blur } from "svelte/transition";
   import { onMount } from "svelte";
   import Lista from "./_Lista.svelte";
@@ -17,13 +17,13 @@
     //obtener_lista();
   });
 
-  $: if (buscando.length>0) {
-    pagina_actual =1;
+  $: if (buscando.length > 0) {
+    pagina_actual = 1;
     $buscadores.clientes = buscando;
   }
 
-  $: if (buscando.length==0) {
-    pagina_actual =1;
+  $: if (buscando.length == 0) {
+    pagina_actual = 1;
     $buscadores.clientes = buscando;
   }
 
@@ -56,13 +56,12 @@
 </script>
 
 <svelte:head>
-<title>Clientes</title>
- </svelte:head>
+  <title>Clientes</title>
+</svelte:head>
 <svelte:window on:keydown={handleKeydown} />
 <div>
-
   <div class="centrado herramientas">
-    {#if estado_actual == 'viendo lista'}
+    {#if estado_actual == "viendo lista"}
       <!-- content here -->
       <div class="centrado">
         <table style="width: 96%;">
@@ -74,14 +73,16 @@
                     <Textfield
                       label="Buscar con nombre o correo"
                       on:keyup={handle_buscar}
-                      bind:value={buscando} />
+                      bind:value={buscando}
+                    />
                   </td>
                   <td>
                     <Button
                       on:click={() => {
                         buscando_mandar = buscando;
                       }}
-                      icon>
+                      icon
+                    >
                       <i class="material-icons">search</i>
                     </Button>
                   </td>
@@ -100,30 +101,44 @@
               Nuevo cliente
               <Button
                 on:click={() => {
-                  estado_actual = 'creando cliente';
-                  goto('app/clientes/nuevo');
+                  estado_actual = "creando cliente";
+                  donde.set("crear");
+                  goto("app/clientes/DatosCliente");
                 }}
                 icon
                 raised
                 outlined
-                title="crear cliente nuevo (Ctrl + u)">
+                title="crear cliente nuevo (Ctrl + u)"
+              >
                 <i class="material-icons">add</i>
               </Button>
+              <!-- <Button
+                on:click={() => {
+                  estado_actual = "creando cliente";
+                  goto("app/clientes/nuevo");
+                }}
+                icon
+                raised
+                outlined
+                title="crear cliente nuevo (Ctrl + u)"
+              >
+                <i class="material-icons">add</i>
+              </Button> -->
             </td>
           </tr>
         </table>
       </div>
-    {:else if estado_actual == 'creando cliente'}
+    {:else if estado_actual == "creando cliente"}
       <!-- else content here -->
       <div class="izquierda" style="padding-left: 5px;">
-
         <Button
           on:click={() => {
-            estado_actual = 'viendo lista';
+            estado_actual = "viendo lista";
           }}
           raised
           outlined
-          title="ver lista">
+          title="ver lista"
+        >
           <i class="material-icons">arrow_back</i>
           Ver lista
         </Button>
@@ -135,6 +150,6 @@
     bind:pagina_actual
     bind:buscando={buscando_mandar}
     on:cliente_seleccioando={cliente_seleccioando}
-    on:editar_cliente={handle_editar_cliente} />
-
+    on:editar_cliente={handle_editar_cliente}
+  />
 </div>

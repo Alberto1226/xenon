@@ -29,6 +29,7 @@ export async function post(req, res, next) {
     var registro = req.body.registro;
     const id = req.body.id_carrito;
     const donde = req.body.donde;
+    const canMB = req.body.cantMB;
     const session = await mongoose.startSession();
 
     //          checar suficiencia version 2 
@@ -100,7 +101,7 @@ export async function post(req, res, next) {
             console.log("-***************************PRODUCTO sin PROMO");
         }
 
-        let registro_seguro = { cantidad: registro.cantidad, producto: producto_seguro, promo };
+        let registro_seguro = { cantidad: registro.cantidad, producto: producto_seguro, promo, canMB: canMB };
         //console.log({precioresultante:registro_seguro.producto.precio});
         //      datos para logs
         let precios = { aplica_descuento: producto_constante.aplicar_descuento_distribuidor, precio_original: producto_constante.precio, precio_despues_de_descuento: producto_seguro.precio, descuento: descuento_a_usar }
@@ -123,6 +124,7 @@ export async function post(req, res, next) {
             //   > a cero
             if (registro.cantidad > 0 && donde == "agregar") {
                 producto_temp.cantidad = registro.cantidad;
+                producto_temp.canMB = cantMB;
                 producto_temp.promo = registro.promo;
                 producto_temp.producto.precio = producto_seguro.precio;
                 snap_tipo_Accion = "4b"; //    4b:cambio_cantidad

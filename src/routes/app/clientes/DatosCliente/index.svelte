@@ -769,7 +769,6 @@
                         bind:value={cliente.password}
                         id="inputContra"
                         aria-describedby="passwordHelpBlock"
-                        required
                     />
                     <label for="inputContra" class="form-label"
                         >Contraseña</label
@@ -785,7 +784,6 @@
                     class="form-control"
                     bind:value={cliente.fecha_nacimiento}
                     id="inputCumple"
-                    required
                     max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
                 />
                 <label for="inputCumple" class="form-label">Cumpleaños</label>

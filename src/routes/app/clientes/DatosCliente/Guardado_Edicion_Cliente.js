@@ -33,10 +33,10 @@ export function post(req, res, next) {
                 console.log(err);
                 return;
             }
-            if (docs.length > 0) {
-                res.send({ ok: false, mensaje: "Correo de cliente ya fue registrado, intente cambiarlo." })
-                return;
-            }
+            // if (docs.length > 0) {
+            //     res.send({ ok: false, mensaje: "Correo de cliente ya fue registrado, intente cambiarlo." })
+            //     return;
+            // }
             let cliente_Acomodado = AcomodarCliente(req.body.cliente, req.body.direccion, req.user, req.body.accion);
 
             let cliente_nuevo = new Cliente(cliente_Acomodado);

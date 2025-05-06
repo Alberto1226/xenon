@@ -34,6 +34,8 @@
   };
   let visible_cancelar = false;
 
+  var fecha = "";
+
   let message =
     '<i  class="material-icons vertical-alineado">delete</i> Cancelar el pedido <b>' +
     pedido.folio +
@@ -229,18 +231,41 @@
   <div class="uno">
     <i style="vertical-align:middle;" class="material-icons">shopping_cart</i>
     {pedido.folio}
+    <br />
+    <span class="indice_row">{pedido.usuario_que_registro.usuario}</span>
   </div>
   <div class="dos" />
   <div class="tres">
-    {pedido.fecha_creado == undefined
+    <!-- {pedido.fecha_creado == undefined
       ? ""
       : new Date(pedido.fecha_creado).toLocaleDateString("es-MX", options)}
     <br />
     {pedido.fecha_creado == undefined
       ? ""
-      : new Date(pedido.fecha_creado).toLocaleTimeString("es-MX")}
-    <br />
-    <span class="indice_row">{pedido.usuario_que_registro.usuario}</span>
+      : new Date(pedido.fecha_creado).toLocaleTimeString("es-MX")} -->
+
+    <span title="Fecha de creacion" style="color: blue;">
+      {pedido.fecha
+        ? new Date(pedido.fecha).toLocaleDateString("es-MX", options) +
+          " a las " +
+          new Date(pedido.fecha).toLocaleTimeString("es-MX")
+        : ""}
+    </span> <br />
+    <hr />
+    <span title="Fecha de entrega" style="color: green;">
+      {pedido.fecha_entregado != undefined
+        ? new Date(pedido.fecha_entregado).toLocaleDateString(
+            "es-MX",
+            options,
+          ) +
+          " a las " +
+          new Date(pedido.fecha_entregado).toLocaleTimeString("es-MX")
+        : pedido.fecha != undefined
+          ? new Date(pedido.fecha).toLocaleDateString("es-MX", options) +
+            " a las " +
+            new Date(pedido.fecha).toLocaleTimeString("es-MX")
+          : ""}
+    </span>
   </div>
   <!-- <div class="cuatro" class:color_ficha_descuento={pedido.tenia_ficha}>
     {#if pedido.tenia_ficha}
@@ -259,14 +284,14 @@
       <!-- content here -->
       <span class="indice_row" title={pedido.moneda}>
         $ {formato_precio(pedido.total_pedido / pedido.tipo_de_cambio)} ( {formato_precio(
-          pedido.tipo_de_cambio
+          pedido.tipo_de_cambio,
         )})
       </span>
     {/if}
     <div class="indice_row">{pedido.moneda}</div>
   </div>
 
-  <div class="seis ">
+  <div class="seis">
     <div class="sobresaltar">
       {pedido.cliente == undefined ? "" : pedido.cliente.nombre}
       <br />
@@ -349,6 +374,7 @@
     </table>
   </div>
 </div>
+
 <!-- <Snackbar bind:visible={visible_cancelar} bg="black">
   {@html message}
   <span slot="action">

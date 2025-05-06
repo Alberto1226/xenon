@@ -218,7 +218,12 @@ function consulta(pagina_actual, usuario) {
                         .skip(pagina_actual * 10)
                         .toArray()
                         .then((resDB) => {
-                            const ids = resDB.map(doc => doc._id);
+                            // const ids = resDB.map(doc => doc._id);
+                            resDB.forEach(doc => {
+                                if (!doc.fecha_creado) {
+                                    doc.fecha_creado = doc.fecha;
+                                }
+                            });
                             resolve({
                                 ok: true,
                                 lista: resDB,

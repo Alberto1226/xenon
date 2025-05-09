@@ -7,7 +7,7 @@ export async function post(req, res, next) {
         return;
     }
 
-    console.log("entro a Listar_Poductos_Descargar");
+    // console.log("entro a Listar_Poductos_Descargar");
     res.send(await consulta());
 
 }

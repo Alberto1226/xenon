@@ -173,6 +173,7 @@ export async function post(req, res, next) {
 
 
         if (proceso_apartado.ok === true) {
+            console.log('cambiar_cantidad_v2.1cambiar_cantidad_v2.1cambiar_cantidad_v2.1cambiar_cantidad_v2.1');
 
             const proceso_cambiar_carrito_de_cliente = await cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, registro.producto._id);
             if (proceso_cambiar_carrito_de_cliente.ok == true) {
@@ -197,7 +198,7 @@ export async function post(req, res, next) {
                     mensaje: "Se aparto el producto, pero no se pudo cambiar el carrito del cliente",
                     solucion: "Es necesario desapartar el producto"
                 }
-                console.log("Error al cambiar carrito de cliente")
+                // console.log("Error al cambiar carrito de cliente")
                 accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log, req);
             }
 
@@ -274,7 +275,7 @@ async function cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, pro
         }, { new: true });
 
         // console.log("updateResult", updateResult);
-        // console.log("8888888888888888888888888888888888888888888888888888888888");
+        // console.log("88888888888888888888888]]88888888888888888888888888888888888");
 
         if (!updateResult) {
             throw new Error("No se pudo actualizar el carrito del cliente");
@@ -282,6 +283,17 @@ async function cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, pro
 
         // Registrar el cambio en el log de actividades
         // await accesos.logActividad('carrito/cambiar_carrito_de_cliente', req, { id, lista, total_dinero, producto_id });
+        const producto_despues_proceso = await devolver_producto_db(producto_id);
+        const producto_despues = producto_despues_proceso.producto;
+        const carritos_despues = producto_despues.carritos;
+        let total_reservado_despues = carritos_despues.reduce((a, b) => +a + parseInt(b.cantidad), 0);
+        const existencias_despues = producto_despues.existencia.actual;
+        let log_tmp = log;
+        log_tmp.inventario.existencias_despues = existencias_despues;
+        log_tmp.inventario.total_reservado_despues = total_reservado_despues;
+        log_tmp.producto_despues = producto_despues;
+
+        accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log_tmp, req);
 
         // Retornar éxito
         return { ok: true, carrito: updateResult };

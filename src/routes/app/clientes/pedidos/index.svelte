@@ -32,7 +32,7 @@
   }
 
   function obtener_lista_ventas() {
-    console.log("se obtendra lista de ventas 1");
+    // console.log("se obtendra lista de ventas 1");
 
     if (http_ocupado) return;
     if (pagina_actual < 1 || isNaN(pagina_actual)) return;

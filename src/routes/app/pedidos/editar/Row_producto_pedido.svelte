@@ -117,11 +117,13 @@
     producto.precio = precio_nuevo;
     let registro = { producto, cantidad: 0 };
     let donde = "eliminar";
+    let cantMB = 0;
     //console.log(registro);
     postData("/app/pedidos/editar/cambiar_cantidad", {
       registro,
       id_carrito,
       donde,
+      cantMB,
     })
       .then((respuesta) => {
         procesando_en_la_nube = false;

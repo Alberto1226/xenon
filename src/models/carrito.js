@@ -15,6 +15,7 @@ var schema = new Schema({
     lista: [
         {
             cantidad: { type: Number, default: 0 },
+            canMB: { type: Number, default: 0 },//cantidad de masterbox para la coleccion de carritos
             promo: {
                 con_promo: { type: Boolean, default: false },
             },

@@ -14,6 +14,7 @@ var schema = new Schema({
     correo:{type:String ,default :""},
     comision:{type:Number,default:0},
     nombre:{type:String ,default :""},
+    edit:{type:Boolean,default:false},//el campo se agrega para dar permiso que el usuario pueda editar sus clientes asignados
 });
 
 schema.methods.encryptPassword = function(password){

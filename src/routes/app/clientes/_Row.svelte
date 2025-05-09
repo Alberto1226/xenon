@@ -8,6 +8,7 @@
     usuario_db,
     postData,
     editar_store,
+    donde,
   } from "./../../stores";
   import { onMount, createEventDispatcher } from "svelte";
   import { Button, ButtonGroup, Dialog, Textfield } from "svelte-mui/src";
@@ -34,7 +35,7 @@
         ? "-"
         : new Date(cliente.fecha_nacimiento).toLocaleDateString(
             "es-MX",
-            options
+            options,
           );
     crear_lista_telefonos();
   });
@@ -74,7 +75,7 @@
         } else {
           mostrar_error("buscando ficha");
         }
-      }
+      },
     );
   }
 
@@ -93,7 +94,7 @@
           });
           $mensajes_app = $mensajes_app;
           var cliente_tmp = $clientes.lista.find(
-            (cliente_t) => cliente_t._id == cliente._id
+            (cliente_t) => cliente_t._id == cliente._id,
           );
           cliente_tmp.activo = status;
           $clientes = $clientes;
@@ -232,10 +233,17 @@
   class:inactivo={cliente.activo === false}
 >
   <div class="uno">
-    <i style="vertical-align:middle;" class="material-icons">account_circle</i>
+    <i
+      style="vertical-align:middle; color: {cliente.newData ? 'black' : 'red'};"
+      class="material-icons"
+    >
+      account_circle
+    </i>
+
     {#if cliente.activo === false}
       <i
         class="material-icons icono_bloqueado no_select"
+        style="color: {cliente.newData ? 'red' : 'orange'};"
         title="Cliente no activo para ser seleccionado por usuarios para pedidos"
         >block</i
       >
@@ -267,6 +275,9 @@
       ></span
     >
     <br />
+    {#if !cliente.newData}
+      <span style="color: red; font-size: 0.8rem;">Faltan datos</span>
+    {/if}
   </div>
   <div class="tres">
     {#each telefonos_lista as telefono, i}
@@ -298,7 +309,7 @@
                 <i class="material-icons">cancel</i>
               </Button>
             {/if}
-              {#if cliente.activo==false && $usuario_db.rol == "administrador"}
+            {#if cliente.activo == false && $usuario_db.rol == "administrador"}
               <Button
                 icon
                 dense
@@ -311,19 +322,33 @@
                 <i class="material-icons">check</i>
               </Button>
             {/if}
-            {#if $usuario_db.rol == "administrador"}
-            <Button
-              icon
-              dense
-              color="green"
-              on:click={() => {
-                $editar_store.cliente = cliente;
-                goto("/app/clientes/editar");
-              }}
-              title="editar"
-            >
-              <i class="material-icons">create</i>
-            </Button>
+            {#if $usuario_db.rol == "administrador" || $usuario_db.edit}
+              <Button
+                icon
+                dense
+                color="green"
+                on:click={() => {
+                  $editar_store.cliente = cliente;
+                  donde.set("editar");
+                  goto("/app/clientes/DatosCliente");
+                }}
+                title="editar"
+              >
+                <i class="material-icons">create</i>
+              </Button>
+              <!-- <Button
+                icon
+                dense
+                color="green"
+                on:click={() => {
+                  $editar_store.cliente = cliente;
+                  // donde.set("editar");
+                  goto("/app/clientes/editar");
+                }}
+                title="editar"
+              >
+                <i class="material-icons">create</i>
+              </Button> -->
             {/if}
             {#if $usuario_db.rol == "administrador"}
               <!-- content here -->

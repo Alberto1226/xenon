@@ -32,7 +32,7 @@ schema.statics.registrarLog = async function (ruta, usuario, body, req,error) {
             var id ="666-666-1";
             if(!error) id = await logActividad(ruta, usuario, body, req);
             else  id = await logActividad(ruta, usuario, body, req,null,error);
-            console.log("----++++++++++++++++++++++")
+            // console.log("----++++++++++++++++++++++")
             console.log(id)
             resolve(id);
         } catch (err) {

@@ -13,7 +13,7 @@ export async function post(req, res) {
         return res.send({ ok: false, mensaje: "El pedido no se pudo encontrar." })
     }
     let carrito = carrito_proc.carrito;
-    console.log("*****Checar folios de salida que aun existan en sus productos respectivos");
+    // console.log("*****Checar folios de salida que aun existan en sus productos respectivos");
     var { todos_los_folios_ok, reporte_de_folios_para_frontend } = await los_folios_de_todos_los_productos_estan_disponibles(carrito.lista);
     console.log({ todos_los_folios_ok });
 
@@ -54,7 +54,7 @@ async function los_folios_de_todos_los_productos_estan_disponibles(lista) {
         reportes_de_productos.push(reporte_producto);
         if (resultado == true) contador_de_exitos++;
         if (i + 1 == lista.length) {
-            console.log("***********------");
+            // console.log("***********------");
             let reporte_de_folios_para_frontend = []
             //console.log({ contador_de_exitos });
             //console.log({ total: lista.length });
@@ -75,11 +75,11 @@ async function los_folios_de_este_producto_estan_disponibles(registro) {
     if (registro.folios.length == 0) return true;
     //  Los que no ocupan folios no pasan de aqui
     var contador_de_exitos = 0;
-    console.log("checando el producto " + registro.producto.nombre);
+    // console.log("checando el producto " + registro.producto.nombre);
     let producto_tmp = await encontrar_producto(registro.producto._id);
     for (let i = 0; i < registro.folios.length; i++) {
         const element = registro.folios[i];
-        console.log("Folio a checar =" + element);
+        // console.log("Folio a checar =" + element);
         let folio_encontrado = producto_tmp.existencia.folios.find(elem => elem == element)
         if (folio_encontrado) {
             contador_de_exitos++;
@@ -100,7 +100,7 @@ async function los_folios_de_este_producto_estan_disponibles(registro) {
                     reporte: producto_tmp.reporte_folios(registro.folios)
                 }
             }
-            console.log("Se termino de checar el producto");
+            // console.log("Se termino de checar el producto");
             console.log(reporte_producto);
             return { resultado: contador_de_exitos == registro.folios.length, reporte_producto }
         }
@@ -126,7 +126,7 @@ function encontrar_producto(id) {
 
 
 async function generar_reporte_para_cliente(reportes) {
-    console.log("Generar reporte para cliente ----------------------------------------------------------");
+    // console.log("Generar reporte para cliente ----------------------------------------------------------");
     var algun_error = false;
     var errores_solamente = [];
     await reportes.map((elem, i) => {

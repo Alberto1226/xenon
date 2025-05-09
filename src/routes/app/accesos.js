@@ -35,14 +35,22 @@ export function tiene_permisos_gerenciales(req) {
 }
 
 export async function logActividad(ruta, usuario, body,req, error = false) {
+    // console.log("logActividad");
+    // console.log(ruta);
+    // console.log(usuario);
+    // console.log(body);
+    // console.log(req);
+    // console.log(error);
 
     // 'a' flag stands for 'append'
     return new Promise( async(resolve,reject)=>{
         try {
+            // console.log("logActividad2---try");
             let id = await Log.registrarLog(ruta,usuario,body,req,error);
             
             resolve(id)
         } catch (err) {
+            // console.log("logActividad2---catch");
             reject(err)
         }
     })

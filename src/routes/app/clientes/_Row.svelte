@@ -33,10 +33,12 @@
     fecha_nacimiento =
       cliente.fecha_nacimiento === null
         ? "-"
-        : new Date(cliente.fecha_nacimiento).toLocaleDateString(
-            "es-MX",
-            options,
-          );
+        : (() => {
+            const date = new Date(cliente.fecha_nacimiento);
+            // Ajustar la fecha sumando la diferencia de zona horaria
+            date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+            return date.toLocaleDateString("es-MX", options);
+          })();
     crear_lista_telefonos();
   });
 

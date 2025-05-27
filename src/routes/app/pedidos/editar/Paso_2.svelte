@@ -538,6 +538,9 @@
             outlined
             bind:value={buscar}
             placeholder="Buscar con nombre de producto"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
           />
         </td>
         <td>

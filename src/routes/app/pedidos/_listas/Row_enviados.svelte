@@ -244,7 +244,7 @@
       ? ""
       : new Date(pedido.fecha_creado).toLocaleTimeString("es-MX")} -->
 
-    <span title="Fecha de creacion" style="color: blue;">
+    <span title="Fecha de creacion" style="color: red;">
       {pedido.fecha
         ? new Date(pedido.fecha).toLocaleDateString("es-MX", options) +
           " a las " +

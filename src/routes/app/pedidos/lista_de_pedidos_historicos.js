@@ -103,7 +103,7 @@ function consullta_con_texto(query, res, pagina_actual) {
                         .exec()
                         .then(async (resDB) => {
                             //let lista_filtrada= await filtrar_lista(buscando,resDB);
-                            console.log(resDB)
+                            // console.log(resDB)
                             //console.log(numero_total)
                             let paginas;
                             let coincidencias;
@@ -223,7 +223,7 @@ function consulta(pagina_actual, usuario) {
                         .toArray()
                         .then((resDB) => {
                             resDB.forEach(doc => {
-                                console.log('doc', doc.agente.id);
+                                // console.log('doc', doc.agente.id);
                                 if (!doc.fecha_creado) {
                                     doc.fecha_creado = doc.fecha;
                                 }

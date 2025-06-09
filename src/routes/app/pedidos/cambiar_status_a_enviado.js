@@ -72,7 +72,7 @@ function carrito_a_cambiar(id_carrito) {
  function guardar_como_pedido(carrito) {
    return new Promise((resolve , reject)=>{
     let pedido_temp = JSON.parse(JSON.stringify(carrito))
-    pedido_temp.fecha_enviado = new Date();
+    pedido_temp.fecha_entregado = Date.now();
     pedido_temp.status='Enviado';
     delete pedido_temp._id;
     delete pedido_temp.__v;

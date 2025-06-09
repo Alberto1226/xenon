@@ -41,7 +41,7 @@
     galeria_imagenes: [],
     para_venta_publico: true,
     aplicar_descuento_distribuidor: true,
-    existencia: { actual: 0, minimo: 0, maximo: 0 },
+    existencia: { actual: 0, minimo: 0, maximo: 0, masterBox: 0 },
     carritos: [],
     activo: true,
   };
@@ -198,10 +198,10 @@
   }
 </script>
 
-<div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}> 
-  <div class="grid-container"> 
-    <div class="area_info_general margen caja">
-      <div class="subtitulo ">Información general</div>
+<div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}>
+  <div class="grid-container">
+    <div class="area_info_general margen caja" style="overflow: auto;">
+      <div class="subtitulo">Información general</div>
       <div class="contenido_caja">
         <Textfield
           outlined
@@ -256,7 +256,7 @@
       </div>
     </div>
     <div class="area_carac_tecnicas margen caja">
-      <div class="subtitulo ">Características técnicas</div>
+      <div class="subtitulo">Características técnicas</div>
       <div class="contenido_caja">
         <Caracteristicas_tecnicas
           bind:caracteristicas_tecnicas={nuevo_producto.caracteristicas_tecnicas}
@@ -264,7 +264,7 @@
       </div>
     </div>
     <div class="area_precios margen caja">
-      <div class="subtitulo ">Precios</div>
+      <div class="subtitulo">Precios</div>
       <div class="contenido_caja">
         <table style="width: 99%;">
           <tr>
@@ -281,6 +281,20 @@
               />
             </td>
           </tr>
+          <tr>
+            <td>
+              <span class="indice_row">$</span>
+            </td>
+            <td>
+              <Textfield
+                outlined
+                bind:value={nuevo_producto.precio_compra}
+                placeholder="Precio Compra*"
+                message="Precio Compra*"
+                type="number"
+              />
+            </td>
+          </tr>
         </table>
         <Checkbox
           {...props}
@@ -292,7 +306,7 @@
       </div>
     </div>
     <div class="existencias margen caja">
-      <div class="subtitulo ">Existencias</div>
+      <div class="subtitulo">Existencias</div>
       <div class="contenido_caja">
         <Textfield
           outlined
@@ -322,11 +336,26 @@
               />
             </td>
           </tr>
+          <tr>
+            <td style="display: flex; align-items: center;">
+              <i class="material-icons" style="margin-right: 8px;"
+                >inventory_2</i
+              >
+              <Textfield
+                outlined
+                bind:value={nuevo_producto.existencia.masterBox}
+                placeholder="Master Box"
+                message="Master Box"
+                type="number"
+              />
+              <span style="margin-left: 8px;">Cantidad por MasterBox</span>
+            </td>
+          </tr>
         </table>
       </div>
     </div>
     <div class="imagenes margen caja">
-      <div class="subtitulo ">Imágenes</div>
+      <div class="subtitulo">Imágenes</div>
       <div class="contenido_caja">
         <Uploader />
       </div>

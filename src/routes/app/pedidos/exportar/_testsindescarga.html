@@ -32,7 +32,7 @@
       display: grid;
       grid-template-columns: 0.2fr 1.8fr 1.8fr 0.2fr;
       grid-template-rows: 150px 2.2fr;
-      grid-template-areas: "margen_izq head head margen_derecha""margen_izq contenido contenido margen_derecha";
+      grid-template-areas: "margen_izq head head margen_derecha" "margen_izq contenido contenido margen_derecha";
     }
 
     .margen_izq {
@@ -114,7 +114,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
       grid-template-rows: 75px 75px;
-      grid-template-areas: "xenon xenon xenon cliente cliente cliente""hsbc hsbc bajio bajio banamex banamex";
+      grid-template-areas: "xenon xenon xenon cliente cliente cliente" "hsbc hsbc bajio bajio banamex banamex";
       border: solid 1px gray;
       border-radius: 5px;
       padding: 5px;
@@ -174,7 +174,7 @@
       display: grid;
       grid-template-columns: 2fr 0.4fr 1fr;
       grid-template-rows: 0.8fr 0.8fr 1.4fr;
-      grid-template-areas: "descuento margen2 total""letras margen2 moneda""Texto_inferior Texto_inferior Texto_inferior";
+      grid-template-areas: "descuento margen2 total" "letras margen2 moneda" "Texto_inferior Texto_inferior Texto_inferior";
     }
 
     .descuento {
@@ -241,7 +241,7 @@
 
 <body id="body">
   <div class="texto-centrado">
-    <button class="boton" onclick="generatePDF()"> Descargar pdf </button>
+    <button class="boton" onclick="generateARPDF()"> Descargar PDF</button>
   </div>
   <div id="invoice">
     <div class="grid-container">
@@ -254,6 +254,8 @@
                 <img src="/imagenes/logo-xenon.png" class="logo" alt="logotipo" />
               </td>
               <td>_folio_fecha</td>
+              <td>_id-pedido</td>
+              <td>_origen-pedido</td>
             </tr>
           </table>
         </div>
@@ -284,7 +286,23 @@
       let body = document.getElementById('body');
       // body.innerHTML = '<div class="texto-centrado"><h2>Pdf descargado </h2></div>';
     }
-     // generatePDF();
+    // generatePDF();
+
+    // Client-side code to download PDF 
+    async function generateARPDF() {
+      var id = document.querySelector('.id-pedido').textContent;
+      var origen = document.querySelector('.origen-pedido').textContent;
+      var folio = document.querySelector('.folioName').textContent;
+      const response = await fetch(`/api/GenerarPdf?id=${id}&origen=${origen}`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Nota-${folio}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+
   </script>
 </body>
 

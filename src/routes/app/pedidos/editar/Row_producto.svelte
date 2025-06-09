@@ -63,7 +63,7 @@
       // console.log(input)
       if (input === null || input === undefined) return;
       input.select();
-    }, 100);
+    }, 2000);
   }
 
   $: if (visible_info_promo == false) {
@@ -79,12 +79,28 @@
   var mostrando_producto = true;
   var mouse_arriba = false;
   var total_reservado = 0;
+  let controlMasterBox = false;
   var disponible = 0;
   $: disponible =
     parseFloat(producto.existencia.actual) - parseFloat(total_reservado);
 
+  $: if (controlMasterBox) {
+    // console.log("controlMasterBox changed:", controlMasterBox);
+  }
+
   function toggle_visible_info_promo() {
     visible_info_promo = !visible_info_promo;
+  }
+
+  function PorMasterBox() {
+    // console.log("entrooooooooo");
+
+    if (producto.existencia.masterBox && producto.existencia.masterBox !== 0) {
+      controlMasterBox = true;
+      // console.log("true", controlMasterBox);
+    } else {
+      controlMasterBox = false;
+    }
   }
 
   function click() {
@@ -95,7 +111,10 @@
     mouse_arriba = false;
     clearTimeout(timeout);
     timeout = setTimeout(() => {
-      if (mouse_arriba == false) mostrando_producto = true;
+      if (mouse_arriba == false) {
+        mostrando_producto = true;
+        controlMasterBox = false;
+      }
     }, 2000);
   }
 
@@ -115,7 +134,9 @@
     total_reservado = producto.carritos.reduce((a, b) => +a + +b.cantidad, 0);
   }
 
+  //funcion para agregar la cantidad de producto
   function agregar(promo_solicitada) {
+    let cantMB = 0;
     //console.log($lista_productos_en_pedido_en_edicion);
     ////console.log(producto.codigo);
     if (producto.activo === false) {
@@ -127,6 +148,30 @@
       $mensajes_app.push({ tipo: "error", mensaje: "Cantidad incorrecta" });
       $mensajes_app = $mensajes_app;
       return;
+    }
+    if (controlMasterBox) {
+      let cantidadMasterBox = cantidad * producto.existencia.masterBox;
+      // console.log(
+      //   "Cm",
+      //   cantidadMasterBox,
+      //   "can",
+      //   cantidad,
+      //   "mbP",
+      //   producto.existencia.masterBox,
+      //   "disp",
+      //   disponible,
+      // );
+      if (cantidadMasterBox > disponible) {
+        $mensajes_app.push({
+          tipo: "error",
+          mensaje: "No existen suficientes",
+        });
+        $mensajes_app = $mensajes_app;
+        return;
+      } else {
+        cantMB = cantidad;
+        cantidad = cantidadMasterBox;
+      }
     }
     if (cantidad > disponible) {
       $mensajes_app.push({ tipo: "error", mensaje: "No existen suficientes" });
@@ -152,14 +197,19 @@
     var registro = { producto: producto_temp, cantidad, promo };
     //console.log(registro);
     let donde = "agregar";
-    postData("/app/pedidos/editar/cambiar_cantidad", { registro, id_carrito, donde })
+    postData("/app/pedidos/editar/cambiar_cantidad", {
+      registro,
+      id_carrito,
+      donde,
+      cantMB,
+    })
       .then((respuesta) => {
         if (respuesta.ok) {
-          console.log(respuesta);
+          // console.log(respuesta);
           $mensajes_app.push({ tipo: "exito", mensaje: "Producto agregado" });
           $mensajes_app = $mensajes_app;
           var existente = $lista_productos_en_pedido_en_edicion.find(
-            (element) => element.producto._id == producto._id
+            (element) => element.producto._id == producto._id,
           );
           ////console.log(existente);
 
@@ -169,14 +219,16 @@
               cantidad,
               promo: respuesta.registro_agregado.promo,
             });
-            $lista_productos_en_pedido_en_edicion = $lista_productos_en_pedido_en_edicion;
+            $lista_productos_en_pedido_en_edicion =
+              $lista_productos_en_pedido_en_edicion;
           } else {
             existente.cantidad = cantidad;
             existente.promo = respuesta.registro_agregado.promo;
             //existente = respuesta.registro_agregado;
             existente.producto.precio =
               respuesta.registro_agregado.producto.precio;
-            $lista_productos_en_pedido_en_edicion = $lista_productos_en_pedido_en_edicion;
+            $lista_productos_en_pedido_en_edicion =
+              $lista_productos_en_pedido_en_edicion;
           }
           ya_fue_agregado = true;
           mostrando_producto = true;
@@ -208,12 +260,12 @@
     //console.log(cliente);
 
     let producto_temp = lista_temp.find(
-      (element) => element._id === producto._id
+      (element) => element._id === producto._id,
     );
 
     ///   CARRITOS
     let producto_en_apartado = producto_temp.carritos.find(
-      (element) => element.cliente.id === cliente.id
+      (element) => element.cliente.id === cliente.id,
     );
     //console.log(producto_en_apartado);
 
@@ -276,7 +328,7 @@
 >
   {#if mostrando_producto}
     <!-- Producto en lista -->
-    <div class="pointer ">
+    <div class="pointer">
       <table style="width:100%; text-align: center;">
         <tr>
           <td class="indice_row">{indice})</td>
@@ -291,6 +343,22 @@
               class:no_aplicar_descuento={producto.aplicar_descuento_distribuidor ==
                 false}>{producto.nombre}</span
             >
+            <!-- <i class="material-icons" style="margin-right: 8px;">inventory_2</i> -->
+            {#if producto.existencia.masterBox && producto.existencia.masterBox !== 0}
+              <Button
+                style="width: 24px;height: 24px;"
+                raised
+                color="white"
+                icon
+                dense
+                on:click={PorMasterBox}
+              >
+                <i
+                  class="material-icons icono_promo vertical-alineado icono_pequeno"
+                  title="Maste Box">inventory_2</i
+                >
+              </Button>
+            {/if}
             {#if producto.promo}
               {#if producto.promo.tiene_promo == true}
                 <Button
@@ -349,7 +417,7 @@
       </table>
     </div>
   {:else}
-    <div out:fly={{ x: -10, duration: 100 }} class="pointer ">
+    <div out:fly={{ x: -10, duration: 100 }} class="pointer">
       <table style="width:100%">
         <tr>
           <td class="indice_row">{indice})</td>
@@ -363,19 +431,29 @@
               id={producto._id}
               class:rojo={cantidad < 1 || cantidad > disponible}
             />
+            {#if controlMasterBox}
+              <span
+                >Max: {Math.floor(
+                  disponible / producto.existencia.masterBox,
+                )}</span
+              >
+              <span style="color: red; margin-left: 10px;">
+                Cant. X MB: {producto.existencia.masterBox}
+              </span>
+            {/if}
             <!-- <Textfield
-              error={cantidad < 1 ? 'Cantidad no puede ser menor a 1' : ''}
-              max={disponible}
-              min="1"
-              style="background:white;"
-              outlined
-              type="number"
-              id={producto._id}
-              bind:value={cantidad} /> -->
+            error={cantidad < 1 ? 'Cantidad no puede ser menor a 1' : ''}
+            max={disponible}
+            min="1"
+            style="background:white;"
+            outlined
+            type="number"
+            id={producto._id}
+            bind:value={cantidad} /> -->
           </td>
 
           <td class="precio_ancho">
-            <div class="display-flex ">
+            <div class="display-flex">
               <div class="margen_vert_auto div_boton">
                 ${formato_precio(producto.precio)}
               </div>
@@ -386,12 +464,14 @@
                   <Button
                     title="Agregar (Enter)"
                     disabled={disponible <= 0}
-                    color="#7575ff"
+                    color={controlMasterBox ? "red" : "#7575ff"}
                     raised
                     icon
                     on:click={agregar}
                   >
-                    <i class="material-icons">add_circle</i>
+                    <i class="material-icons"
+                      >{controlMasterBox ? "inventory_2" : "add_circle"}</i
+                    >
                   </Button>
                 </div>
               {/if}
@@ -502,7 +582,9 @@
     border-radius: 13px;
     border: 1px dashed #009206;
     /* box-shadow: 0 0 4px 0px #ffffff9e; */
-    box-shadow: 0 0 4px 0px #ffffff9e, inset 0 0 20px 0px #1447a769;
+    box-shadow:
+      0 0 4px 0px #ffffff9e,
+      inset 0 0 20px 0px #1447a769;
     margin-top: 5px;
   }
   .icono_pequeno {

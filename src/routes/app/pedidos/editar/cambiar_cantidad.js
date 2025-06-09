@@ -29,6 +29,7 @@ export async function post(req, res, next) {
     var registro = req.body.registro;
     const id = req.body.id_carrito;
     const donde = req.body.donde;
+    const canMB = req.body.cantMB;
     const session = await mongoose.startSession();
 
     //          checar suficiencia version 2 
@@ -82,14 +83,14 @@ export async function post(req, res, next) {
             registro.promo = { con_promo: false }
         }
         //  PRECIO con PROMO ? , puede reescribir el precio del producto, si fue solicitado y cuenta con una promocion
-        //console.log({tiene:producto_seguro.promo.tiene_promo , con_promo :registro.promo.con_promo});
+        // console.log({ tiene: producto_seguro.promo.tiene_promo, con_promo: registro.promo.con_promo });
         if (producto_seguro.promo.tiene_promo == true && registro.promo.con_promo == true) {
             //  Si, fue solicitada la promo y si, cuenta el producto con una promo
             var devolver_promocionDB_proceso = await devolver_promocionDB(producto_seguro.promo.id_promocion);
             //  si el resultado fue correcto y se encunetra activo
             if (devolver_promocionDB_proceso.ok == true) {
                 if (devolver_promocionDB_proceso.promocion.activa == true) {
-                    console.log("--------------------PRODUCTO CON PROMO");
+                    // console.log("--------------------PRODUCTO CON PROMO");
                     producto_seguro.precio = devolver_promocionDB_proceso.promocion.precio;
                     //console.log(producto_seguro.precio);
                     promo.con_promo = true;
@@ -97,10 +98,10 @@ export async function post(req, res, next) {
             }
         }
         else {
-            console.log("-***************************PRODUCTO sin PROMO");
+            // console.log("-***************************PRODUCTO sin PROMO");
         }
 
-        let registro_seguro = { cantidad: registro.cantidad, producto: producto_seguro, promo };
+        let registro_seguro = { cantidad: registro.cantidad, producto: producto_seguro, promo, canMB: canMB };
         //console.log({precioresultante:registro_seguro.producto.precio});
         //      datos para logs
         let precios = { aplica_descuento: producto_constante.aplicar_descuento_distribuidor, precio_original: producto_constante.precio, precio_despues_de_descuento: producto_seguro.precio, descuento: descuento_a_usar }
@@ -123,6 +124,7 @@ export async function post(req, res, next) {
             //   > a cero
             if (registro.cantidad > 0 && donde == "agregar") {
                 producto_temp.cantidad = registro.cantidad;
+                producto_temp.canMB = canMB;
                 producto_temp.promo = registro.promo;
                 producto_temp.producto.precio = producto_seguro.precio;
                 snap_tipo_Accion = "4b"; //    4b:cambio_cantidad
@@ -142,7 +144,7 @@ export async function post(req, res, next) {
         }
         else {
             const registrar = await devolver_prod_snap_log_fixBug(carritoDB.folio, carritoDB.cliente.id, registro.producto._id);
-            console.log('================', registrar);
+            // console.log('================', registrar);
             // res.send({ ok: false, mensaje: '================' , registrar})
 
             // if (registrar && donde == "agregar") {    
@@ -171,6 +173,7 @@ export async function post(req, res, next) {
 
 
         if (proceso_apartado.ok === true) {
+            console.log('cambiar_cantidad_v2.1cambiar_cantidad_v2.1cambiar_cantidad_v2.1cambiar_cantidad_v2.1');
 
             const proceso_cambiar_carrito_de_cliente = await cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, registro.producto._id);
             if (proceso_cambiar_carrito_de_cliente.ok == true) {
@@ -195,7 +198,7 @@ export async function post(req, res, next) {
                     mensaje: "Se aparto el producto, pero no se pudo cambiar el carrito del cliente",
                     solucion: "Es necesario desapartar el producto"
                 }
-                console.log("Error al cambiar carrito de cliente")
+                // console.log("Error al cambiar carrito de cliente")
                 accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log, req);
             }
 
@@ -272,7 +275,7 @@ async function cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, pro
         }, { new: true });
 
         // console.log("updateResult", updateResult);
-        // console.log("8888888888888888888888888888888888888888888888888888888888");
+        // console.log("88888888888888888888888]]88888888888888888888888888888888888");
 
         if (!updateResult) {
             throw new Error("No se pudo actualizar el carrito del cliente");
@@ -280,6 +283,17 @@ async function cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, pro
 
         // Registrar el cambio en el log de actividades
         // await accesos.logActividad('carrito/cambiar_carrito_de_cliente', req, { id, lista, total_dinero, producto_id });
+        const producto_despues_proceso = await devolver_producto_db(producto_id);
+        const producto_despues = producto_despues_proceso.producto;
+        const carritos_despues = producto_despues.carritos;
+        let total_reservado_despues = carritos_despues.reduce((a, b) => +a + parseInt(b.cantidad), 0);
+        const existencias_despues = producto_despues.existencia.actual;
+        let log_tmp = log;
+        log_tmp.inventario.existencias_despues = existencias_despues;
+        log_tmp.inventario.total_reservado_despues = total_reservado_despues;
+        log_tmp.producto_despues = producto_despues;
+
+        accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log_tmp, req);
 
         // Retornar éxito
         return { ok: true, carrito: updateResult };
@@ -371,7 +385,7 @@ async function apartar_producto(registro, cliente, folio) {
     })
         .then((resultadodb) => {
             // Volver a poner en lista si es > 0
-            console.log({ resultado_primer: resultadodb });
+            // console.log({ resultado_primer: resultadodb });
             if (registro.cantidad === 0) {
                 // aqui es cuando se borra un producto
                 return { ok: true }

@@ -569,69 +569,199 @@
 
     function asignarDatosClienteSelecto() {
         let clientSelect = $editar_store.cliente;
-        let direccionCliSelect = clientSelect.direcciones_asociadas[0];
-        direccion.calle = direccionCliSelect.calle;
-        direccion.colonia = direccionCliSelect.colonia;
-        direccion.cp = direccionCliSelect.cp;
-        direccion.entre_calle = direccionCliSelect.entre_calle;
-        direccion.estado = direccionCliSelect.estado;
-        direccion.idEstado = direccionCliSelect.idEstado;
-        direccion.localidad = direccionCliSelect.localidad;
-        direccion.localidad_nombre = direccionCliSelect.localidad_nombre;
-        direccion.municipio = direccionCliSelect.municipio;
-        direccion.idMunicipio = direccionCliSelect.idMunicipio;
-        direccion.nombre = direccionCliSelect.nombre;
-        direccion.notas = direccionCliSelect.notas;
-        direccion.numero_exterior = direccionCliSelect.numero_exterior;
-        direccion.numero_interior = direccionCliSelect.numero_interior;
-        direccion.pais = direccionCliSelect.pais;
-        direccion.idPais = direccionCliSelect.idPais;
-        direccion.y_calle = direccionCliSelect.y_calle;
-        direccion.tipo = direccionCliSelect.tipo;
-        direccion.rfc = direccionCliSelect.rfc;
-        direccion.cfdi = direccionCliSelect.cfdi;
-        direccion.rfiscal = direccionCliSelect.rfiscal;
-        direccion.tipo_persona = direccionCliSelect.tipo_persona;
-        direccion.telefono = direccionCliSelect.telefono;
-        direccion.correo = direccionCliSelect.correo;
-        direccion.predeterminada = direccionCliSelect.predeterminada;
+        let direccionCliSelect =
+            clientSelect.direcciones_asociadas &&
+            clientSelect.direcciones_asociadas[0]
+                ? clientSelect.direcciones_asociadas[0]
+                : {};
 
-        cliente.nombre = clientSelect.nombre;
-        cliente.alias = clientSelect.alias;
-        cliente.correo = clientSelect.correo;
-        cliente.direcciones_asociadas = clientSelect.direcciones_asociadas;
-        cliente.fecha_nacimiento = new Date(clientSelect.fecha_nacimiento)
-            .toISOString()
-            .split("T")[0];
-        cliente.fecha_creacion = new Date(clientSelect.fecha_creacion);
-        cliente.fecha_update = new Date(clientSelect.fecha_update);
-        cliente.fecha_desactivacion = new Date(
-            clientSelect.fecha_desactivacion,
-        );
+        direccion.calle =
+            direccionCliSelect.calle != null ? direccionCliSelect.calle : null;
+        direccion.colonia =
+            direccionCliSelect.colonia != null
+                ? direccionCliSelect.colonia
+                : null;
+        direccion.cp =
+            direccionCliSelect.cp != null ? direccionCliSelect.cp : null;
+        direccion.entre_calle =
+            direccionCliSelect.entre_calle != null
+                ? direccionCliSelect.entre_calle
+                : null;
+        direccion.estado =
+            direccionCliSelect.estado != null
+                ? direccionCliSelect.estado
+                : null;
+        direccion.idEstado =
+            direccionCliSelect.idEstado != null
+                ? direccionCliSelect.idEstado
+                : null;
+        direccion.localidad =
+            direccionCliSelect.localidad != null
+                ? direccionCliSelect.localidad
+                : null;
+        direccion.localidad_nombre =
+            direccionCliSelect.localidad_nombre != null
+                ? direccionCliSelect.localidad_nombre
+                : null;
+        direccion.municipio =
+            direccionCliSelect.municipio != null
+                ? direccionCliSelect.municipio
+                : null;
+        direccion.idMunicipio =
+            direccionCliSelect.idMunicipio != null
+                ? direccionCliSelect.idMunicipio
+                : null;
+        direccion.nombre =
+            direccionCliSelect.nombre != null
+                ? direccionCliSelect.nombre
+                : null;
+        direccion.notas =
+            direccionCliSelect.notas != null ? direccionCliSelect.notas : null;
+        direccion.numero_exterior =
+            direccionCliSelect.numero_exterior != null
+                ? direccionCliSelect.numero_exterior
+                : null;
+        direccion.numero_interior =
+            direccionCliSelect.numero_interior != null
+                ? direccionCliSelect.numero_interior
+                : null;
+        direccion.pais =
+            direccionCliSelect.pais != null ? direccionCliSelect.pais : null;
+        direccion.idPais =
+            direccionCliSelect.idPais != null
+                ? direccionCliSelect.idPais
+                : null;
+        direccion.y_calle =
+            direccionCliSelect.y_calle != null
+                ? direccionCliSelect.y_calle
+                : null;
+        direccion.tipo =
+            direccionCliSelect.tipo != null ? direccionCliSelect.tipo : null;
+        direccion.rfc =
+            direccionCliSelect.rfc != null ? direccionCliSelect.rfc : null;
+        direccion.cfdi =
+            direccionCliSelect.cfdi != null ? direccionCliSelect.cfdi : null;
+        direccion.rfiscal =
+            direccionCliSelect.rfiscal != null
+                ? direccionCliSelect.rfiscal
+                : null;
+        direccion.tipo_persona =
+            direccionCliSelect.tipo_persona != null
+                ? direccionCliSelect.tipo_persona
+                : null;
+        direccion.telefono =
+            direccionCliSelect.telefono != null
+                ? direccionCliSelect.telefono
+                : null;
+        direccion.correo =
+            direccionCliSelect.correo != null
+                ? direccionCliSelect.correo
+                : null;
+        direccion.predeterminada =
+            direccionCliSelect.predeterminada != null
+                ? direccionCliSelect.predeterminada
+                : null;
+
+        cliente.nombre =
+            clientSelect.nombre != null ? clientSelect.nombre : null;
+        cliente.alias = clientSelect.alias != null ? clientSelect.alias : null;
+        cliente.correo =
+            clientSelect.correo != null ? clientSelect.correo : null;
+        cliente.direcciones_asociadas =
+            clientSelect.direcciones_asociadas != null
+                ? clientSelect.direcciones_asociadas
+                : null;
+        cliente.fecha_nacimiento =
+            clientSelect.fecha_nacimiento != null
+                ? new Date(clientSelect.fecha_nacimiento)
+                      .toISOString()
+                      .split("T")[0]
+                : null;
+        cliente.fecha_creacion =
+            clientSelect.fecha_creacion != null
+                ? new Date(clientSelect.fecha_creacion)
+                : null;
+        cliente.fecha_update =
+            clientSelect.fecha_update != null
+                ? new Date(clientSelect.fecha_update)
+                : null;
+        cliente.fecha_desactivacion =
+            clientSelect.fecha_desactivacion != null
+                ? new Date(clientSelect.fecha_desactivacion)
+                : null;
         cliente.datos_fiscales.razon_social =
-            clientSelect.datos_fiscales.razon_social;
-        cliente.datos_fiscales.rfc = clientSelect.datos_fiscales.rfc;
-        cliente.datos_fiscales.nombre = clientSelect.datos_fiscales.nombre;
-        cliente.datos_fiscales.rfiscal = clientSelect.datos_fiscales.rfiscal;
+            clientSelect.datos_fiscales &&
+            clientSelect.datos_fiscales.razon_social != null
+                ? clientSelect.datos_fiscales.razon_social
+                : null;
+        cliente.datos_fiscales.rfc =
+            clientSelect.datos_fiscales &&
+            clientSelect.datos_fiscales.rfc != null
+                ? clientSelect.datos_fiscales.rfc
+                : null;
+        cliente.datos_fiscales.nombre =
+            clientSelect.datos_fiscales &&
+            clientSelect.datos_fiscales.nombre != null
+                ? clientSelect.datos_fiscales.nombre
+                : null;
+        cliente.datos_fiscales.rfiscal =
+            clientSelect.datos_fiscales &&
+            clientSelect.datos_fiscales.rfiscal != null
+                ? clientSelect.datos_fiscales.rfiscal
+                : null;
         cliente.datos_fiscales.tipo_persona =
-            clientSelect.datos_fiscales.tipo_persona;
-        cliente.datos_fiscales.cfdi = clientSelect.datos_fiscales.cfdi;
-        cliente.localidad = clientSelect.localidad;
-        cliente.localidad_nombre = clientSelect.localidad_nombre;
-        cliente.location.lat = clientSelect.location.lat;
-        cliente.location.lng = clientSelect.location.lng;
-        cliente.perfil.perfil = clientSelect.perfil.perfil;
-        cliente.perfil.porcentaje = clientSelect.perfil.porcentaje;
-        cliente.plataforma = clientSelect.plataforma;
-        cliente.push_token = clientSelect.push_token;
-        cliente.region = clientSelect.region;
-        cliente.telefono = clientSelect.telefono;
-        cliente.uid = clientSelect.uid;
-        cliente.password = clientSelect.password;
-        cliente.observaciones = clientSelect.observaciones;
-        cliente.agente.id = clientSelect.agente.id;
-        // cliente.agente.nombre = clientSelect.agente.nombre;
-        // cliente.agente.correo = clientSelect.agente.correo;
+            clientSelect.datos_fiscales &&
+            clientSelect.datos_fiscales.tipo_persona != null
+                ? clientSelect.datos_fiscales.tipo_persona
+                : null;
+        cliente.datos_fiscales.cfdi =
+            clientSelect.datos_fiscales &&
+            clientSelect.datos_fiscales.cfdi != null
+                ? clientSelect.datos_fiscales.cfdi
+                : null;
+        cliente.localidad =
+            clientSelect.localidad != null ? clientSelect.localidad : null;
+        cliente.localidad_nombre =
+            clientSelect.localidad_nombre != null
+                ? clientSelect.localidad_nombre
+                : null;
+        cliente.location.lat =
+            clientSelect.location && clientSelect.location.lat != null
+                ? clientSelect.location.lat
+                : null;
+        cliente.location.lng =
+            clientSelect.location && clientSelect.location.lng != null
+                ? clientSelect.location.lng
+                : null;
+        cliente.perfil.perfil =
+            clientSelect.perfil && clientSelect.perfil.perfil != null
+                ? clientSelect.perfil.perfil
+                : null;
+        cliente.perfil.porcentaje =
+            clientSelect.perfil && clientSelect.perfil.porcentaje != null
+                ? clientSelect.perfil.porcentaje
+                : null;
+        cliente.plataforma =
+            clientSelect.plataforma != null ? clientSelect.plataforma : null;
+        cliente.push_token =
+            clientSelect.push_token != null ? clientSelect.push_token : null;
+        cliente.region =
+            clientSelect.region != null ? clientSelect.region : null;
+        cliente.telefono =
+            clientSelect.telefono != null ? clientSelect.telefono : null;
+        cliente.uid = clientSelect.uid != null ? clientSelect.uid : null;
+        cliente.password =
+            clientSelect.password != null ? clientSelect.password : null;
+        cliente.observaciones =
+            clientSelect.observaciones != null
+                ? clientSelect.observaciones
+                : null;
+        cliente.agente.id =
+            clientSelect.agente && clientSelect.agente.id != null
+                ? clientSelect.agente.id
+                : null;
+        // cliente.agente.nombre = clientSelect.agente && clientSelect.agente.nombre != null ? clientSelect.agente.nombre : null;
+        // cliente.agente.correo = clientSelect.agente && clientSelect.agente.correo != null ? clientSelect.agente.correo : null;
     }
 
     async function EditarClienteSelecto() {
@@ -784,7 +914,11 @@
                     class="form-control"
                     bind:value={cliente.fecha_nacimiento}
                     id="inputCumple"
-                    max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
+                    max={new Date(
+                        new Date().setFullYear(new Date().getFullYear() - 18),
+                    )
+                        .toISOString()
+                        .split("T")[0]}
                 />
                 <label for="inputCumple" class="form-label">Cumpleaños</label>
                 <div class="valid-feedback">¡Se ve bien!</div>
@@ -1101,29 +1235,29 @@
         </div>
         <div class="d-grid gap-2 d-md-flex justify-content-md-end w-100">
             <button type="submit" class="btn btn-dark me-md-2 w-100">
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="currentColor"
-                class="bi bi-floppy-fill"
-                viewBox="0 0 16 16"
-            >
-                <path
-                d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"
-                />
-                <path
-                d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"
-                />
-            </svg>
-            Guardar
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                    class="bi bi-floppy-fill"
+                    viewBox="0 0 16 16"
+                >
+                    <path
+                        d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"
+                    />
+                    <path
+                        d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"
+                    />
+                </svg>
+                Guardar
             </button>
             <button
-            type="button"
-            class="btn btn-danger w-100"
-            on:click={() => goto("app/clientes")}
+                type="button"
+                class="btn btn-danger w-100"
+                on:click={() => goto("app/clientes")}
             >
-            Cancelar
+                Cancelar
             </button>
         </div>
     </form>

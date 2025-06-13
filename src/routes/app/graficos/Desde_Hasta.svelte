@@ -13,37 +13,47 @@
   };
 
   let format = "D.MM.YYYY";
-  let desde_texto = '';
-  let hasta_texto = '';
+  let desde_texto = "";
+  let hasta_texto = "";
 
-  const acualizar_textos =()=>{
-desde_texto = desde.getDate()+'-' + meses[desde.getMonth()] + ' ' + desde.getFullYear();
-hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFullYear();
-  }
+  const acualizar_textos = () => {
+    desde_texto =
+      desde.getDate() +
+      "-" +
+      meses[desde.getMonth()] +
+      " " +
+      desde.getFullYear();
+    hasta_texto =
+      hasta.getDate() +
+      "-" +
+      meses[hasta.getMonth()] +
+      " " +
+      hasta.getFullYear();
+  };
   function click_semana() {
     //console.log('asdss');
 
     mostrar = "semana";
-    acualizar_textos()
+    acualizar_textos();
   }
   function click_mes() {
     mostrar = "mes";
-    acualizar_textos()
+    acualizar_textos();
   }
   function click_year() {
     mostrar = "año";
-    acualizar_textos()
+    acualizar_textos();
   }
   function salio_mouse() {
     mostrar = "fechas";
-    acualizar_textos()
+    acualizar_textos();
   }
 
   function este_mes(params) {
     desde = new Date();
     hasta = new Date();
     desde.setDate(1);
-    acualizar_textos()
+    acualizar_textos();
     dispatch("cambio_fecha");
   }
 
@@ -51,7 +61,7 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
     desde = new Date();
     hasta = new Date();
     desde = getMonday(desde);
-    acualizar_textos()
+    acualizar_textos();
     dispatch("cambio_fecha");
   }
 
@@ -60,41 +70,55 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
     hasta = new Date();
     desde.setDate(1);
     desde.setMonth(0);
-    acualizar_textos()
+    acualizar_textos();
     dispatch("cambio_fecha");
   }
 
-  function anterior_mes(params) {
+  function anterior_mes() {
+    // Ir al primer día del mes actual
     desde.setDate(1);
-    hasta.setDate(1);
+    // Retroceder un mes
     desde.setMonth(desde.getMonth() - 1);
-    hasta.setMonth(desde.getMonth() + 1);
-    acualizar_textos()
+
+    // hasta será el primer día del mes siguiente a "desde"
+    hasta = new Date(desde.getFullYear(), desde.getMonth() + 1, 1);
+
+    acualizar_textos();
     dispatch("cambio_fecha");
   }
 
-  function siguiente_mes(params) {
+  function siguiente_mes() {
+    // Ir al primer día del mes actual
     desde.setDate(1);
-    hasta.setDate(1);
+    // Avanzar un mes
     desde.setMonth(desde.getMonth() + 1);
-    hasta.setMonth(desde.getMonth() + 1);
-    acualizar_textos()
+
+    // hasta será el primer día del mes siguiente a "desde"
+    hasta = new Date(desde.getFullYear(), desde.getMonth() + 1, 1);
+
+    acualizar_textos();
     dispatch("cambio_fecha");
   }
 
-  function anterior_semana(params) {
-    desde.setDate(desde.getDate()-1);
-    desde = getMonday(desde);
-    hasta.setDate(desde.getDate() + 7);
-    acualizar_textos()
+  function anterior_semana() {
+    let temp = new Date(desde); // Clonamos la fecha
+    temp.setDate(temp.getDate() - 7); // Retrocedemos 7 días completos
+    desde = getMonday(temp);
+    hasta = new Date(desde);
+    hasta.setDate(desde.getDate() + 6); // Hasta el domingo
+
+    acualizar_textos();
     dispatch("cambio_fecha");
   }
 
-  function siguiente_semana(params) {
-    desde.setDate(desde.getDate()+7);
-    desde = getMonday(desde);
-    hasta.setDate(desde.getDate() + 7);
-    acualizar_textos()
+  function siguiente_semana() {
+    let temp = new Date(desde); // Clonamos la fecha
+    temp.setDate(temp.getDate() + 7); // Avanzamos 7 días completos
+    desde = getMonday(temp);
+    hasta = new Date(desde);
+    hasta.setDate(desde.getDate() + 6); // Hasta el domingo
+
+    acualizar_textos();
     dispatch("cambio_fecha");
   }
 
@@ -105,7 +129,7 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
     hasta.setMonth(0);
     desde.setFullYear(desde.getFullYear() - 1);
     hasta.setFullYear(desde.getFullYear() + 1);
-    acualizar_textos()
+    acualizar_textos();
     dispatch("cambio_fecha");
   }
 
@@ -116,7 +140,7 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
     hasta.setMonth(0);
     desde.setFullYear(desde.getFullYear() + 1);
     hasta.setFullYear(desde.getFullYear() + 1);
-    acualizar_textos()
+    acualizar_textos();
 
     dispatch("cambio_fecha");
   }
@@ -135,25 +159,38 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
   <table>
     <tr>
       <td>
-
-        <Button on:click={salio_mouse} dense>fechas 
-        {#if mostrar === 'fechas'} <i class="material-icons">check</i> {/if}
+        <Button on:click={salio_mouse} dense
+          >fechas
+          {#if mostrar === "fechas"}
+            <i class="material-icons">check</i>
+          {/if}
         </Button>
         <br />
-        <Button on:click={click_semana} dense>semana 
-        {#if mostrar === 'semana'} <i class="material-icons">check</i> {/if}</Button>
+        <Button on:click={click_semana} dense
+          >semana
+          {#if mostrar === "semana"}
+            <i class="material-icons">check</i>
+          {/if}</Button
+        >
         <br />
       </td>
       <td>
-
-        <Button on:click={click_mes} dense>mes 
-        {#if mostrar === 'mes'} <i class="material-icons">check</i> {/if}</Button>
+        <Button on:click={click_mes} dense
+          >mes
+          {#if mostrar === "mes"}
+            <i class="material-icons">check</i>
+          {/if}</Button
+        >
         <br />
-        <Button on:click={click_year} dense>año 
-        {#if mostrar === 'año'} <i class="material-icons">check</i> {/if}</Button>
+        <Button on:click={click_year} dense
+          >año
+          {#if mostrar === "año"}
+            <i class="material-icons">check</i>
+          {/if}</Button
+        >
       </td>
       <td>
-        {#if mostrar === 'semana'}
+        {#if mostrar === "semana"}
           <!-- SEMANA -->
           <table>
             <tr>
@@ -167,7 +204,8 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
                   on:click={anterior_semana}
                   title="semana anterior"
                   dense
-                  icon>
+                  icon
+                >
                   <i class="material-icons">arrow_left</i>
                 </Button>
               </td>
@@ -176,7 +214,8 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
                   on:click={siguiente_semana}
                   title="semana siguiente"
                   dense
-                  icon>
+                  icon
+                >
                   <i class="material-icons">arrow_right</i>
                 </Button>
               </td>
@@ -184,10 +223,9 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
               <td>{desde_texto}</td>
 
               <td>{hasta_texto}</td>
-
             </tr>
           </table>
-        {:else if mostrar === 'mes'}
+        {:else if mostrar === "mes"}
           <!-- MES -->
           <table>
             <tr>
@@ -206,17 +244,17 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
                   on:click={siguiente_mes}
                   title="mes siguiente"
                   dense
-                  icon>
+                  icon
+                >
                   <i class="material-icons">arrow_right</i>
                 </Button>
               </td>
               <td>{desde_texto}</td>
 
               <td>{hasta_texto}</td>
-
             </tr>
           </table>
-        {:else if mostrar === 'año'}
+        {:else if mostrar === "año"}
           <!-- AÑO -->
           <table>
             <tr>
@@ -230,7 +268,8 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
                   on:click={anterior_year}
                   title="año anterior"
                   dense
-                  icon>
+                  icon
+                >
                   <i class="material-icons">arrow_left</i>
                 </Button>
               </td>
@@ -239,7 +278,8 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
                   on:click={siguiente_year}
                   title="año siguiente"
                   dense
-                  icon>
+                  icon
+                >
                   <i class="material-icons">arrow_right</i>
                 </Button>
               </td>
@@ -247,10 +287,9 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
               <td>{desde_texto}</td>
 
               <td>{hasta_texto}</td>
-
             </tr>
           </table>
-        {:else if mostrar === 'fechas'}
+        {:else if mostrar === "fechas"}
           <td>
             <Datefield
               icon
@@ -258,7 +297,8 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
               label="Desdeee"
               on:click={cambio_fecha}
               {format}
-              message={format} />
+              message={format}
+            />
           </td>
           <td>
             <Datefield
@@ -267,10 +307,10 @@ hasta_texto = hasta.getDate()+'-' + meses[hasta.getMonth()] + ' ' + hasta.getFul
               label="Hastsa"
               {format}
               on:click={cambio_fecha}
-              message={format} />
+              message={format}
+            />
           </td>
         {/if}
-
       </td>
     </tr>
   </table>

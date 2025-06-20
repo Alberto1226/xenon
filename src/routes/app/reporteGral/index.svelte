@@ -23,6 +23,7 @@
     let mostrarTopAgentes = false;
 
     const porPagina = 20;
+    const top = 5;
     let pagina = 1;
 
     let mensaje = "";
@@ -133,15 +134,15 @@
 
         topClientes = Object.entries(comprasPorCliente)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 3);
+            .slice(0, top);
 
         topProductos = Object.entries(ventasPorProducto)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 3);
+            .slice(0, top);
 
         topAgentes = Object.entries(ventasPorAgente)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 3);
+            .slice(0, top);
     }
 
     function siguientePagina() {
@@ -173,7 +174,7 @@
             <label>Cliente:</label>
             <select bind:value={cliente}>
                 <option value="">Todos</option>
-                {#each clientes as c}
+                {#each [...clientes].sort((a, b) => a.localeCompare(b)) as c}
                     <option value={c}>{c}</option>
                 {/each}
             </select>
@@ -182,7 +183,7 @@
             <label>Producto:</label>
             <select bind:value={producto}>
                 <option value="">Todos</option>
-                {#each productos as p}
+                {#each [...productos].sort((a, b) => a.localeCompare(b)) as p}
                     <option value={p}>{p}</option>
                 {/each}
             </select>
@@ -191,7 +192,7 @@
             <label>Usuario:</label>
             <select bind:value={usuario}>
                 <option value="">Todos</option>
-                {#each usuarios as u}
+                {#each [...usuarios].sort((a, b) => a.localeCompare(b)) as u}
                     <option value={u}>{u}</option>
                 {/each}
             </select>
@@ -205,7 +206,7 @@
 <!-- BOTONES DE TOP 3 -->
 {#if resultadosOriginales.length > 0}
     <section class="top3">
-        <h3>Top 3</h3>
+        <h3>Top {top}</h3>
         <button on:click={() => (mostrarTopClientes = true)}
             >Top Clientes</button
         >
@@ -236,13 +237,13 @@
                     <th>Cantidad</th>
                     <th>Precio Unitario</th>
                     <th>Total</th>
-                    <th>Usuario</th>
+                    <th>Agente</th>
                 </tr>
             </thead>
             <tbody>
                 {#each resultadosPaginados as r}
                     <tr>
-                        <td>{r.fecha}</td>
+                        <td>{new Date(r.fecha).toLocaleDateString("es-MX")}</td>
                         <td>{r.folio}</td>
                         <td>{r.cliente}</td>
                         <td>{r.producto}</td>
@@ -275,7 +276,7 @@
 {#if mostrarTopClientes}
     <div class="modal">
         <div class="modal-content">
-            <h4>Top 3 Clientes</h4>
+            <h4>Top {top} Clientes</h4>
             <ul>
                 {#each topClientes as [cliente, cantidad]}
                     <li>{cliente}: {cantidad} compras</li>
@@ -290,7 +291,7 @@
 {#if mostrarTopProductos}
     <div class="modal">
         <div class="modal-content">
-            <h4>Top 3 Productos</h4>
+            <h4>Top {top} Productos</h4>
             <ul>
                 {#each topProductos as [producto, totalCantidad]}
                     <li>{producto}: {totalCantidad} unidades vendidas</li>
@@ -306,7 +307,7 @@
 {#if mostrarTopAgentes}
     <div class="modal">
         <div class="modal-content">
-            <h4>Top 3 Agentes</h4>
+            <h4>Top {top} Agentes</h4>
             <ul>
                 {#each topAgentes as [usuario, cantidad]}
                     <li>{usuario}: {cantidad} ventas</li>

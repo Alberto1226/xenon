@@ -72,6 +72,13 @@
     },
 
     {
+      url: "/app/reporteGral",
+      titulo: "Reporte General",
+      icono: "assessment",
+      roles: ["administrador"],
+    },
+
+    {
       url: "/app/usuarios",
       titulo: "Usuarios",
       icono: "supervised_user_circle",

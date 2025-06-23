@@ -4,10 +4,10 @@ import { Pedido } from "../../../models/pedido";
 import { Producto } from "../../../models/producto";
 
 export async function post(req, res, next) {
-    // if (accesos.esta_logueado(req) === false) {
-    //     res.send({ ok: false, mensaje: "sesion expirada" })
-    //     return;
-    // }
+    if (accesos.esta_logueado(req) === false) {
+        res.send({ ok: false, mensaje: "sesion expirada" })
+        return;
+    }
     console.log("Datos del reporte general", req.body);
     let NumRegistros = req.body.NumRegistros;
     let FechaInicio = req.body.fechaInicio;
@@ -88,9 +88,9 @@ export async function post(req, res, next) {
     }
     if (tipo === "producto") {
 
-        console.log("Tipo de reporte: Producto");
-        // let id = req.body.id; // ID del producto a consultar
-        let id = "5e81b9f7ef9af91c43989060";
+        // console.log("Tipo de reporte: Producto");
+        let id = req.body.id; // ID del producto a consultar
+        // let id = "5e81b9f7ef9af91c43989060";
         const match = {
             _id: mongoose.Types.ObjectId(id) // Asegúrate de que el ID sea un ObjectId válido
         };
@@ -100,11 +100,12 @@ export async function post(req, res, next) {
                 $project: {
                     // tipo: { $literal: "Producto" },
                     // producto_id: "$_id",
-                    nombre: 1,
-                    codigo: 1,
-                    precio: 1,
-                    existencia:"$existencia.actual",
-                    categoria: "$categoria.nombre",
+                    _id: 0,
+                    Nombre: "$nombre",
+                    Codigo: "$codigo",
+                    Precio: "$precio",
+                    Existencia: "$existencia.actual",
+                    Categoria: "$categoria.nombre",
                 }
             },
             { $match: match },

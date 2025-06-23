@@ -1,5 +1,5 @@
 <script>
-    import { postData } from "./../../stores";
+    import { postData, mensajes_app } from "./../../stores";
 
     let fechaInicio = "";
     let fechaFin = "";
@@ -49,15 +49,20 @@
         } else {
             datosModalEspecifico = null;
             mostrarModalEspecifico = false;
-            alert("No se encontraron detalles.");
+            // alert("No se encontraron detalles.");
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "No se encontraron detalles para el producto seleccionado.",
+            });
+            $mensajes_app = $mensajes_app;
         }
     }
 
     async function obtenerDatosDesdeBD() {
-        // if (!fechaInicio || !fechaFin) {
-        //     mensaje = "Selecciona ambas fechas para obtener los datos.";
-        //     return;
-        // }
+        if (!fechaInicio || !fechaFin) {
+            mensaje = "Selecciona ambas fechas para obtener los datos.";
+            return;
+        }
 
         mensaje = "";
         cargando = true;

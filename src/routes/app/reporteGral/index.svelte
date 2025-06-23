@@ -29,11 +29,29 @@
     let mensaje = "";
     let cargando = false;
 
+    let datosModalEspecifico = null;
+    let mostrarModalEspecifico = false;
+
     $: totalPaginas = Math.ceil(resultadosFiltrados.length / porPagina);
     $: resultadosPaginados = resultadosFiltrados.slice(
         (pagina - 1) * porPagina,
         pagina * porPagina,
     );
+
+    async function DatosEspesificos(tipo, id) {
+        const body = { tipo, id };
+
+        const res = await postData("app/reporteGral/datosReporteGral", body);
+
+        if (res && res.ok && res.resultados && res.resultados.length > 0) {
+            datosModalEspecifico = res.resultados[0];
+            mostrarModalEspecifico = true;
+        } else {
+            datosModalEspecifico = null;
+            mostrarModalEspecifico = false;
+            alert("No se encontraron detalles.");
+        }
+    }
 
     async function obtenerDatosDesdeBD() {
         // if (!fechaInicio || !fechaFin) {
@@ -59,6 +77,7 @@
                 folio: r.folio,
                 cliente: r.cliente,
                 producto: r.producto,
+                productoId: r.producto_id,
                 cantidad: r.cantidad,
                 precioUnitario: r.precio_unitario,
                 total: r.total,
@@ -154,113 +173,164 @@
     }
 </script>
 
-<section class="filtros">
-    <h2>Filtros</h2>
-    <form class="filtros-form" on:submit|preventDefault={aplicarFiltros}>
-        <div class="filtro">
-            <label>Fecha Inicio:</label>
-            <input type="date" bind:value={fechaInicio} />
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+    crossorigin="anonymous"
+/>
+
+<!-- Bootstrap ya está importado en tu <link> -->
+
+<section class="filtros card p-4 mb-4">
+    <!-- <h2 class="h4 mb-3">Filtros</h2> -->
+    <form class="row g-3" on:submit|preventDefault={aplicarFiltros}>
+        <div class="col-md-3">
+            <label class="form-label">Fecha Inicio:</label>
+            <input type="date" class="form-control" bind:value={fechaInicio} />
         </div>
-        <div class="filtro">
-            <label>Fecha Fin:</label>
-            <input type="date" bind:value={fechaFin} />
+        <div class="col-md-3">
+            <label class="form-label">Fecha Fin:</label>
+            <input type="date" class="form-control" bind:value={fechaFin} />
         </div>
-        <div class="filtro botones">
-            <button type="button" on:click={obtenerDatosDesdeBD}>
+        <div class="col-md-2 d-flex align-items-end">
+            <button
+                type="button"
+                class="btn btn-primary w-100"
+                on:click={obtenerDatosDesdeBD}
+            >
                 Obtener Datos
             </button>
         </div>
-        <div class="filtro">
-            <label>Cliente:</label>
-            <select bind:value={cliente}>
+        <div class="col-md-4 d-flex align-items-end mx-auto">
+            <button type="submit" class="btn btn-success"
+                >Aplicar Filtros</button
+            >
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Cliente:</label>
+            <select class="form-select" bind:value={cliente}>
                 <option value="">Todos</option>
                 {#each [...clientes].sort((a, b) => a.localeCompare(b)) as c}
                     <option value={c}>{c}</option>
                 {/each}
             </select>
         </div>
-        <div class="filtro">
-            <label>Producto:</label>
-            <select bind:value={producto}>
+        <div class="col-md-4">
+            <label class="form-label">Producto:</label>
+            <select class="form-select" bind:value={producto}>
                 <option value="">Todos</option>
                 {#each [...productos].sort((a, b) => a.localeCompare(b)) as p}
                     <option value={p}>{p}</option>
                 {/each}
             </select>
         </div>
-        <div class="filtro">
-            <label>Usuario:</label>
-            <select bind:value={usuario}>
+        <div class="col-md-4">
+            <label class="form-label">Agente:</label>
+            <select class="form-select" bind:value={usuario}>
                 <option value="">Todos</option>
                 {#each [...usuarios].sort((a, b) => a.localeCompare(b)) as u}
                     <option value={u}>{u}</option>
                 {/each}
             </select>
         </div>
-        <div class="filtro botones">
-            <button type="submit"> Aplicar Filtros </button>
-        </div>
     </form>
 </section>
 
-<!-- BOTONES DE TOP 3 -->
 {#if resultadosOriginales.length > 0}
-    <section class="top3">
-        <h3>Top {top}</h3>
-        <button on:click={() => (mostrarTopClientes = true)}
-            >Top Clientes</button
-        >
-        <button on:click={() => (mostrarTopProductos = true)}
-            >Top Productos</button
-        >
-        <button on:click={() => (mostrarTopAgentes = true)}>Top Agentes</button>
+    <section class="top3 card p-3 mb-4 text-center">
+        <h3 class="h5 mb-3">Top {top}</h3>
+        <div class="d-flex justify-content-center gap-3">
+            <button
+                class="btn btn-outline-primary"
+                on:click={() => (mostrarTopClientes = true)}
+            >
+                Top Clientes
+            </button>
+            <button
+                class="btn btn-outline-info"
+                on:click={() => (mostrarTopProductos = true)}
+            >
+                Top Productos
+            </button>
+            <button
+                class="btn btn-outline-success"
+                on:click={() => (mostrarTopAgentes = true)}
+            >
+                Top Agentes
+            </button>
+        </div>
     </section>
 {/if}
 
-<section class="resultados">
-    <h2>Resultados</h2>
+<section class="resultados card p-4 mb-4">
+    <h2 class="h4 mb-3">Resultados</h2>
 
     {#if mensaje}
-        <p style="color: red;">{mensaje}</p>
+        <div class="alert alert-warning">{mensaje}</div>
     {/if}
 
     {#if cargando}
-        <p>Cargando datos...</p>
+        <div class="text-center">Cargando datos...</div>
     {:else if resultadosFiltrados.length > 0}
-        <table>
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Folio</th>
-                    <th>Cliente</th>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Precio Unitario</th>
-                    <th>Total</th>
-                    <th>Agente</th>
-                </tr>
-            </thead>
-            <tbody>
-                {#each resultadosPaginados as r}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-light">
                     <tr>
-                        <td>{new Date(r.fecha).toLocaleDateString("es-MX")}</td>
-                        <td>{r.folio}</td>
-                        <td>{r.cliente}</td>
-                        <td>{r.producto}</td>
-                        <td>{r.cantidad}</td>
-                        <td>${r.precioUnitario}</td>
-                        <td>${r.total}</td>
-                        <td>{r.usuario}</td>
+                        <th>Fecha</th>
+                        <th>Folio</th>
+                        <th>Cliente</th>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unitario</th>
+                        <th>Total</th>
+                        <th>Agente</th>
                     </tr>
-                {/each}
-            </tbody>
-        </table>
-        <div class="paginacion">
-            <button on:click={anteriorPagina} disabled={pagina === 1}>
+                </thead>
+                <tbody>
+                    {#each resultadosPaginados as r}
+                        <tr>
+                            <td
+                                >{new Date(r.fecha).toLocaleDateString(
+                                    "es-MX",
+                                )}</td
+                            >
+                            <td>{r.folio}</td>
+                            <td>{r.cliente}</td>
+                            <td>
+                                <a
+                                    href="#"
+                                    on:click|preventDefault={() =>
+                                        DatosEspesificos(
+                                            "producto",
+                                            r.productoId,
+                                        )}
+                                >
+                                    {r.producto}
+                                </a>
+                            </td>
+                            <td>{r.cantidad}</td>
+                            <td>${r.precioUnitario}</td>
+                            <td>${r.total}</td>
+                            <td>{r.usuario}</td>
+                        </tr>
+                    {/each}
+                </tbody>
+            </table>
+        </div>
+        <div
+            class="paginacion d-flex justify-content-between align-items-center mt-3"
+        >
+            <button
+                class="btn btn-secondary"
+                on:click={anteriorPagina}
+                disabled={pagina === 1}
+            >
                 Anterior
             </button>
             <span>Página {pagina} de {totalPaginas}</span>
             <button
+                class="btn btn-secondary"
                 on:click={siguientePagina}
                 disabled={pagina === totalPaginas}
             >
@@ -268,52 +338,114 @@
             </button>
         </div>
     {:else}
-        <p>No hay datos para mostrar.</p>
+        <div class="alert alert-info">No hay datos para mostrar.</div>
     {/if}
 </section>
 
 <!-- MODALES -->
 {#if mostrarTopClientes}
-    <div class="modal">
-        <div class="modal-content">
-            <h4>Top {top} Clientes</h4>
-            <ul>
-                {#each topClientes as [cliente, cantidad]}
-                    <li>{cliente}: {cantidad} compras</li>
-                {/each}
-            </ul>
-            <button on:click={() => (mostrarTopClientes = false)}>Cerrar</button
-            >
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Top {top} Clientes</h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        on:click={() => (mostrarTopClientes = false)}
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        {#each topClientes as [cliente, cantidad]}
+                            <li class="list-group-item">
+                                {cliente}: {cantidad} compras
+                            </li>
+                        {/each}
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 {/if}
 
 {#if mostrarTopProductos}
-    <div class="modal">
-        <div class="modal-content">
-            <h4>Top {top} Productos</h4>
-            <ul>
-                {#each topProductos as [producto, totalCantidad]}
-                    <li>{producto}: {totalCantidad} unidades vendidas</li>
-                {/each}
-            </ul>
-            <button on:click={() => (mostrarTopProductos = false)}
-                >Cerrar</button
-            >
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Top {top} Productos</h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        on:click={() => (mostrarTopProductos = false)}
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        {#each topProductos as [producto, totalCantidad]}
+                            <li class="list-group-item">
+                                {producto}: {totalCantidad} unidades vendidas
+                            </li>
+                        {/each}
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 {/if}
 
 {#if mostrarTopAgentes}
-    <div class="modal">
-        <div class="modal-content">
-            <h4>Top {top} Agentes</h4>
-            <ul>
-                {#each topAgentes as [usuario, cantidad]}
-                    <li>{usuario}: {cantidad} ventas</li>
-                {/each}
-            </ul>
-            <button on:click={() => (mostrarTopAgentes = false)}>Cerrar</button>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Top {top} Agentes</h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        on:click={() => (mostrarTopAgentes = false)}
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        {#each topAgentes as [usuario, cantidad]}
+                            <li class="list-group-item">
+                                {usuario}: {cantidad} ventas
+                            </li>
+                        {/each}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}
+
+{#if mostrarModalEspecifico && datosModalEspecifico}
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Detalle del {datosModalEspecifico.tipo}
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        on:click={() => (mostrarModalEspecifico = false)}
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        {#each Object.entries(datosModalEspecifico) as [key, value]}
+                            <li class="list-group-item">
+                                <strong>{key}:</strong>
+                                {value}
+                            </li>
+                        {/each}
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 {/if}

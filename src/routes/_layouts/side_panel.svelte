@@ -123,6 +123,12 @@
       roles: ["administrador"],
     },
     {
+      url: "/app/QR",
+      titulo: "codigo QR",
+      icono: "qr_code",
+      roles: ["administrador"],
+    },
+    {
       url: "/app/pedidos/publicos",
       titulo: "Pedidos públicos",
       icono: "fingerprint",

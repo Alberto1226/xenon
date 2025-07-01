@@ -33,6 +33,7 @@
     "passport-local": "^1.0.0",
     "pdfkit": "^0.11.0",
     "pdfmake": "^0.1.65",
+    "qrcode": "^1.5.4",
     "sirv": "^0.4.0",
     "svelte-infinite-scroll": "^1.4.0",
     "svelte-loading-spinners": "0.0.17",

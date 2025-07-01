@@ -1,6 +1,6 @@
 import { Rutas } from "../../../models/rutas";
 import { Cliente } from "../../../models/cliente";
-import accesos from "../accesos";
+import * as accesos from "../accesos";
 
 export async function post(req, res, next) {
     if (accesos.esta_logueado(req) === false) {

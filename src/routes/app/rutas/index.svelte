@@ -38,7 +38,7 @@
     }
 
     onMount(() => {
-        console.log("Cargando rutas y clientes...");
+        // console.log("Cargando rutas y clientes...");
         cargarRutas();
         cargarClientes();
     });

@@ -117,6 +117,12 @@
       roles: ["administrador", "almacen"],
     },
     {
+      url: "/app/rutas",
+      titulo: "Rutas",
+      icono: "map",
+      roles: ["administrador"],
+    },
+    {
       url: "/app/pedidos/publicos",
       titulo: "Pedidos públicos",
       icono: "fingerprint",

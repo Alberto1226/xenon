@@ -3,16 +3,16 @@ import { Cliente } from "../../../models/cliente";
 import accesos from "../accesos";
 
 export async function post(req, res, next) {
-    // if (accesos.esta_logueado(req) === false) {
-    //     res.send({ ok: false, mensaje: "sesion expirada" })
-    //     return;
-    // }
-    console.log("Datos de la ruta", req.body);
+    if (accesos.esta_logueado(req) === false) {
+        res.send({ ok: false, mensaje: "sesion expirada" })
+        return;
+    }
+    // console.log("Datos de la ruta", req.body);
     let tipo = req.body.tipo;
 
     if (tipo == "consulta_clientes") {
         const clientes = await Cliente.find({}, { _id: 1, nombre: 1 }).lean();
-        console.log("Clientes encontrados:", clientes);
+        // console.log("Clientes encontrados:", clientes);
 
         if (!clientes || clientes.length === 0) {
             res.send({ ok: false, mensaje: "No se encontraron clientes" });
@@ -165,7 +165,7 @@ export async function post(req, res, next) {
             res.send({ ok: false, mensaje: "Error al eliminar la ruta", error: error.message });
             return;
         }
-        
+
     }
 
     // Generar rutas ficticias para pruebas

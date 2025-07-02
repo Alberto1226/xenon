@@ -51,7 +51,9 @@ var schema = new Schema({
         empresa: { type: String, default: '' },
         codigo_de_rastreo: { type: String, default: '' },
         notas: { type: String, default: '' },
-    }
+    },
+    folio_salida: { type: String, default: '' }, // Folio de la venta en el sistema de ventas por rutas
+    folio_ruta: { type: String, default: '' }, // Folio de la ruta en el sistema de ventas por rutas
 });
 
 

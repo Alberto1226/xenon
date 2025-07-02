@@ -15,6 +15,7 @@ var schema = new Schema({
     comision:{type:Number,default:0},
     nombre:{type:String ,default :""},
     edit:{type:Boolean,default:false},//el campo se agrega para dar permiso que el usuario pueda editar sus clientes asignados
+    isMovil:{type:Boolean,default:false},//el campo se agrega para dar permiso que el usuario pueda iniciar sesion en la app movil para rutas
 });
 
 schema.methods.encryptPassword = function(password){

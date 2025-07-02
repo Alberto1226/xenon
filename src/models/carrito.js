@@ -48,7 +48,7 @@ var schema = new Schema({
     total_pedido: { type: Number, default: 0 },
     notas: { type: String, default: "" },
     notas_usuarios: [],
-    status: { type: String, default: 'Pedido' },
+    status: { type: String, default: 'Pedido' },//se agrega el status ruta para que el carrito pueda ser utilizado en la app movil de ventas por rutas
     mensajeria: {
         empresa: { type: String, default: '' },
         codigo_de_rastreo: { type: String, default: '' },

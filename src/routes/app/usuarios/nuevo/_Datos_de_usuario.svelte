@@ -129,6 +129,10 @@
         Edición de clientes
       </label>
       {/if}
+      <label for="">
+        <input type="checkbox" bind:checked={nuevo_usuario.isMovil} />
+        Inicio de sesión en rutas
+      </label>
     </div>
     <div class="siete espacio">
 

@@ -207,6 +207,10 @@ onMount(()=>{
         Edicion de clientes
       </label>
       {/if}
+      <label for="">
+        <input type="checkbox" bind:checked={usuario_temp.isMovil} />
+        Inicio de sesión en rutas
+      </label>
     </div>
     <div class="siete espacio" />
   </div>

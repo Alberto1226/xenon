@@ -58,6 +58,8 @@
   let busqueda_coincidencias = 0;
   var total_unidades = 0;
   let tenia_ficha = false;
+  let modalSelectRuta = false;
+  let rutasArray = [];
 
   let visible = false;
   let descuento_nuevo = 1;
@@ -76,7 +78,7 @@
 
   onMount(() => {
     buscar = $buscadores.productos;
-    console.log($editar_store.pedido.descuento);
+    console.log("onMount Paso 2", $editar_store.pedido.rutas);
     $lista_productos_en_pedido_en_edicion = lista_productos;
     // pedido_selecto.descuento = cliente.perfil.porcentaje;
     descuento_a_usar = $editar_store.pedido.descuento;
@@ -88,6 +90,10 @@
 
     selecionar_input_buscar();
     obtener_productos_por_pagina();
+    consultaRutas();
+    if ($editar_store.pedido.rutas) {
+      modalSelectRuta = true;
+    }
     /*
     
     if ($productos.lista.length > 0) {
@@ -116,6 +122,29 @@
   }
   $: if (descuento_a_usar) {
     $editar_store.descuento = descuento_a_usar;
+  }
+
+  async function consultaRutas() {
+    try {
+      const respuesta = await postData(
+        "app/pedidos/nuevo/administracion_carrito_ruta",
+        { donde: "consultaRutas" },
+      );
+      if (respuesta.ok) {
+        console.log("Rutas obtenidas:", respuesta.rutas);
+        rutasArray = respuesta.rutas;
+        modalSelectRuta = true;
+      } else {
+        $mensajes_app.push({
+          tipo: "error",
+          mensaje: "No se pudo obtener las rutas",
+        });
+      }
+    } catch (error) {
+      console.error("Error al consultar rutas:", error);
+    } finally {
+      http_ocupado = false;
+    }
   }
 
   async function obtener_analisis_promos() {
@@ -508,20 +537,52 @@
           title="Info sobre disponibilidad de los folios selectos"
         /></Button
       > -->
-      <Button
-        color="white"
-        disabled={$usuario_db.rol == "almacen"}
-        icon
-        dense
-        on:click={obtener_analisis_promos}
-      >
-        <i
-          class="material-icons"
-          title="Obtener analisis de promos y sus condiciones en el pedido"
+      {#if !$editar_store.pedido.rutas}
+        <Button
+          color="white"
+          disabled={$usuario_db.rol == "almacen"}
+          icon
+          dense
+          on:click={obtener_analisis_promos}
         >
-          new_releases</i
-        >
-      </Button>
+          <i
+            class="material-icons"
+            title="Obtener analisis de promos y sus condiciones en el pedido"
+          >
+            new_releases</i
+          >
+        </Button>
+      {/if}
+
+      {#if $editar_store.pedido.rutas}
+        <!-- Mostrar rutas y fecha estimada si ya existen -->
+        <div style="display: inline-flex; margin-left: 16px;">
+          <label for="selectRuta">Ruta:</label>
+          <select
+            id="selectRuta"
+            bind:value={$editar_store.pedido.rutaSelect}
+            on:change={(e) => ($editar_store.pedido.rutaSelect = e.target.value)}
+            style="margin-right: 8px;"
+          >
+            <option value="" disabled>Selecciona una ruta</option>
+            {#each rutasArray as ruta}
+              <option value={ruta._id}>{ruta.nombre_ruta}</option>
+            {/each}
+          </select>
+        </div>
+        <div style="display: inline-flex; margin-left: 16px;">
+          <label for="fechaEstimada">Fecha estimada:</label>
+          <input
+            id="fechaEstimada"
+            type="date"
+            bind:value={$editar_store.pedido.fecha_estimada}
+            on:change={(e) =>
+              ($editar_store.pedido.fecha_estimada = e.target.value)}
+            style="margin-left: 4px;"
+          />
+        </div>
+      {/if}
+
       <Button color="white" icon dense on:click={actualizar_pedido}>
         <i class="material-icons" title={recargar_txt}> autorenew</i>
       </Button>

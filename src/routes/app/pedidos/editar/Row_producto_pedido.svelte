@@ -372,7 +372,7 @@
             {:else}
               <td title="Precio con descuento aplicado ">
                 $ {formato_precio(producto.precio)}
-                {#if $usuario_db.rol === "administrador"}
+                {#if $usuario_db.rol === "administrador" && !$editar_store.pedido.rutas}
                   <Button
                     icon
                     style="width: 26px;height: 26px;"

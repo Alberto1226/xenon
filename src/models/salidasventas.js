@@ -14,4 +14,4 @@ var schema = new Schema({
     status: { type: String, default: 'Activa' }, // Estado de la salida (Activa, Proceso, Terminada)
 });
 
-module.exports = mongoose.model('SalidasVentas', schema);
+export var SalidasVentas = mongoose.model('SalidasVentas', schema);

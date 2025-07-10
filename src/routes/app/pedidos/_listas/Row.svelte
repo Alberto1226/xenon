@@ -165,9 +165,13 @@
 
   function cancelar_pedido() {
     // mensaje_envio = 'CAncelado...';
+    let ruta = false;
+    if (pedido.folio_salida && pedido.cliente.id == "") {
+      ruta = true;
+    }
     dispatch("procesando_cambio_status_a_envio");
     procesando = true;
-    postData("/app/pedidos/cancelar_carrito", { id: pedido._id })
+    postData("/app/pedidos/cancelar_carrito", { id: pedido._id, ruta: ruta })
       .then((respuesta) => {
         //console.log(respuesta);
 
@@ -345,7 +349,12 @@
 
   <div class="seis">
     <div class="sobresaltar no_select">
-      {pedido.cliente == undefined ? "" : pedido.cliente.nombre}
+      <!-- // Mostrar el folio de salida si existe, o el nombre del cliente -->
+      {#if pedido.folio_salida && pedido.cliente.id == ""}
+        {pedido.folio_salida == undefined ? "" : pedido.folio_salida}
+      {:else}
+        {pedido.cliente == undefined ? "" : pedido.cliente.nombre}
+      {/if}
       <br />
       <div class="indice_row">
         {pedido.cliente == undefined ? "" : pedido.cliente.correo}

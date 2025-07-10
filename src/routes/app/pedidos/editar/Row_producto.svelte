@@ -29,6 +29,7 @@
   let virgen = true;
   let timeout;
   let visible_info_promo = false;
+  let masData = {};
   const dispatch = createEventDispatcher();
 
   onMount(() => {
@@ -195,17 +196,43 @@
     procesando_en_la_nube = true;
     var promo = { con_promo: promo_solicitada };
     var registro = { producto: producto_temp, cantidad, promo };
-    //console.log(registro);
+    console.log(registro);
     let donde = "agregar";
-    postData("/app/pedidos/editar/cambiar_cantidad", {
+    let url = "";
+    if ($editar_store.pedido.rutas) {
+      if (
+        $editar_store.pedido.rutaSelect &&
+        $editar_store.pedido.fecha_estimada
+      ) {
+        console.log("rutaSelect:", $editar_store.pedido.rutaSelect);
+        console.log("fecha_estimada:", $editar_store.pedido.fecha_estimada);
+        url = "/app/pedidos/nuevo/administracion_carrito_ruta";
+        masData = {
+          ruta: $editar_store.pedido.rutaSelect,
+          fecha_estimada: $editar_store.pedido.fecha_estimada,
+        };
+      } else {
+        $mensajes_app.push({
+          tipo: "error",
+          mensaje: "Debe seleccionar una ruta y fecha estimada",
+        });
+        $mensajes_app = $mensajes_app;
+        procesando_en_la_nube = false;
+        return;
+      }
+    } else {
+      url = "/app/pedidos/editar/cambiar_cantidad";
+    }
+    postData(url, {
       registro,
       id_carrito,
       donde,
       cantMB,
+      masData,
     })
       .then((respuesta) => {
         if (respuesta.ok) {
-          // console.log(respuesta);
+          console.log(respuesta);
           $mensajes_app.push({ tipo: "exito", mensaje: "Producto agregado" });
           $mensajes_app = $mensajes_app;
           var existente = $lista_productos_en_pedido_en_edicion.find(

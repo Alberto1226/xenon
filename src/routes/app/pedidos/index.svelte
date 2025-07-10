@@ -6,6 +6,7 @@
     pedidos,
     pedidos_cancelados,
     postData,
+    usuario_db,
     pedidos_historicos,
     buscadores,
   } from "./../../stores";
@@ -28,9 +29,11 @@
   var url_consulta = "app/pedidos/lista_de_pedidos";
   var ejecutar_consulta = false;
   var sugerencia_visible = false;
+  let visible_modal_tipo_pedido = false;
 
   onMount(() => {
     buscando = $buscadores.pedidos;
+    console.log($usuario_db.rol);
     // if ($clientes.lista.length > 0) return;
     //obtener_lista();
   });
@@ -58,11 +61,24 @@
     estado_actual = "editando pedido";
   }
 
+  function handleNuevoPedido() {
+    if ($usuario_db.rol === "administrador") {
+      visible_modal_tipo_pedido = true;
+    } else {
+      estado_actual = "creando pedido";
+      goto("/app/pedidos/nuevo/nuevo");
+    }
+  }
+
   function handleKeydown(evt) {
     if (evt.key == "+") {
       evt.preventDefault();
-      estado_actual = "creando pedido";
-      goto("/app/pedidos/nuevo/nuevo");
+      if ($usuario_db.rol === "administrador") {
+        visible_modal_tipo_pedido = true;
+      } else {
+        estado_actual = "creando pedido";
+        goto("/app/pedidos/nuevo/nuevo");
+      }
       return;
     }
     if (evt.key == "Escape") {
@@ -78,6 +94,17 @@
 
   function cerrar_dialogo_de_Folios() {
     $visible_ventana_de_detalles = false;
+  }
+
+  function seleccionarTipoPedido(tipo) {
+    visible_modal_tipo_pedido = false;
+    if (tipo === "clientes") {
+      estado_actual = "creando pedido";
+      goto("/app/pedidos/nuevo/nuevo");
+    } else if (tipo === "rutas") {
+      estado_actual = "creando pedido";
+      goto("/app/pedidos/nuevo/PedidoRuta");
+    }
   }
 </script>
 
@@ -138,10 +165,7 @@
           <td>
             Nuevo Pedido
             <Button
-              on:click={() => {
-                estado_actual = "creando pedido";
-                goto("/app/pedidos/nuevo/nuevo");
-              }}
+              on:click={handleNuevoPedido}
               icon
               raised
               outlined
@@ -283,6 +307,39 @@
   <div slot="actions" class="actions center" />
 
   <div slot="footer" class="footer" />
+</Dialog>
+
+<!-- Modal para seleccionar tipo de pedido (solo admins) -->
+<Dialog width="350" bind:visible={visible_modal_tipo_pedido}>
+  <div class="centrado" style="margin-bottom: 20px;">
+    <h4>Selecciona el tipo de pedido</h4>
+  </div>
+  <div
+    class="centrado"
+    style="gap: 1em; display: flex; flex-direction: column;"
+  >
+    <Button
+      color="primary"
+      raised
+      on:click={() => seleccionarTipoPedido("clientes")}
+      style="width: 200px;"
+    >
+      Pedido a Clientes
+    </Button>
+    <Button
+      color="secondary"
+      raised
+      on:click={() => seleccionarTipoPedido("rutas")}
+      style="width: 200px;"
+    >
+      Pedido a Rutas
+    </Button>
+  </div>
+  <div slot="actions" class="actions center">
+    <Button on:click={() => (visible_modal_tipo_pedido = false)}
+      >Cancelar</Button
+    >
+  </div>
 </Dialog>
 
 <style>

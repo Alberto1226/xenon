@@ -7,6 +7,7 @@ import { Producto } from "../../../models/producto";
 import { devolver_producto_db } from './../pedidos/editar/_server_cambiar_cantidad/devolver_producto_db';
 import { snap_por_cambio_en_pedido } from './editar/_producto_snaplogs/snap_por_cambio_en_pedido';
 import * as mongoose from 'mongoose';
+import { SalidasVentas } from "../../../models/salidasventas";
 
 export async function post(req, res, next) {
 
@@ -33,8 +34,15 @@ export async function post(req, res, next) {
     //      SI no tiene productos guardar el log y despues cancelarlo
     if (carrito.lista.length == 0) {
         // accesos.logActividad('carrito/cancelar/', usuario, { folio: carrito.folio, req }, req);
-        accesos.logActividad('carrito/cancelar/',usuario,{folio:carrito.folio},req);
+        accesos.logActividad('carrito/cancelar/', usuario, { folio: carrito.folio }, req);
         const cancelar_carrito_proceso = await cancelar_carrito(carrito, usuario);
+        console.log('--->', carrito);
+        if (solicitud.ruta) {
+            await SalidasVentas.updateMany(
+                { "id_carritos": carrito.id },
+                { $set: { status: "Cancelado" } }
+            );
+        }
         res.send(cancelar_carrito_proceso);
         return;
     }
@@ -52,8 +60,15 @@ export async function post(req, res, next) {
     //console.log(proceso_ciclo_snaps);
 
     const cancelar_carrito_proceso = await cancelar_carrito(carrito, usuario);
+    console.log('-/**/-->', carrito);
+        if (solicitud.ruta) {
+            await SalidasVentas.updateMany(
+                { "id_carritos": carrito.id },
+                { $set: { status: "Cancelado" } }
+            );
+        }
     // accesos.logActividad('carrito/cancelar/', req.user, { folio: carrito.folio, req }, req);
-    accesos.logActividad('carrito/cancelar/',usuario,{folio:carrito.folio, Carrito: carrito.lista, Cliente:carrito.cliente},req);
+    accesos.logActividad('carrito/cancelar/', usuario, { folio: carrito.folio, Carrito: carrito.lista, Cliente: carrito.cliente }, req);
     res.send(cancelar_carrito_proceso);
 
 

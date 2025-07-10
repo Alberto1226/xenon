@@ -293,7 +293,11 @@
 
   <div class="seis">
     <div class="sobresaltar">
-      {pedido.cliente == undefined ? "" : pedido.cliente.nombre}
+      {#if pedido.folio_salida}
+        {pedido.folio_salida == undefined ? "" : pedido.folio_salida}
+      {:else}
+        {pedido.cliente == undefined ? "" : pedido.cliente.nombre}
+      {/if}
       <br />
       <div class="indice_row">
         {pedido.cliente == undefined ? "" : pedido.cliente.correo}

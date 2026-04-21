@@ -306,6 +306,31 @@
 
     function GenerarFolios(dato) {
         let dato2 = normalizarFolio(dato);
+        let codigoBase = codigoProductoBase;
+
+        if (dato2.length === 0) {
+            return;
+        }
+
+        if (!codigoBase) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje:
+                    "No se pudo determinar el código del producto para generar folios",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
+        if (!normalizarCodigoProducto(dato2).includes(codigoBase)) {
+            let codigoDetectado = obtenerCodigoDetectadoEnFolio(dato2);
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: `El folio no coincide con el código base. Detectado: ${codigoDetectado || "(vacío)"} | Esperado: ${codigoBase}`,
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
 
         let resultado_ya_existia = checar_que_sea_unico(dato2);
         if (resultado_ya_existia) {
@@ -317,74 +342,48 @@
             return;
         }
 
-        let parteInicial = dato2; // Iniciamos con el folio completo
-        let ultimosCuatro = dato2.slice(-4); // Últimos 4 caracteres
-        let lista = [];
-        let numeroBase = "";
-        let letrasFinales = ""; // Letras después del número
-        let leadingZeros = "";
-        let leadingZerosStr = "";
+        let folioComparable = normalizarCodigoProducto(dato2);
+        let indiceInicioSobrante =
+            folioComparable.indexOf(codigoBase) + codigoBase.length;
+        let parteSecuencialStr = folioComparable.slice(indiceInicioSobrante);
+        let matchNumero = parteSecuencialStr.match(/(\d+)$/);
 
-        // Comprobamos si los últimos 4 caracteres tienen letras
-        let tieneLetras = /[A-Z]/.test(ultimosCuatro);
-        let tieneNumeros = /^\d+$/.test(ultimosCuatro);
-
-        if (tieneLetras) {
-            // Recorremos los últimos caracteres para encontrar el número base
-            for (let i = ultimosCuatro.length - 1; i >= 0; i--) {
-                if (isNaN(ultimosCuatro[ultimosCuatro.length - 1])) {
-                    parteInicial = dato2.slice(0, -ultimosCuatro.length + i);
-                    numeroBase = 0;
-                    break;
-                }
-
-                if (!isNaN(ultimosCuatro[i])) {
-                    numeroBase = parseInt(ultimosCuatro.slice(i));
-                    parteInicial = dato2.slice(0, -ultimosCuatro.length + i);
-                    // break;
-                }
-            }
-            for (let i = 0; i < CantidadArreglo; i++) {
-                let nuevoNumero = (numeroBase + i).toString();
-                // let folioGenerado = `${parteInicial}${nuevoNumero}${letrasFinales}`;
-                let folioGenerado = `${parteInicial}${nuevoNumero}`;
-                // console.log("FOLg", folioGenerado);
-                lista.push(folioGenerado);
-            }
+        if (!matchNumero) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje:
+                    "No se detectó un número secuencial al final del folio.",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
         }
-        if (tieneNumeros) {
-            numeroBase = parseInt(ultimosCuatro, 10);
-            leadingZeros = ultimosCuatro.length - numeroBase.toString().length;
-            leadingZerosStr = "0".repeat(leadingZeros);
-            parteInicial = dato2.slice(0, -ultimosCuatro.toString().length);
-            // console.log(
-            //     "todosnumeros",
-            //     ultimosCuatro,
-            //     "base",
-            //     numeroBase,
-            //     "zeros",
-            //     leadingZeros,
-            //     "Zstring",
-            //     leadingZerosStr,
-            // );
-            if (leadingZeros === 0) {
-                for (let i = 0; i < CantidadArreglo; i++) {
-                    let nuevoNumero = (numeroBase + i).toString();
-                    // let folioGenerado = `${parteInicial}${nuevoNumero}${letrasFinales}`;
-                    let folioGenerado = `${parteInicial}${nuevoNumero}`;
-                    // console.log("FOLg", folioGenerado);
-                    lista.push(folioGenerado);
-                }
-            }
-            if (leadingZeros > 0) {
 
-                for (let i = 0; i < CantidadArreglo; i++) {
-                    let folio3dfd = (numeroBase + i)
-                        .toString()
-                        .padStart(4, "0");
-                    let folioGenerado = `${parteInicial}${folio3dfd}`;
-                    lista.push(folioGenerado);
-                }
+        let numeroBaseStr = matchNumero[0];
+        let prefijoIntermedio = parteSecuencialStr.slice(
+            0,
+            -numeroBaseStr.length,
+        );
+        let numeroBase = parseInt(numeroBaseStr, 10);
+        let padding = numeroBaseStr.length;
+        let lista = [];
+        let espaciosDisponibles = cantidad - foliosMaster.length;
+        let totalAGenerar = Math.min(Number(CantidadArreglo), espaciosDisponibles);
+
+        if (totalAGenerar <= 0) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "Ya no hay espacio para generar más folios",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
+        for (let i = 0; i < totalAGenerar; i++) {
+            let nuevoNumero = (numeroBase + i).toString().padStart(padding, "0");
+            let nuevoFolio = `${codigoBase}${prefijoIntermedio}${nuevoNumero}`;
+
+            if (!foliosMaster.includes(nuevoFolio)) {
+                lista.push(nuevoFolio);
             }
         }
 
@@ -394,6 +393,16 @@
             if (!foliosMaster.includes(element)) {
                 foliosMaster = [...foliosMaster, element];
             }
+        }
+
+        if (lista.length === 0) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje:
+                    "No se generaron folios nuevos porque todos ya existían en la lista",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
         }
 
         // console.log("Lista generada:", foliosMaster);
@@ -507,7 +516,7 @@
                         >
                         Un solo tipo de folio
                     </button>
-                    {#if modoUnSoloTipo && codigoProductoBase}
+                    {#if (modoUnSoloTipo || BoxProd) && codigoProductoBase}
                         <div class="tipo-base-pill">
                             Base: <b>{codigoProductoBase}</b>
                         </div>

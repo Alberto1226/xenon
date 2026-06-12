@@ -322,7 +322,7 @@
   bind:folios
   bind:visible={viendo_masterbox_inyector}
 />
-<Lista_de_folios {producto} bind:folios bind:visible={viendo_folios} />
+<!-- <Lista_de_folios {producto} bind:folios bind:visible={viendo_folios} /> -->
 <div
   class="grid-container row"
   class:row_activo={producto.activo === true}
@@ -355,13 +355,13 @@
             <div
               class="imagen_row pointer"
               style="background-image:url({imagen ? imagen : ''})"
-              on:click={() => (viendo_folios = !viendo_folios)}
+              on:click={() => window.open(imagen, '_blank')}
             />
           {/if}
         </td>
       </tr>
     </table>
-    <div class="id pointer" on:click={() => (viendo_folios = !viendo_folios)}>
+    <div class="id">
       {producto._id}
     </div>
   </div>

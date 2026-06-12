@@ -48,6 +48,7 @@
   var folios = [];
   var promo = { tiene_promo: false };
   var viendo_masterbox_inyector = false;
+  let ver_modal_masterbox = false;
 
   const options = {
     weekday: "long",
@@ -355,7 +356,7 @@
             <div
               class="imagen_row pointer"
               style="background-image:url({imagen ? imagen : ''})"
-              on:click={() => window.open(imagen, '_blank')}
+              on:click={() => window.open(imagen, "_blank")}
             />
           {/if}
         </td>
@@ -463,6 +464,15 @@
         on:click={ir_a_todos_movimientos_por_producto}
       >
         <i class="material-icons">details</i>
+      </Button>
+      <Button
+        icon
+        dense
+        color="#0065ff"
+        title="Ver Master Box"
+        on:click={() => (ver_modal_masterbox = true)}
+      >
+        <i class="material-icons">archive</i>
       </Button>
     </div>
   {/if}
@@ -582,6 +592,17 @@
             <i class="material-icons">delete</i>
           </Button>
         {/if}
+        {#if $usuario_db.rol != "diseñador"}
+          <Button
+            icon
+            dense
+            color="#0065ff"
+            title="Ver Master Box"
+            on:click={() => (ver_modal_masterbox = true)}
+          >
+            <i class="material-icons">archive</i>
+          </Button>
+        {/if}
       </ButtonGroup>
 
       <!--<button on:click={() => producto.ref.delete()}>Borrar</button>-->
@@ -632,6 +653,44 @@
   bind:cantidad_a_ingresar
   bind:visible={cambio_existencia_visible}
 />
+
+<Dialog width="400" bind:visible={ver_modal_masterbox}>
+  <div
+    slot="title"
+    style="background:#222d32;color:white;padding:10px"
+    class="centrado"
+  >
+    Información de Master Box
+  </div>
+  <div class="centrado" style="padding: 20px;">
+    {#if producto.galeria_imagenes != undefined && producto.galeria_imagenes.length > 0}
+      <img
+        src={imagen}
+        alt={producto.nombre}
+        style="max-width: 150px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0px 2px 5px rgba(0,0,0,0.2);"
+      />
+    {/if}
+    <h3 style="margin: 5px 0 15px 0; font-weight: 600; color: #333;">
+      {producto.nombre}
+    </h3>
+    <div
+      style="background-color: #f7f7f7; padding: 12px; border-radius: 8px; border: 1px solid #eee;"
+    >
+      <span style="font-size: 1.1em; font-weight: 500; color: #555;"
+        >Cantidad por Master Box:</span
+      >
+      <h2 style="margin: 5px 0 0 0; color: #0065ff; font-weight: 700;">
+        {producto.master_box || 0}
+        {producto.unidad || "unidades"}
+      </h2>
+    </div>
+  </div>
+  <div slot="actions" class="actions center">
+    <Button color="primary" on:click={() => (ver_modal_masterbox = false)}
+      >Cerrar</Button
+    >
+  </div>
+</Dialog>
 
 <Snackbar bind:visible={visible_borrar} bg="#f44336">
   Borrar para siempre el producto {producto.nombre}

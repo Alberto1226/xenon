@@ -41,7 +41,8 @@ var schema = new Schema({
     para_venta_publico: { type: Boolean, default: true },
     recomendar_como_paqueteria: { type: Boolean, default: false },
     precio: { type: Number, default: 0 },
-    unidad: { type: String, default: 0 }
+    unidad: { type: String, default: 0 },
+    master_box: { type: Number, default: 0 }
 });
 
 

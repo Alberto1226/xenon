@@ -61,6 +61,7 @@
     existencia: { actual: 0, minimo: 0, maximo: 0 },
     carritos: [],
     activo: true,
+    master_box: 0,
   };
 
   function mostrar_error(error) {
@@ -410,6 +411,18 @@
           {/if}
         </div>
       </div>
+      <div class="masterbox margen caja">
+        <div class="subtitulo">Master Box</div>
+        <div class="contenido_caja">
+          <Textfield
+            outlined
+            bind:value={nuevo_producto.master_box}
+            placeholder="Unidades por caja"
+            message={"Unidades por caja (en base a: " + (nuevo_producto.unidad || "unidad") + ")"}
+            type="number"
+          />
+        </div>
+      </div>
       <div class="imagenes margen caja">
         <div class="subtitulo">Imágenes</div>
         <div class="contenido_caja">
@@ -454,7 +467,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
     grid-template-rows: 1.7fr 0.8fr px;
-    grid-template-areas: "area_info_general area_info_general area_carac_tecnicas area_carac_tecnicas area_precios area_precios" "existencias existencias existencias imagenes imagenes imagenes" "area_footer1 area_footer1 area_footer2 area_footer2 area_footer3 area_footer3";
+    grid-template-areas: "area_info_general area_info_general area_carac_tecnicas area_carac_tecnicas area_precios area_precios" "existencias existencias masterbox masterbox imagenes imagenes" "area_footer1 area_footer1 area_footer2 area_footer2 area_footer3 area_footer3";
   }
 
   .area_info_general {
@@ -474,6 +487,11 @@
 
   .existencias {
     grid-area: existencias;
+    overflow: hidden;
+  }
+
+  .masterbox {
+    grid-area: masterbox;
     overflow: hidden;
   }
 

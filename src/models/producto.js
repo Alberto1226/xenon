@@ -50,6 +50,7 @@ var schema = new Schema({
     recomendar_como_paqueteria: { type: Boolean, default: false },
     unidad: { type: String, default: '' },
     uid_previo: { type: String, default: '' },
+    master_box: { type: Number, default: 0 }
 });
 
 

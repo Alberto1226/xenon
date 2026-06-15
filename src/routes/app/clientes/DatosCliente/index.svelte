@@ -7,6 +7,7 @@
 
 <script>
     import { onMount } from "svelte";
+    import { fade, scale } from "svelte/transition";
     import { goto } from "@sapper/app";
     import SelectPaisBs5 from "../Componentes/SelectPaisBS5.svelte";
     import SelectEstadoBs5 from "../Componentes/SelectEstadoBS5.svelte";
@@ -108,6 +109,30 @@
         rfOptions = [],
         rfOptions2 = [],
         listaAgente = [];
+
+    let mostrarConfirmModal = false;
+    let confirmModalResolve = null;
+    let nameToReplace = "";
+    let currentName = "";
+
+    function confirmarReemplazo(actual, nuevo) {
+        currentName = actual;
+        nameToReplace = nuevo;
+        mostrarConfirmModal = true;
+        return new Promise((resolve) => {
+            confirmModalResolve = resolve;
+        });
+    }
+
+    function handleConfirmModalAccept() {
+        mostrarConfirmModal = false;
+        if (confirmModalResolve) confirmModalResolve(true);
+    }
+
+    function handleConfirmModalCancel() {
+        mostrarConfirmModal = false;
+        if (confirmModalResolve) confirmModalResolve(false);
+    }
 
     var tp = ["FISICA", "MORAL"];
 
@@ -457,7 +482,7 @@
             $mensajes_app = $mensajes_app;
 
             postData("app/clientes/DatosCliente/parse_sat_pdf", { pdfBase64 })
-                .then((res) => {
+                .then(async (res) => {
                     if (res.ok && res.data) {
                         const info = res.data;
 
@@ -465,8 +490,14 @@
                         if (info.rfc) cliente.datos_fiscales.rfc = info.rfc;
                         if (info.tipoPersona) cliente.datos_fiscales.tipo_persona = info.tipoPersona;
                         if (info.nombre) {
-                            cliente.nombre = info.nombre;
-                            cliente.datos_fiscales.nombre = info.nombre;
+                            let reemplazar = true;
+                            if ($donde === "editar") {
+                                reemplazar = await confirmarReemplazo(cliente.nombre, info.nombre);
+                            }
+                            if (reemplazar) {
+                                cliente.nombre = info.nombre;
+                                cliente.datos_fiscales.nombre = info.nombre;
+                            }
                         }
 
                         // Asignar datos de dirección
@@ -1260,6 +1291,48 @@
     </form>
 </div>
 
+{#if mostrarConfirmModal}
+    <div class="modal-backdrop-custom" transition:fade={{ duration: 150 }} on:click={handleConfirmModalCancel}>
+        <div class="modal-card-custom" transition:scale={{ duration: 200, start: 0.95 }} on:click|stopPropagation>
+            <div class="modal-header-custom">
+                <div class="modal-icon-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-person-lines-fill" viewBox="0 0 16 16">
+                      <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z"/>
+                    </svg>
+                </div>
+                <h3>Actualizar Nombre y Alias</h3>
+            </div>
+            <div class="modal-body-custom">
+                <p>Se ha detectado un nombre diferente en la constancia SAT cargada. ¿Desea actualizar el nombre y el alias del cliente con los nuevos datos?</p>
+                <div class="names-container">
+                    <div class="name-box current-name">
+                        <span class="label">Nombre Registrado</span>
+                        <span class="value">{currentName}</span>
+                    </div>
+                    <div class="name-box new-name">
+                        <span class="label">Nombre en Constancia SAT</span>
+                        <span class="value">{nameToReplace}</span>
+                    </div>
+                </div>
+                <div class="modal-alert-box">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi me-2" viewBox="0 0 16 16">
+                      <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                    </svg>
+                    <span>Si selecciona <strong>"Mantener actual"</strong>, se conservará el nombre actual pero se completará el resto de la dirección.</span>
+                </div>
+            </div>
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-custom btn-secondary-custom" on:click={handleConfirmModalCancel}>
+                    Mantener actual
+                </button>
+                <button type="button" class="btn-custom btn-primary-custom" on:click={handleConfirmModalAccept}>
+                    Reemplazar datos
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
+
 <style>
     .form-container {
         max-width: inherit;
@@ -1282,5 +1355,181 @@
         padding: 0.5rem;
         border: 1px solid #f0f1ff;
         border-radius: 4px;
+    }
+
+    /* Estilos del Modal Personalizado */
+    .modal-backdrop-custom {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .modal-card-custom {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 550px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        overflow: hidden;
+    }
+
+    .modal-header-custom {
+        padding: 1.5rem 1.5rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .modal-icon-container {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #eff6ff;
+        color: #3b82f6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .modal-header-custom h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .modal-body-custom {
+        padding: 1.5rem;
+        color: #475569;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .modal-body-custom p {
+        margin-top: 0;
+        margin-bottom: 1.25rem;
+    }
+
+    .names-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .name-box {
+        padding: 0.85rem 1rem;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .current-name {
+        background-color: #f8fafc;
+        border-left: 4px solid #94a3b8;
+    }
+
+    .new-name {
+        background-color: #f0fdf4;
+        border-color: #bbf7d0;
+        border-left: 4px solid #22c55e;
+    }
+
+    .name-box .label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .current-name .label {
+        color: #64748b;
+    }
+
+    .new-name .label {
+        color: #166534;
+    }
+
+    .name-box .value {
+        font-weight: 600;
+        color: #0f172a;
+        word-break: break-word;
+    }
+
+    .new-name .value {
+        color: #14532d;
+    }
+
+    .modal-alert-box {
+        display: flex;
+        align-items: flex-start;
+        background-color: #fffbeb;
+        border: 1px solid #fef3c7;
+        color: #92400e;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+    }
+
+    .modal-footer-custom {
+        padding: 1rem 1.5rem 1.5rem;
+        background-color: #f8fafc;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    .btn-custom {
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 550;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-secondary-custom {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+    }
+
+    .btn-secondary-custom:hover {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        border-color: #94a3b8;
+    }
+
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+    }
+
+    .btn-primary-custom:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        box-shadow: 0 4px 12px -1px rgba(59, 130, 246, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .btn-primary-custom:active {
+        transform: translateY(0);
     }
 </style>

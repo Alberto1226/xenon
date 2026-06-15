@@ -21,6 +21,16 @@
     } from "../../../stores";
     // import { Cliente } from './path-to-your-model'; // Adjust the import path as necessary
 
+    function generarAlias(name) {
+        if (!name) return "";
+        const words = name.trim().split(/\s+/).filter(Boolean);
+        if (words.length === 0) return "";
+        const firstWord = words[0];
+        if (words.length === 1) return firstWord;
+        const abbreviated = words.slice(1).map(w => w[0].toLowerCase() + ".").join("");
+        return `${firstWord} ${abbreviated}`;
+    }
+
     let IdClientSelect = "";
 
     let cliente = {
@@ -54,8 +64,9 @@
         },
         nombre: "",
         perfil: {
-            perfil: "Público en general",
+            perfil: "Mayoreo",
             porcentaje: 0,
+            mostrar: "0%",
         },
         plataforma: "web",
         push_token: "",
@@ -99,6 +110,14 @@
         listaAgente = [];
 
     var tp = ["FISICA", "MORAL"];
+
+    const perfiles_lista = [];
+    for (let i = 0; i <= 50; i += 5) {
+        perfiles_lista.push({ mostrar: `${i}%`, perfil: "Mayoreo", porcentaje: i });
+    }
+    for (let i = 51; i <= 60; i++) {
+        perfiles_lista.push({ mostrar: `${i}%`, perfil: "Mayoreo", porcentaje: i });
+    }
     var cfdi_pf = [
         {
             CFDI: "G01",
@@ -381,6 +400,8 @@
         }
     });
 
+    $: cliente.alias = generarAlias(cliente.nombre);
+
     $: if (listaAgente.length > 0) {
         // console.log("Lista de agentes no está vacía", listaAgente);
         if ($donde === "editar") {
@@ -505,6 +526,11 @@
             // console.log("agenteAsignar");
             cliente.agente.id = agenteSeleccionado._id;
             cliente.agente.nombre = agenteSeleccionado.nombre;
+            cliente.agente.correo = agenteSeleccionado.correo;
+        } else {
+            cliente.agente.id = "";
+            cliente.agente.nombre = "";
+            cliente.agente.correo = "";
         }
 
         // console.log(cliente.agente);
@@ -620,8 +646,9 @@
         cliente.localidad_nombre = clientSelect.localidad_nombre;
         cliente.location.lat = clientSelect.location.lat;
         cliente.location.lng = clientSelect.location.lng;
-        cliente.perfil.perfil = clientSelect.perfil.perfil;
-        cliente.perfil.porcentaje = clientSelect.perfil.porcentaje;
+        cliente.perfil.perfil = clientSelect.perfil.perfil || "Mayoreo";
+        cliente.perfil.porcentaje = clientSelect.perfil.porcentaje !== undefined ? clientSelect.perfil.porcentaje : 0;
+        cliente.perfil.mostrar = clientSelect.perfil.mostrar || `${cliente.perfil.porcentaje}%`;
         cliente.plataforma = clientSelect.plataforma;
         cliente.push_token = clientSelect.push_token;
         cliente.region = clientSelect.region;
@@ -642,7 +669,9 @@
         $editar_store.cliente.correo = cliente.correo;
         $editar_store.cliente.fecha_nacimiento = cliente.fecha_nacimiento;
         $editar_store.cliente.region = cliente.region;
-        $editar_store.cliente.perfil.perfil = cliente.perfil.perfil;
+        $editar_store.cliente.perfil.perfil = cliente.perfil.perfil || "Mayoreo";
+        $editar_store.cliente.perfil.porcentaje = cliente.perfil.porcentaje !== undefined ? cliente.perfil.porcentaje : 0;
+        $editar_store.cliente.perfil.mostrar = cliente.perfil.mostrar || `${cliente.perfil.porcentaje}%`;
         $editar_store.cliente.observaciones = cliente.observaciones;
         $editar_store.cliente.datos_fiscales.rfc = cliente.datos_fiscales.rfc;
         $editar_store.cliente.datos_fiscales.tipo_persona =
@@ -729,6 +758,7 @@
                     bind:value={cliente.alias}
                     id="inputAlias"
                     required
+                    readonly
                 />
                 <label for="inputAlias">Alias</label>
                 <div class="valid-feedback">¡Se ve bien!</div>
@@ -741,12 +771,13 @@
                     class="form-control"
                     bind:value={cliente.telefono}
                     id="inputTelefono"
-                    required
                 />
                 <label for="inputTelefono" class="form-label">Telefono</label>
                 <div class="valid-feedback">¡Se ve bien!</div>
             </div>
         </div>
+        <!-- Correo y Contraseña ya no se usan -->
+        <!--
         <div class="col-md-6">
             <div class="form-floating mb-3">
                 <input
@@ -754,7 +785,6 @@
                     class="form-control"
                     bind:value={cliente.correo}
                     id="inputCorreo"
-                    required
                 />
                 <label for="inputCorreo" class="form-label">Correo</label>
                 <div class="valid-feedback">¡Se ve bien!</div>
@@ -777,6 +807,7 @@
                 </div>
             {/if}
         </div>
+        -->
         <div class="col-md-3">
             <div class="form-floating mb-3">
                 <input
@@ -816,21 +847,23 @@
                     id="floatingPerfil"
                     aria-label="Floating label select example"
                     required
-                    bind:value={cliente.perfil.perfil}
+                    bind:value={cliente.perfil.porcentaje}
+                    on:change={(event) => {
+                        const pct = Number(event.target.value);
+                        cliente.perfil.porcentaje = pct;
+                        cliente.perfil.perfil = "Mayoreo";
+                        cliente.perfil.mostrar = `${pct}%`;
+                    }}
                 >
-                    <option value="" selected>Seleccione un Perfil</option>
-                    <option value="Elite">Elite</option>
-                    <option value="Distribuidor">Distribuidor</option>
-                    <option value="Mayoreo">Mayoreo</option>
-                    <option value="Menudeo">Menudeo</option>
-                    <option value="Público en general"
-                        >Público en general</option
-                    >
+                    <option value="" selected>Seleccione un Descuento</option>
+                    {#each perfiles_lista as item}
+                        <option value={item.porcentaje}>{item.mostrar}</option>
+                    {/each}
                 </select>
-                <label for="floatingSelect">Perfil</label>
+                <label for="floatingPerfil">Descuento</label>
             </div>
         </div>
-        {#if $usuario_db.rol === "administrador" || usuario_db.rol === "gerente"}
+        {#if $usuario_db.rol === "administrador" || $usuario_db.rol === "gerente"}
             <div class="col-md-3">
                 <div class="form-floating">
                     <select
@@ -868,7 +901,6 @@
                     class="form-select"
                     id="floatingSelectRegion"
                     aria-label="Floating label select example"
-                    required
                     bind:value={direccion.tipo}
                 >
                     <option value="" selected>Tipo de direccion</option>
@@ -886,7 +918,6 @@
                         type="text"
                         class="form-control"
                         id="floatingInput"
-                        required
                         bind:value={cliente.datos_fiscales.rfc}
                     />
                     <label for="floatingInput">RFC</label>
@@ -898,7 +929,6 @@
                         class="form-select"
                         id="floatingSelectRegion"
                         aria-label="Floating label select example"
-                        required
                         bind:value={cliente.datos_fiscales.tipo_persona}
                         on:change={updateCfdiOptions}
                     >
@@ -916,7 +946,6 @@
                         class="form-select"
                         id="floatingSelectRegion"
                         aria-label="Floating label select example"
-                        required
                         disabled={cfdiOptions.length === 0 ||
                             cliente.tipo_persona === ""}
                         bind:value={cliente.datos_fiscales.cfdi}
@@ -938,7 +967,6 @@
                         class="form-select"
                         id="floatingSelectRegion"
                         aria-label="Floating label select example"
-                        required
                         disabled={rfOptions.length === 0 || cliente.cfdi === ""}
                         bind:value={cliente.datos_fiscales.rfiscal}
                     >
@@ -987,7 +1015,6 @@
                     class="form-control"
                     id="floatingInputValueZip"
                     bind:value={direccion.cp}
-                    required
                 />
                 <label for="floatingInputValueZip">C.P.</label>
             </form>
@@ -999,7 +1026,6 @@
                     class="form-control"
                     id="floatingInputValueLocalidad"
                     bind:value={direccion.localidad_nombre}
-                    required
                 />
                 <label for="floatingInputValueLocalidad">Localidad</label>
             </form>
@@ -1011,7 +1037,6 @@
                     class="form-control"
                     id="floatingInputValueColonia"
                     bind:value={direccion.colonia}
-                    required
                 />
                 <label for="floatingInputValueColonia">Colonia</label>
             </form>
@@ -1023,7 +1048,6 @@
                     class="form-control"
                     id="floatingInputValueCalle"
                     bind:value={direccion.calle}
-                    required
                 />
                 <label for="floatingInputValueCalle">Calle</label>
             </form>
@@ -1035,7 +1059,6 @@
                     class="form-control"
                     id="floatingInputValueInterior"
                     bind:value={direccion.numero_interior}
-                    required
                 />
                 <label for="floatingInputValueInterior">N° Interior</label>
             </form>
@@ -1058,7 +1081,6 @@
                     class="form-control"
                     id="floatingInputValueEntreC"
                     bind:value={direccion.entre_calle}
-                    required
                 />
                 <label for="floatingInputValueEntreC">Entre Calle</label>
             </form>
@@ -1070,7 +1092,6 @@
                     class="form-control"
                     id="floatingInputValueYCalle"
                     bind:value={direccion.y_calle}
-                    required
                 />
                 <label for="floatingInputValueYCalle">Y Calle</label>
             </form>

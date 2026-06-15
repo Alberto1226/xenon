@@ -16,11 +16,11 @@
     export var donde;
     export var actualizar;
     export var size;
+    export let required = false;
 
     let lista = [];
     let listaSelect = [];
     var busqueda = "";
-    let R = true;
 
     const dispatch = createEventDispatcher();
 
@@ -45,10 +45,6 @@
                 // console.log(data, data.mensaje);
             }
         });
-    }
-
-    $: if (donde === "editar" && estado) {
-        R = false;
     }
 
     function filtrar_nuevo_arreglo() {
@@ -93,7 +89,7 @@
                 });
             }}
             aria-label="Floating label select example"
-            required={R}
+            required={required}
         >
             {#if donde === "editar" && estado}
                 <option selected disabled value="">{estado}</option>

@@ -39,6 +39,11 @@ export function post(req, res, next) {
             // }
             let cliente_Acomodado = AcomodarCliente(req.body.cliente, req.body.direccion, req.user, req.body.accion);
 
+            if (!cliente_Acomodado.agente || !cliente_Acomodado.agente.id) {
+                res.send({ ok: false, mensaje: "El agente es obligatorio" });
+                return;
+            }
+
             let cliente_nuevo = new Cliente(cliente_Acomodado);
 
             cliente_nuevo.password = cliente_nuevo.encryptPassword(cliente_nuevo.password);
@@ -60,6 +65,19 @@ export function post(req, res, next) {
 
         let idCliente = new mongoose.Types.ObjectId(req.body.IdClientSelect);
         let nuevo_cliente = req.body.cliMod;
+
+        if (req.user.rol === 'vendedor' && (!nuevo_cliente.agente || !nuevo_cliente.agente.id)) {
+            nuevo_cliente.agente = {
+                id: req.user._id,
+                nombre: req.user.nombre,
+                correo: req.user.correo
+            };
+        }
+
+        if (!nuevo_cliente.agente || !nuevo_cliente.agente.id) {
+            res.send({ ok: false, mensaje: "El agente es obligatorio" });
+            return;
+        }
 
         Cliente.findByIdAndUpdate(idCliente, { $set: nuevo_cliente }, { new: true })
             .then((data) => {

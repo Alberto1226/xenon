@@ -40,7 +40,8 @@
     if (evt.key == "+") {
       evt.preventDefault();
       estado_actual = "creando cliente";
-      goto("app/clientes/nuevo");
+      donde.set("crear");
+      goto("app/clientes/DatosCliente");
       return;
     }
     if (evt.key == "Escape") {

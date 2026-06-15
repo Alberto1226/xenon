@@ -11,7 +11,7 @@
     // export const activar;
     export var actualizar;
     export var size;
-    let R = true;
+    export let required = false;
 
     let lista = [];
     let listaSelect = [];
@@ -51,10 +51,6 @@
             return normalizedItem.includes(normalizedBusqueda);
         });
     }
-
-    $: if (donde === "editar" && pais) {
-        R = false;
-    }
 </script>
 
 <link
@@ -79,7 +75,7 @@
                 });
             }}
             aria-label="Floating label select example"
-            required={R}
+            required={required}
         >
             <!-- {#if pais}
                 {#each listaSelect as item}

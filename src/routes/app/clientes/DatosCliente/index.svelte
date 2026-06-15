@@ -433,6 +433,98 @@
     //     console.log("pais", direccion.pais);
     // }
 
+    async function handleSatPdfUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validar tipo de archivo
+        if (file.type !== "application/pdf") {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "El archivo seleccionado debe ser un PDF",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async () => {
+            const pdfBase64 = reader.result;
+            $mensajes_app.push({
+                tipo: "info",
+                mensaje: "Procesando Constancia SAT...",
+            });
+            $mensajes_app = $mensajes_app;
+
+            postData("app/clientes/DatosCliente/parse_sat_pdf", { pdfBase64 })
+                .then((res) => {
+                    if (res.ok && res.data) {
+                        const info = res.data;
+
+                        // Asignar datos fiscales
+                        if (info.rfc) cliente.datos_fiscales.rfc = info.rfc;
+                        if (info.tipoPersona) cliente.datos_fiscales.tipo_persona = info.tipoPersona;
+                        if (info.nombre) {
+                            cliente.nombre = info.nombre;
+                            cliente.datos_fiscales.nombre = info.nombre;
+                        }
+
+                        // Asignar datos de dirección
+                        if (info.cp) direccion.cp = info.cp;
+                        if (info.calle) direccion.calle = info.calle;
+                        if (info.numeroExterior) direccion.numero_exterior = info.numeroExterior;
+                        if (info.numeroInterior) direccion.numero_interior = info.numeroInterior;
+                        if (info.colonia) direccion.colonia = info.colonia;
+                        if (info.localidad) direccion.localidad_nombre = info.localidad;
+                        if (info.entreCalle) direccion.entre_calle = info.entreCalle;
+                        if (info.yCalle) direccion.y_calle = info.yCalle;
+
+                        // Asignar país
+                        if (info.idPais) {
+                            direccion.idPais = info.idPais;
+                            direccion.pais = info.pais;
+                        }
+
+                        // Asignar estado
+                        if (info.idEstado) {
+                            direccion.idEstado = info.idEstado;
+                            direccion.estado = info.estado;
+                        }
+
+                        // Asignar municipio
+                        if (info.idMunicipio) {
+                            direccion.idMunicipio = info.idMunicipio;
+                            direccion.municipio = info.municipio;
+                        }
+
+                        // Forzar actualización de CFDI options en base al tipo de persona
+                        updateCfdiOptions();
+
+                        $mensajes_app.push({
+                            tipo: "exito",
+                            mensaje: "Datos de Constancia SAT cargados correctamente",
+                        });
+                        $mensajes_app = $mensajes_app;
+                    } else {
+                        $mensajes_app.push({
+                            tipo: "error",
+                            mensaje: res.mensaje || "No se pudieron extraer datos del PDF",
+                        });
+                        $mensajes_app = $mensajes_app;
+                    }
+                })
+                .catch((err) => {
+                    console.error("Error al procesar PDF:", err);
+                    $mensajes_app.push({
+                        tipo: "error",
+                        mensaje: "Error de conexión al procesar el archivo PDF",
+                    });
+                    $mensajes_app = $mensajes_app;
+                });
+        };
+        reader.readAsDataURL(file);
+    }
+
     function DatosAgenteSelect() {
         postData("app/usuarios/lista_de_usuarios")
             .then((res) => {
@@ -827,7 +919,6 @@
                     class="form-select"
                     id="floatingSelectRegion"
                     aria-label="Floating label select example"
-                    required
                     bind:value={cliente.region}
                 >
                     <option value="" selected>Seleccione una Region</option>
@@ -912,6 +1003,25 @@
             </div>
         </div>
         {#if direccion.tipo === "Envio/Facturacion" || direccion.tipo == "Facturacion"}
+            <div class="col-md-3">
+                <div class="d-flex align-items-center mb-3">
+                    <input
+                        type="file"
+                        id="satPdfInput"
+                        accept=".pdf"
+                        on:change={handleSatPdfUpload}
+                        style="display: none;"
+                    />
+                    <button
+                        type="button"
+                        class="btn btn-primary w-100"
+                        style="height: 58px;"
+                        on:click={() => document.getElementById('satPdfInput').click()}
+                    >
+                        Cargar Constancia SAT
+                    </button>
+                </div>
+            </div>
             <div class="col-md-3">
                 <div class="form-floating mb-3">
                     <input

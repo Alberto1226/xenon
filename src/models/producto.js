@@ -35,7 +35,7 @@ var schema = new Schema({
         tiene_promo: { type: Boolean, default: false },
         precio: { type: Number, default: 0 },//    precio del prodcuto con promocion,
         tipo_condicion: { type: Number, default: 0 },//    1: Sin condicion, 2: minimo de el mismo producto, 3: Minimo de combo
-        id_promocion: { type: String, default: "" },//    id de la promocion, nunca se debe de borrar las promos solo virtualmente
+        id_promocion: { type: Schema.Types.ObjectId, ref: 'Promocion', default: null },//    id de la promocion, nunca se debe de borrar las promos solo virtualmente
     },
     galeria_imagenes: [],
     marca: { type: String, default: 0 },

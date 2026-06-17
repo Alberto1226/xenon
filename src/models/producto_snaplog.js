@@ -7,11 +7,11 @@ var ObjectId = Schema.ObjectId;
 var schema = new Schema({
     producto: {
         nombre: { type: String, default: '' },
-        id: { type: ObjectId }
+        id: { type: Schema.Types.ObjectId, ref: 'Producto', default: null }
     },
     usuario: {
         nombre: { type: String, default: 'anonimo' },
-        id: { type: ObjectId }
+        id: { type: Schema.Types.ObjectId, ref: 'Usuario', default: null }
     },
     fecha: { type: Date, default: Date.now },
     accion: { type: String, default: '' },//    1:inyeccion a inventario, 2:descuento de inventario, 3:sobreescritura de inventario , 4:cambio_en_apartado
@@ -20,10 +20,10 @@ var schema = new Schema({
     cantidad_anterior: { type: Number, default: 0 },//   cantidad involucrada en el movimiento
     pedido: {
         folio: { type: Number, default: 0 },
-        id: { type: ObjectId },
+        id: { type: Schema.Types.ObjectId, ref: 'Pedido', default: null },
         cliente: {
             nombre: { type: String, default: 'anonimo' },
-            id: { type: ObjectId }
+            id: { type: Schema.Types.ObjectId, ref: 'Cliente', default: null }
         }
     },
     inventario_antes: {

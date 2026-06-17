@@ -90,6 +90,12 @@
       icono: "admin_panel_settings",
       roles: ["administrador"],
     },
+    {
+      url: "/app/herramientas/correccion",
+      titulo: "Corrección de Datos",
+      icono: "build",
+      roles: ["administrador"],
+    },
 
     {
       url: "/app/categorias",
@@ -151,6 +157,9 @@
           break;
         case "/app/mapas":
           menu_actual = "mapas";
+          break;
+        case "/app/herramientas/correccion":
+          menu_actual = "correccion";
           break;
         case "/app/categorias":
           menu_actual = "categorias";

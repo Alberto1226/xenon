@@ -27,19 +27,19 @@ var schema = new Schema({
     fecha: { type: Date, default: new Date() },
     fecha_creado: { type: Date, default: Date.now },
     usuario_que_registro: {
-        id: { type: String, default: "" },
+        id: { type: Schema.Types.ObjectId, ref: 'Usuario', default: null },
         nombre: { type: String, default: "" },
         correo: { type: String, default: "" },
         usuario: { type: String, default: "" },
     },
     agente: {
-        id: { type: String, default: "" },
+        id: { type: Schema.Types.ObjectId, ref: 'Usuario', default: null },
         nombre: { type: String, default: "" },
         comision: { type: Number, default: 0 },
         correo: { type: String, default: "" },
     },
     cliente: {
-        id: { type: String, default: "" },
+        id: { type: Schema.Types.ObjectId, ref: 'Cliente', default: null },
         nombre: { type: String, default: "" },
         direccion: { type: String, default: '' },
         correo: { type: String, default: "" },

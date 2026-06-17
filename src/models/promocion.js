@@ -10,7 +10,7 @@ var schema = new Schema({
     condiciones :[],
     //      PRODUCTO con promocion
     producto:{
-            id:{type:String , default:""},
+            id:{type:Schema.Types.ObjectId , ref: 'Producto', default:null},
             nombre:{type:String , default:""},
             codigo:{type:String , default:""},
     },
@@ -18,7 +18,7 @@ var schema = new Schema({
     creacion:{
         fecha:{type:Date, default :Date.now},
         usuario:{
-            id:{type:String, default :""},
+            id:{type:Schema.Types.ObjectId, ref: 'Usuario', default :null},
             nombre:{type:String, default :""}
         }
     },
@@ -26,7 +26,7 @@ var schema = new Schema({
     borrada_detalle:{
         fecha:{type:Date, default :Date.now},
         usuario:{
-            id:{type:String, default :""},
+            id:{type:Schema.Types.ObjectId, ref: 'Usuario', default :null},
             nombre:{type:String, default :""}
         }
     }

@@ -11,7 +11,7 @@ var schema = new Schema({
     activo:{type:Boolean,default:true},
     agente :{
         nombre :{type: String ,default :''},
-        id :{type: String ,default :''},
+        id :{type: Schema.Types.ObjectId, ref: 'Usuario', default: null},
         correo :{type: String ,default :''},
     },
     alias :{type: String ,default :''},

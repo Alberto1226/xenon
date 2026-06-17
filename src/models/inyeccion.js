@@ -14,11 +14,11 @@ var schema = new Schema({
     producto: {
         nombre: { type: String, default: '' },
         imagen: { type: String, default: '' },
-        id: { type: String, default: '' }
+        id: { type: Schema.Types.ObjectId, ref: 'Producto', default: null }
     },
     usuario: {
         nombre: { type: String, default: '' },
-        id: { type: String, default: '' }
+        id: { type: Schema.Types.ObjectId, ref: 'Usuario', default: null }
     },
     // lista: [
     //     { lista: [String] }

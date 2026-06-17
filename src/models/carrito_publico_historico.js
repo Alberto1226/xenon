@@ -21,7 +21,7 @@ var schema = new Schema({
 
     
     cliente:{
-        id:{type:String ,default :""},
+        id:{type:Schema.Types.ObjectId ,ref: 'Cliente', default :null},
         nombre:{type:String ,default :""},
         direccion:{type:String ,default :''},
         correo:{type:String ,default :""},

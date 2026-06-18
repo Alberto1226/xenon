@@ -4,19 +4,22 @@
   import { fade } from "svelte/transition";
 
   let colecciones = [
-    { value: 'Carrito', label: 'Carritos' },
-    { value: 'Pedido', label: 'Pedidos' },
-    { value: 'Cliente', label: 'Clientes' },
-    { value: 'Producto', label: 'Productos' },
-    { value: 'Promocion', label: 'Promociones' },
-    { value: 'Inyeccion', label: 'Inyecciones a Inventario' },
-    { value: 'Producto_snaplog', label: 'Snaplogs de Productos' },
-    { value: 'Carrito_publico', label: 'Carritos Públicos (Activos)' },
-    { value: 'Carrito_publico_historico', label: 'Carritos Públicos (Históricos)' },
-    { value: 'Ficha_de_descuento', label: 'Fichas de Descuento' }
+    { value: "Carrito", label: "Carritos" },
+    -{ value: "Pedido", label: "Pedidos" },
+    { value: "Cliente", label: "Clientes" },
+    { value: "Producto", label: "Productos" },
+    { value: "Promocion", label: "Promociones" },
+    { value: "Inyeccion", label: "Inyecciones a Inventario" },
+    { value: "Producto_snaplog", label: "Snaplogs de Productos" },
+    { value: "Carrito_publico", label: "Carritos Públicos (Activos)" },
+    {
+      value: "Carrito_publico_historico",
+      label: "Carritos Públicos (Históricos)",
+    },
+    { value: "Ficha_de_descuento", label: "Fichas de Descuento" },
   ];
 
-  let coleccionSeleccionada = 'Carrito';
+  let coleccionSeleccionada = "Carrito";
   let lista = [];
   let totalDocumentos = 0;
   let paginaActual = 1;
@@ -28,9 +31,9 @@
 
   $: if (lista && lista.length > 0) {
     const relsObj = lista[0].relaciones;
-    relacionesColumnas = Object.keys(relsObj).map(key => ({
+    relacionesColumnas = Object.keys(relsObj).map((key) => ({
       path: key,
-      label: relsObj[key].label
+      label: relsObj[key].label,
     }));
   } else {
     relacionesColumnas = [];
@@ -39,13 +42,15 @@
   // Verificar si hay elementos seleccionados y si al menos uno requiere corrección
   let seleccionadosArray = [];
   $: {
-    seleccionadosArray = Object.keys(seleccionados).filter(id => seleccionados[id]);
+    seleccionadosArray = Object.keys(seleccionados).filter(
+      (id) => seleccionados[id],
+    );
   }
 
   let puedeCorregirSeleccionados = false;
   $: {
-    puedeCorregirSeleccionados = seleccionadosArray.some(id => {
-      const doc = lista.find(item => item._id === id);
+    puedeCorregirSeleccionados = seleccionadosArray.some((id) => {
+      const doc = lista.find((item) => item._id === id);
       return doc && tieneCorreccionPendiente(doc.relaciones);
     });
   }
@@ -58,10 +63,10 @@
     cargando = true;
     seleccionados = {}; // Resetear selección al cambiar de bloque o colección
     try {
-      const res = await postData('app/herramientas/diagnosticar', {
+      const res = await postData("app/herramientas/diagnosticar", {
         coleccion: coleccionSeleccionada,
         pagina_actual: paginaActual,
-        limite: limite
+        limite: limite,
       });
       if (res.ok) {
         lista = res.lista;
@@ -101,14 +106,16 @@
   }
 
   function tieneCorreccionPendiente(relaciones) {
-    return Object.values(relaciones).some(rel => rel.estado === 'requiere_conversion');
+    return Object.values(relaciones).some(
+      (rel) => rel.estado === "requiere_conversion",
+    );
   }
 
   let selectAll = false;
   $: {
-    const listIds = lista.map(item => item._id);
+    const listIds = lista.map((item) => item._id);
     if (listIds.length > 0) {
-      selectAll = listIds.every(id => seleccionados[id]);
+      selectAll = listIds.every((id) => seleccionados[id]);
     } else {
       selectAll = false;
     }
@@ -116,7 +123,7 @@
 
   function toggleSelectAll() {
     const newVal = !selectAll;
-    lista.forEach(item => {
+    lista.forEach((item) => {
       seleccionados[item._id] = newVal;
     });
     seleccionados = seleccionados; // Disparar reactividad
@@ -125,9 +132,9 @@
   async function corregirIndividual(id) {
     cargando = true;
     try {
-      const res = await postData('app/herramientas/corregir', {
+      const res = await postData("app/herramientas/corregir", {
         coleccion: coleccionSeleccionada,
-        ids: [id]
+        ids: [id],
       });
       if (res.ok) {
         mensaje_bueno(res.mensaje);
@@ -146,15 +153,19 @@
   async function corregirSeleccionados() {
     if (seleccionadosArray.length === 0) return;
 
-    if (!confirm(`¿Estás seguro de corregir las relaciones de los ${seleccionadosArray.length} registros seleccionados?`)) {
+    if (
+      !confirm(
+        `¿Estás seguro de corregir las relaciones de los ${seleccionadosArray.length} registros seleccionados?`,
+      )
+    ) {
       return;
     }
 
     cargando = true;
     try {
-      const res = await postData('app/herramientas/corregir', {
+      const res = await postData("app/herramientas/corregir", {
         coleccion: coleccionSeleccionada,
-        ids: seleccionadosArray
+        ids: seleccionadosArray,
       });
       if (res.ok) {
         mensaje_bueno(res.mensaje);
@@ -171,15 +182,19 @@
   }
 
   async function corregirColeccionCompleta() {
-    if (!confirm(`¿Estás seguro de que deseas diagnosticar y corregir la colección completa de ${coleccionSeleccionada}? Esto procesará todos los registros por bloques de 100 y guardará un archivo de logs localmente.`)) {
+    if (
+      !confirm(
+        `¿Estás seguro de que deseas diagnosticar y corregir la colección completa de ${coleccionSeleccionada}? Esto procesará todos los registros por bloques de 100 y guardará un archivo de logs localmente.`,
+      )
+    ) {
       return;
     }
 
     cargando = true;
     try {
-      const res = await postData('app/herramientas/corregir', {
+      const res = await postData("app/herramientas/corregir", {
         coleccion: coleccionSeleccionada,
-        corregirTodo: true
+        corregirTodo: true,
       });
       if (res.ok) {
         mensaje_bueno(res.mensaje);
@@ -216,7 +231,10 @@
       <i class="material-icons icon-main">build_circle</i>
       <div>
         <h2>Corrección de Relaciones en Base de Datos</h2>
-        <p class="subtitulo">Diagnostica y migra los IDs de relación guardados como String a tipo ObjectId real de MongoDB.</p>
+        <p class="subtitulo">
+          Diagnostica y migra los IDs de relación guardados como String a tipo
+          ObjectId real de MongoDB.
+        </p>
       </div>
     </div>
   </div>
@@ -225,10 +243,12 @@
   <div class="card card-filtros">
     <div class="row align-items-center">
       <div class="col-md-5">
-        <label for="select-coleccion" class="form-label font-bold text-dark">Colección o Modelo a evaluar:</label>
-        <select 
+        <label for="select-coleccion" class="form-label font-bold text-dark"
+          >Colección o Modelo a evaluar:</label
+        >
+        <select
           id="select-coleccion"
-          class="form-select custom-select" 
+          class="form-select custom-select"
           bind:value={coleccionSeleccionada}
           on:change={handleColeccionChange}
           disabled={cargando}
@@ -239,7 +259,7 @@
         </select>
       </div>
       <div class="col-md-7 text-md-end text-start mt-3 mt-md-0">
-        <button 
+        <button
           class="btn btn-refresh me-2"
           on:click={cargarDatos}
           disabled={cargando}
@@ -247,7 +267,7 @@
           <i class="material-icons vertical-align-middle">refresh</i>
           Actualizar
         </button>
-        <button 
+        <button
           class="btn btn-masivo me-2"
           on:click={corregirSeleccionados}
           disabled={cargando || !puedeCorregirSeleccionados}
@@ -255,7 +275,7 @@
           <i class="material-icons vertical-align-middle">check_circle</i>
           Corregir Seleccionados ({seleccionadosArray.length})
         </button>
-        <button 
+        <button
           class="btn btn-todo"
           on:click={corregirColeccionCompleta}
           disabled={cargando}
@@ -272,7 +292,9 @@
     {#if lista.length === 0}
       <div class="centrado py-5 text-muted">
         <i class="material-icons empty-icon">rule_folder</i>
-        <p class="mt-2 text-large">No se encontraron documentos en esta colección.</p>
+        <p class="mt-2 text-large">
+          No se encontraron documentos en esta colección.
+        </p>
       </div>
     {:else}
       <div class="table-responsive">
@@ -280,11 +302,11 @@
           <thead>
             <tr>
               <th scope="col" class="th-checkbox text-center">
-                <input 
-                  type="checkbox" 
-                  class="form-check-input" 
+                <input
+                  type="checkbox"
+                  class="form-check-input"
                   checked={selectAll}
-                  on:change={toggleSelectAll} 
+                  on:change={toggleSelectAll}
                   disabled={cargando}
                 />
               </th>
@@ -299,29 +321,35 @@
             {#each lista as item (item._id)}
               <tr class:row-selected={seleccionados[item._id]}>
                 <td class="text-center">
-                  <input 
-                    type="checkbox" 
-                    class="form-check-input" 
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
                     bind:checked={seleccionados[item._id]}
                     disabled={cargando}
                   />
                 </td>
                 <td>
-                  <div class="identificador-doc font-bold">{item.identificador}</div>
+                  <div class="identificador-doc font-bold">
+                    {item.identificador}
+                  </div>
                   <div class="id-doc text-muted text-small">{item._id}</div>
                 </td>
-                
+
                 {#each relacionesColumnas as col}
                   <td>
-                    {#if item.relaciones[col.path].estado === 'nulo'}
+                    {#if item.relaciones[col.path].estado === "nulo"}
                       <span class="badge bg-nulo">Nulo / Opcional</span>
                     {:else}
                       <div class="relacion-info">
-                        <div class="relacion-id text-small font-mono">{item.relaciones[col.path].valor}</div>
+                        <div class="relacion-id text-small font-mono">
+                          {item.relaciones[col.path].valor}
+                        </div>
                         <div class="relacion-badges mt-1">
-                          {#if item.relaciones[col.path].tipo === 'String'}
-                            <span class="badge bg-tipo-string text-dark">String</span>
-                          {:else if item.relaciones[col.path].tipo === 'ObjectId'}
+                          {#if item.relaciones[col.path].tipo === "String"}
+                            <span class="badge bg-tipo-string text-dark"
+                              >String</span
+                            >
+                          {:else if item.relaciones[col.path].tipo === "ObjectId"}
                             <span class="badge bg-tipo-objectid">ObjectId</span>
                           {/if}
 
@@ -342,16 +370,21 @@
 
                 <td class="text-center">
                   {#if tieneCorreccionPendiente(item.relaciones)}
-                    <button 
-                      class="btn btn-row-action" 
+                    <button
+                      class="btn btn-row-action"
                       on:click={() => corregirIndividual(item._id)}
                       disabled={cargando}
                     >
-                      <i class="material-icons text-medium vertical-align-middle">build</i>
+                      <i
+                        class="material-icons text-medium vertical-align-middle"
+                        >build</i
+                      >
                       Corregir
                     </button>
                   {:else}
-                    <span class="text-success font-bold d-flex align-items-center justify-content-center">
+                    <span
+                      class="text-success font-bold d-flex align-items-center justify-content-center"
+                    >
                       <i class="material-icons text-medium me-1">verified</i> Correcto
                     </span>
                   {/if}
@@ -368,20 +401,24 @@
   {#if totalDocumentos > 0}
     <div class="paginacion-area">
       <div class="info-paginacion">
-        Mostrando bloques de <strong>{limite}</strong> registros. Total: <strong>{totalDocumentos}</strong> documentos.
+        Mostrando bloques de <strong>{limite}</strong> registros. Total:
+        <strong>{totalDocumentos}</strong> documentos.
       </div>
       <div class="controles-paginacion">
-        <button 
-          class="btn btn-page" 
-          disabled={paginaActual === 1 || cargando} 
+        <button
+          class="btn btn-page"
+          disabled={paginaActual === 1 || cargando}
           on:click={anterior}
         >
           <i class="material-icons">keyboard_arrow_left</i>
         </button>
-        <span class="page-indicator">Página <strong>{paginaActual}</strong> de <strong>{paginasTotales}</strong></span>
-        <button 
-          class="btn btn-page" 
-          disabled={paginaActual === paginasTotales || cargando} 
+        <span class="page-indicator"
+          >Página <strong>{paginaActual}</strong> de
+          <strong>{paginasTotales}</strong></span
+        >
+        <button
+          class="btn btn-page"
+          disabled={paginaActual === paginasTotales || cargando}
           on:click={siguiente}
         >
           <i class="material-icons">keyboard_arrow_right</i>
@@ -581,7 +618,7 @@
   }
 
   .font-mono {
-    font-family: 'Cutive Mono', monospace, Courier;
+    font-family: "Cutive Mono", monospace, Courier;
   }
 
   .text-small {
@@ -752,8 +789,12 @@
   }
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   .vertical-align-middle {

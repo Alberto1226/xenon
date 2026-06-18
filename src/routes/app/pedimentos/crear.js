@@ -12,7 +12,25 @@ export async function post(req, res, next) {
         return;
     }
 
-    const { numero_pedimento, clave_pedimento, fecha_pedimento, tipo_cambio, gastos_importacion, productos } = req.body;
+    const {
+        numero_pedimento,
+        clave_pedimento,
+        fecha_pedimento,
+        tipo_cambio,
+        gastos_importacion,
+        productos,
+        // Nuevos campos SAT
+        aduana_despacho,
+        patente,
+        regimen,
+        peso_bruto,
+        valor_dolares,
+        valor_aduana_mxn,
+        cove,
+        proveedor,
+        incrementables_sat,
+        contribuciones_sat
+    } = req.body;
 
     if (!numero_pedimento || !fecha_pedimento || !tipo_cambio || !productos || !Array.isArray(productos) || productos.length === 0) {
         res.send({ ok: false, mensaje: "Datos incompletos o inválidos" });
@@ -33,7 +51,18 @@ export async function post(req, res, next) {
             tipo_cambio,
             gastos_importacion,
             productos,
-            status: 'transito'
+            status: 'transito',
+            // Campos SAT oficiales
+            aduana_despacho: aduana_despacho || '160',
+            patente: patente || '3387',
+            regimen: regimen || 'IMD',
+            peso_bruto: peso_bruto || 0,
+            valor_dolares: valor_dolares || 0,
+            valor_aduana_mxn: valor_aduana_mxn || 0,
+            cove: cove || '',
+            proveedor: proveedor || { nombre: '', tax_id: '', pais: 'CHN' },
+            incrementables_sat: incrementables_sat || { fletes: 0, seguros: 0, otros: 0 },
+            contribuciones_sat: contribuciones_sat || { dta: 0, prv: 0, igi: 0, iva: 0, total_efectivo: 0 }
         });
 
         const pedimentoGuardado = await nuevoPedimento.save();

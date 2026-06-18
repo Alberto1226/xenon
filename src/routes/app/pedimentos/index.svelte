@@ -24,6 +24,32 @@
     clave_pedimento: "A1",
     fecha_pedimento: new Date().toISOString().substring(0, 10),
     tipo_cambio: 20.00,
+    // Campos SAT oficiales de Cabecera
+    aduana_despacho: "160",
+    patente: "3387",
+    regimen: "IMD",
+    peso_bruto: 0,
+    valor_dolares: 0,
+    valor_aduana_mxn: 0,
+    cove: "",
+    proveedor: {
+      nombre: "",
+      tax_id: "",
+      pais: "CHN"
+    },
+    // Desglose de incrementables y contribuciones del SAT
+    incrementables_sat: {
+      fletes: 0,
+      seguros: 0,
+      otros: 0
+    },
+    contribuciones_sat: {
+      dta: 0,
+      prv: 0,
+      igi: 0,
+      iva: 0,
+      total_efectivo: 0
+    },
     gastos_importacion: {
       Impuesto_Aduanal: 0,
       Flete: 0,
@@ -40,7 +66,13 @@
     cantidad: 1,
     precio_compra_usd: 0,
     fraccion_arancelaria: "",
-    unidad_medida: "pza"
+    unidad_medida: "pza",
+    // Campos SAT por partida
+    sec: 1,
+    nico: "00",
+    marca: "",
+    modelo: "",
+    valor_aduana_partida_mxn: 0
   };
 
   let searchProductQuery = "";
@@ -122,6 +154,18 @@
     nuevoPedimento.gastos_importacion.otros = nuevoPedimento.gastos_importacion.otros;
   }
 
+  function sincronizarGastosSat() {
+    const c = nuevoPedimento.contribuciones_sat;
+    const inc = nuevoPedimento.incrementables_sat;
+    
+    // Sumar contribuciones e incrementables
+    const totalImpuestosSat = (c.igi || 0) + (c.iva || 0) + (c.dta || 0) + (c.prv || 0);
+    nuevoPedimento.gastos_importacion.Impuesto_Aduanal = totalImpuestosSat;
+    nuevoPedimento.gastos_importacion.Flete = inc.fletes || 0;
+    
+    mensaje_bueno("Gastos e impuestos del SAT sincronizados para prorrateo.");
+  }
+
   function agregarProductoALista() {
     if (!tempProduct.producto_id) {
       mensaje_error("Por favor selecciona un producto");
@@ -148,9 +192,17 @@
         cantidad: tempProduct.cantidad,
         unidad_medida: tempProduct.unidad_medida,
         precio_compra_usd: tempProduct.precio_compra_usd,
-        costo_fiscal_unitario_mxn: 0
+        costo_fiscal_unitario_mxn: 0,
+        // Nuevos campos SAT
+        sec: tempProduct.sec,
+        nico: tempProduct.nico,
+        marca: tempProduct.marca,
+        modelo: tempProduct.modelo,
+        valor_aduana_partida_mxn: tempProduct.valor_aduana_partida_mxn
       }
     ];
+
+    const siguientePartida = nuevoPedimento.productos.length + 1;
 
     // Resetear inputs temporales
     tempProduct = {
@@ -158,7 +210,12 @@
       cantidad: 1,
       precio_compra_usd: 0,
       fraccion_arancelaria: "",
-      unidad_medida: "pza"
+      unidad_medida: "pza",
+      sec: siguientePartida,
+      nico: "00",
+      marca: "",
+      modelo: "",
+      valor_aduana_partida_mxn: 0
     };
     selectedProductName = "Selecciona un producto...";
   }
@@ -189,6 +246,30 @@
           clave_pedimento: "A1",
           fecha_pedimento: new Date().toISOString().substring(0, 10),
           tipo_cambio: 20.00,
+          aduana_despacho: "160",
+          patente: "3387",
+          regimen: "IMD",
+          peso_bruto: 0,
+          valor_dolares: 0,
+          valor_aduana_mxn: 0,
+          cove: "",
+          proveedor: {
+            nombre: "",
+            tax_id: "",
+            pais: "CHN"
+          },
+          incrementables_sat: {
+            fletes: 0,
+            seguros: 0,
+            otros: 0
+          },
+          contribuciones_sat: {
+            dta: 0,
+            prv: 0,
+            igi: 0,
+            iva: 0,
+            total_efectivo: 0
+          },
           gastos_importacion: {
             Impuesto_Aduanal: 0,
             Flete: 0,
@@ -432,7 +513,7 @@
       <div class="secciones-verticales">
         <!-- 1. Datos Generales y Aduanales -->
         <div class="card p-4 mb-4">
-          <h4 class="card-section-title mb-3">1. Datos Generales y Aduanales</h4>
+          <h4 class="card-section-title mb-3">1. Datos Generales y Aduanales (SAT)</h4>
           
           <div class="form-row">
             <div class="form-group fg-large">
@@ -452,6 +533,33 @@
                 bind:value={nuevoPedimento.clave_pedimento}
               />
             </div>
+            <div class="form-group fg-small">
+              <label class="form-label font-bold">Régimen:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                bind:value={nuevoPedimento.regimen}
+              />
+            </div>
+            <div class="form-group fg-small">
+              <label class="form-label font-bold">Patente:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                bind:value={nuevoPedimento.patente}
+              />
+            </div>
+            <div class="form-group fg-small">
+              <label class="form-label font-bold">Aduana E/S:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                bind:value={nuevoPedimento.aduana_despacho}
+              />
+            </div>
+          </div>
+
+          <div class="form-row mt-3">
             <div class="form-group fg-medium">
               <label class="form-label font-bold">Tipo de Cambio (MXN):</label>
               <input 
@@ -469,16 +577,146 @@
                 bind:value={nuevoPedimento.fecha_pedimento}
               />
             </div>
+            <div class="form-group fg-medium">
+              <label class="form-label font-bold">Peso Bruto (kg):</label>
+              <input 
+                type="number" 
+                step="0.001" 
+                class="form-control" 
+                bind:value={nuevoPedimento.peso_bruto}
+              />
+            </div>
+            <div class="form-group fg-medium">
+              <label class="form-label font-bold">COVE / Factura:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Ej. COVE257UVCJ84"
+                bind:value={nuevoPedimento.cove}
+              />
+            </div>
+          </div>
+
+          <h5 class="mt-4 mb-3 text-dark border-bottom pb-2 font-bold text-medium">Datos del Proveedor Extranjero</h5>
+          <div class="form-row">
+            <div class="form-group fg-large">
+              <label class="form-label font-bold">Razón Social Proveedor:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Nombre de la empresa extranjera"
+                bind:value={nuevoPedimento.proveedor.nombre}
+              />
+            </div>
+            <div class="form-group fg-medium">
+              <label class="form-label font-bold">Tax ID / ID Fiscal:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Identificador fiscal"
+                bind:value={nuevoPedimento.proveedor.tax_id}
+              />
+            </div>
+            <div class="form-group fg-small">
+              <label class="form-label font-bold">País Origen:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Ej. CHN"
+                bind:value={nuevoPedimento.proveedor.pais}
+              />
+            </div>
           </div>
         </div>
 
-        <!-- 2. Gastos Indirectos de Importación (MXN) -->
+        <!-- 2. Gastos e Impuestos SAT -->
         <div class="card p-4 mb-4">
-          <h4 class="card-section-title mb-3">2. Gastos Indirectos de Importación (MXN)</h4>
+          <h4 class="card-section-title mb-3">2. Incrementables y Contribuciones SAT</h4>
           
+          <p class="text-small text-muted mb-3">Ingresa los valores declarados en el pedimento ante el SAT. Al finalizar, presiona el botón para cargarlos automáticamente al prorrateo de costos fiscales de importación.</p>
+
+          <h5 class="mt-3 mb-2 font-bold text-dark text-small">A. Incrementables Oficiales SAT (MXN)</h5>
+          <div class="form-row mb-4">
+            <div class="form-group">
+              <label class="form-label font-bold">Fletes SAT:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                bind:value={nuevoPedimento.incrementables_sat.fletes}
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label font-bold">Seguros SAT:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                bind:value={nuevoPedimento.incrementables_sat.seguros}
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label font-bold">Otros Incrementables SAT:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                bind:value={nuevoPedimento.incrementables_sat.otros}
+              />
+            </div>
+          </div>
+
+          <h5 class="mt-3 mb-2 font-bold text-dark text-small">B. Contribuciones Liquidadas SAT (MXN)</h5>
+          <div class="form-row mb-3">
+            <div class="form-group">
+              <label class="form-label font-bold">IGI / IGE SAT:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                bind:value={nuevoPedimento.contribuciones_sat.igi}
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label font-bold">IVA Aduana SAT:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                bind:value={nuevoPedimento.contribuciones_sat.iva}
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label font-bold">DTA SAT:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                bind:value={nuevoPedimento.contribuciones_sat.dta}
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label font-bold">PRV SAT:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                bind:value={nuevoPedimento.contribuciones_sat.prv}
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label font-bold">Total Efectivo Pagado:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                bind:value={nuevoPedimento.contribuciones_sat.total_efectivo}
+              />
+            </div>
+          </div>
+
+          <div class="mb-4 text-start">
+            <button class="btn btn-secondary py-2 font-bold" style="width: auto; padding: 10px 24px; background-color: #ebf5fb; color: #1a5276; border: 1.5px solid #1a5276;" on:click={sincronizarGastosSat}>
+              <i class="material-icons text-medium">sync</i> Cargar Valores Oficiales al Prorrateo
+            </button>
+          </div>
+
+          <h4 class="card-section-title mb-3 mt-4">C. Desglose de Gastos de Prorrateo (Costos Fiscales)</h4>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label font-bold">Impuesto Aduanal (IGI/DTA/IVA):</label>
+              <label class="form-label font-bold">Impuesto Aduanal Prorrateo:</label>
               <input 
                 type="number" 
                 class="form-control" 
@@ -486,7 +724,7 @@
               />
             </div>
             <div class="form-group">
-              <label class="form-label font-bold">Costo de Flete (Logística):</label>
+              <label class="form-label font-bold">Costo de Flete Prorrateo:</label>
               <input 
                 type="number" 
                 class="form-control" 
@@ -512,7 +750,7 @@
           </div>
 
           <!-- Otros gastos dinámicos -->
-          <div class="mb-2">
+          <div class="mb-2 mt-3">
             <div class="d-flex justify-content-between align-items-center mb-2" style="max-width: 600px;">
               <label class="form-label font-bold mb-0">Otros Gastos:</label>
               <button class="btn btn-secondary btn-sm" on:click={agregarOtrosGastos}>
@@ -550,10 +788,10 @@
 
         <!-- 3. Productos en el Cargamento -->
         <div class="card p-4 mb-4">
-          <h4 class="card-section-title mb-3">3. Productos en el Cargamento</h4>
+          <h4 class="card-section-title mb-3">3. Productos en el Cargamento (Partidas)</h4>
 
           <!-- Inputs para agregar producto -->
-          <div class="form-row align-items-end">
+          <div class="form-row">
             <!-- Buscador Predictivo de Productos -->
             <div class="form-group fg-large product-selector-container">
               <label class="form-label font-bold">Seleccionar Producto:</label>
@@ -585,6 +823,47 @@
               {/if}
             </div>
 
+            <div class="form-group fg-small">
+              <label class="form-label font-bold">Partida (Sec):</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                bind:value={tempProduct.sec}
+              />
+            </div>
+            
+            <div class="form-group fg-small">
+              <label class="form-label font-bold">NICO:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Ej. 99"
+                bind:value={tempProduct.nico}
+              />
+            </div>
+
+            <div class="form-group fg-medium">
+              <label class="form-label font-bold">Marca Declarada:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Ej. Carbon Audio"
+                bind:value={tempProduct.marca}
+              />
+            </div>
+
+            <div class="form-group fg-medium">
+              <label class="form-label font-bold">Modelo Declarado:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Ej. CA-WMB8065PR"
+                bind:value={tempProduct.modelo}
+              />
+            </div>
+          </div>
+
+          <div class="form-row mt-3">
             <div class="form-group fg-medium">
               <label class="form-label font-bold">Fracción Arancelaria:</label>
               <input 
@@ -622,9 +901,19 @@
                 bind:value={tempProduct.precio_compra_usd}
               />
             </div>
+
+            <div class="form-group fg-medium">
+              <label class="form-label font-bold">Valor Aduana Partida (MXN):</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                placeholder="Monto aduana pesos"
+                bind:value={tempProduct.valor_aduana_partida_mxn}
+              />
+            </div>
           </div>
 
-          <div class="mb-4 text-start">
+          <div class="mb-4 mt-3 text-start">
             <button class="btn btn-secondary py-2" style="width: auto; padding: 10px 24px;" on:click={agregarProductoALista}>
               <i class="material-icons text-medium">add_shopping_cart</i> Agregar Item al Cargamento
             </button>
@@ -636,25 +925,40 @@
             {#if nuevoPedimento.productos.length === 0}
               <div class="p-3 text-center text-muted text-small">No hay productos agregados en este cargamento</div>
             {:else}
-              <table class="table table-sm table-striped">
+              <table class="table table-sm table-striped align-middle">
                 <thead>
                   <tr>
-                    <th>Código</th>
-                    <th>Nombre del Producto</th>
+                    <th>Sec</th>
+                    <th>Producto</th>
+                    <th>Marca/Modelo</th>
+                    <th>NICO/Fracción</th>
                     <th>Cantidad</th>
-                    <th>Precio Compra Unitario (USD)</th>
-                    <th>Importe Total (USD)</th>
+                    <th>Prec. Compra (USD)</th>
+                    <th>Valor Aduana (MXN)</th>
+                    <th>Total (USD)</th>
                     <th class="text-center">X</th>
                   </tr>
                 </thead>
                 <tbody>
                   {#each nuevoPedimento.productos as prod, index}
                     <tr>
-                      <td class="font-mono text-small">{prod.codigo || 'S/C'}</td>
-                      <td class="text-small">{prod.nombre}</td>
+                      <td><strong>{prod.sec}</strong></td>
+                      <td>
+                        <div class="font-bold">{prod.nombre}</div>
+                        <div class="text-muted text-small">{prod.codigo || 'S/C'}</div>
+                      </td>
+                      <td>
+                        <div class="text-small">{prod.marca || 'S/M'}</div>
+                        <div class="text-small text-muted">{prod.modelo || 'S/Mod'}</div>
+                      </td>
+                      <td>
+                        <div class="font-mono text-small">{prod.fraccion_arancelaria || 'S/F'}</div>
+                        <div class="text-small text-muted">NICO: {prod.nico}</div>
+                      </td>
                       <td>{prod.cantidad} {prod.unidad_medida}</td>
-                      <td>${prod.precio_compra_usd.toFixed(2)} USD</td>
-                      <td>${(prod.cantidad * prod.precio_compra_usd).toFixed(2)} USD</td>
+                      <td>${prod.precio_compra_usd.toFixed(2)}</td>
+                      <td>{formatMoney(prod.valor_aduana_partida_mxn)}</td>
+                      <td>${(prod.cantidad * prod.precio_compra_usd).toFixed(2)}</td>
                       <td class="text-center">
                         <button class="btn btn-danger-icon btn-sm" on:click={() => removerProductoDeLista(index)}>
                           <i class="material-icons text-small">close</i>
@@ -987,19 +1291,20 @@
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    padding: 24px 32px !important; /* Incrementamos el padding lateral para crear espacios en los extremos */
   }
 
   /* Form Layout */
   .secciones-verticales {
-    max-width: 1200px;
-    margin: 0 auto;
     width: 100%;
+    max-width: 100%; /* Permitimos que ocupe todo el ancho sin gaps laterales vacíos gigantes */
+    margin: 0;
   }
 
   .form-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 24px; /* Aumentamos el gap a 24px para mejor separación entre columnas */
     align-items: flex-end;
     margin-bottom: 20px;
   }
@@ -1007,6 +1312,7 @@
   .form-group {
     flex: 1;
     min-width: 180px;
+    max-width: 320px; /* Evita que los inputs normales se estiren de forma antiestética */
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -1017,15 +1323,18 @@
   }
 
   .fg-small {
-    flex: 0 0 100px;
+    flex: 0 0 120px;
+    max-width: 120px;
   }
 
   .fg-medium {
-    flex: 0 0 200px;
+    flex: 0 0 220px;
+    max-width: 220px;
   }
 
   .fg-large {
-    flex: 1 1 300px;
+    flex: 1 1 350px;
+    max-width: 480px;
   }
 
   .card-section-title {

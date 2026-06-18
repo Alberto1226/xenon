@@ -37,6 +37,13 @@ var schema = new Schema({
         tipo_condicion: { type: Number, default: 0 },//    1: Sin condicion, 2: minimo de el mismo producto, 3: Minimo de combo
         id_promocion: { type: Schema.Types.ObjectId, ref: 'Promocion', default: null },//    id de la promocion, nunca se debe de borrar las promos solo virtualmente
     },
+    pedimento_actual: {
+        id_pedimento: { type: Schema.Types.ObjectId, ref: 'Pedimento', default: null },
+        cantidad_en_transito: { type: Number, default: 0 },
+        precio_compra_usd: { type: Number, default: 0 },
+        costo_fiscal_unitario_mxn: { type: Number, default: 0 },
+        fecha_estimada_arribo: { type: Date, default: null }
+    },
     galeria_imagenes: [],
     marca: { type: String, default: 0 },
     medidas: {

@@ -18,9 +18,12 @@ var schema = new Schema({
             },
             fecha: { type: Date, default: Date.now },//       fecha en la cual fue agregado, o modificado el producto al pedido
             producto: Producto_Schema,
-            folios: []
+            folios: [],
+            preventa: { type: Boolean, default: false },
+            pedimento_origen: { type: Schema.Types.ObjectId, ref: 'Pedimento', default: null }
         }
     ],
+    contiene_preventa: { type: Boolean, default: false },
     fecha: { type: Date, default: new Date() },
     fecha_creado: { type: Date, default: Date.now() },
     usuario_que_registro: {

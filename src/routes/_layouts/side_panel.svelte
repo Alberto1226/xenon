@@ -96,6 +96,18 @@
       icono: "build",
       roles: ["administrador"],
     },
+    {
+      url: "/app/pedimentos",
+      titulo: "Pedimentos",
+      icono: "sailing",
+      roles: ["administrador", "gerente"],
+    },
+    {
+      url: "/app/reportes/utilidades",
+      titulo: "Utilidades",
+      icono: "trending_up",
+      roles: ["administrador"],
+    },
 
     {
       url: "/app/categorias",
@@ -160,6 +172,12 @@
           break;
         case "/app/herramientas/correccion":
           menu_actual = "correccion";
+          break;
+        case "/app/pedimentos":
+          menu_actual = "pedimentos";
+          break;
+        case "/app/reportes/utilidades":
+          menu_actual = "utilidades";
           break;
         case "/app/categorias":
           menu_actual = "categorias";

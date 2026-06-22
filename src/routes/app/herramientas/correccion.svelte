@@ -5,7 +5,7 @@
 
   let colecciones = [
     { value: "Carrito", label: "Carritos" },
-    -{ value: "Pedido", label: "Pedidos" },
+    { value: "Pedido", label: "Pedidos" },
     { value: "Cliente", label: "Clientes" },
     { value: "Producto", label: "Productos" },
     { value: "Promocion", label: "Promociones" },

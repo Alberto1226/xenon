@@ -7,12 +7,12 @@ export async function post(req, res, next) {
         res.send({ ok: false, mensaje: "Sesión expirada" });
         return;
     }
-    if (accesos.tiene_permisos_administrativos(req) === false) {
+    if (accesos.tiene_permisos_administrativos(req) === false && accesos.tiene_permisos_gerenciales(req) === false) {
         res.send({ ok: false, mensaje: "Acceso no autorizado" });
         return;
     }
 
-    const { id_pedimento, metodologia, factor_fijo = 0 } = req.body;
+    const { id_pedimento, metodologia, factor_fijo = 0, preview = false } = req.body;
 
     if (!id_pedimento || !metodologia) {
         res.send({ ok: false, mensaje: "Datos incompletos" });
@@ -90,22 +90,48 @@ export async function post(req, res, next) {
             item.costo_fiscal_unitario_mxn = costoFiscalUnitario;
             productosActualizados.push(item);
 
-            // Actualizar también en el Producto correspondiente
-            await Producto.findByIdAndUpdate(item.producto, {
-                $set: {
-                    'pedimento_actual.costo_fiscal_unitario_mxn': costoFiscalUnitario
-                }
-            });
+            // Solo actualizar en el Producto correspondiente si NO es previsualización
+            if (!preview) {
+                // Se utiliza updateOne con filtro exacto para evitar errores si 'pedimento_actual' es null (ya arribó)
+                await Producto.updateOne(
+                    { _id: item.producto, 'pedimento_actual.id_pedimento': id_pedimento },
+                    {
+                        $set: {
+                            'pedimento_actual.costo_fiscal_unitario_mxn': costoFiscalUnitario
+                        }
+                    }
+                );
+            }
         }
 
         pedimento.productos = productosActualizados;
-        const pedimentoCalculado = await pedimento.save();
 
-        res.send({ 
-            ok: true, 
-            mensaje: `Cálculo fiscal completado usando metodología: ${metodologia}.`, 
-            pedimento: pedimentoCalculado 
-        });
+        if (preview) {
+            // Popular el documento en memoria sin guardar en la base de datos
+            await pedimento.populate({
+                path: 'productos.producto',
+                select: 'nombre codigo'
+            }).execPopulate();
+
+            res.send({
+                ok: true,
+                mensaje: `Previsualización de cálculo fiscal lista (${metodologia}).`,
+                pedimento: pedimento
+            });
+        } else {
+            const pedimentoCalculado = await pedimento.save();
+
+            // Popular referencias para evitar campos undefined en la vista de Svelte
+            const pedimentoPopuladado = await Pedimento.findById(pedimentoCalculado._id)
+                .populate('productos.producto', 'nombre codigo')
+                .exec();
+
+            res.send({ 
+                ok: true, 
+                mensaje: `Cálculo fiscal completado y guardado con éxito (${metodologia}).`, 
+                pedimento: pedimentoPopuladado 
+            });
+        }
 
     } catch (err) {
         console.error("Error al calcular costos fiscales:", err);

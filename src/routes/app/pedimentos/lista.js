@@ -6,7 +6,7 @@ export async function post(req, res, next) {
         res.send({ ok: false, mensaje: "Sesión expirada" });
         return;
     }
-    if (accesos.tiene_permisos_administrativos(req) === false) {
+    if (accesos.tiene_permisos_administrativos(req) === false && accesos.tiene_permisos_gerenciales(req) === false) {
         res.send({ ok: false, mensaje: "Acceso no autorizado" });
         return;
     }

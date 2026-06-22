@@ -7,12 +7,12 @@ export async function post(req, res, next) {
         res.send({ ok: false, mensaje: "Sesión expirada" });
         return;
     }
-    if (accesos.tiene_permisos_administrativos(req) === false) {
+    if (accesos.tiene_permisos_administrativos(req) === false && accesos.tiene_permisos_gerenciales(req) === false) {
         res.send({ ok: false, mensaje: "Acceso no autorizado" });
         return;
     }
 
-    const { id_pedimento } = req.body;
+    const { id_pedimento, folios_productos, actualizar_existencias } = req.body;
 
     if (!id_pedimento) {
         res.send({ ok: false, mensaje: "ID del pedimento no proporcionado" });
@@ -31,12 +31,22 @@ export async function post(req, res, next) {
             return;
         }
 
-        // Incrementar existencias físicas y vaciar el campo pedimento_actual de cada producto
+        // Vaciar el campo pedimento_actual de cada producto, asociar folios e incrementar existencias físicas opcionalmente
         for (const item of pedimento.productos) {
-            await Producto.findByIdAndUpdate(item.producto, {
-                $inc: { 'existencia.actual': item.cantidad },
+            // Obtener folios capturados para este producto en específico
+            const foliosItem = folios_productos && folios_productos[item.producto] ? folios_productos[item.producto] : [];
+            
+            // Guardar folios en la partida del pedimento
+            item.folios = foliosItem;
+
+            // Actualizar el stock físico del producto y vaciar la referencia del pedimento en tránsito
+            const updateQuery = {
                 $set: { pedimento_actual: null }
-            });
+            };
+            if (actualizar_existencias !== false) {
+                updateQuery.$inc = { 'existencia.actual': item.cantidad };
+            }
+            await Producto.findByIdAndUpdate(item.producto, updateQuery);
         }
 
         pedimento.status = 'arribado';

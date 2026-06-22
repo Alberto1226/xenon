@@ -61,8 +61,9 @@ var schema = new Schema({
         nico: { type: String, default: '00' },
         marca: { type: String, default: '' },
         modelo: { type: String, default: '' },
-        valor_aduana_partida_mxn: { type: Number, default: 0 }
+        valor_aduana_partida_mxn: { type: Number, default: 0 },
         // -------------------------------
+        folios: [{ type: String }] // Lista de folios o números de serie recibidos
     }],
     status: { type: String, enum: ['transito', 'arribado'], default: 'transito' },
     fecha_arribo: { type: Date, default: null }

@@ -16,22 +16,53 @@ export async function post(req, res, next) {
     const { fecha_inicio, fecha_fin, id_pedimento } = req.body;
 
     try {
+        // Si se filtra por un pedimento específico, cargamos ese pedimento primero
+        let pedimentoFiltrado = null;
+        if (id_pedimento) {
+            pedimentoFiltrado = await Pedimento.findById(id_pedimento).lean().exec();
+            if (!pedimentoFiltrado) {
+                res.send({
+                    ok: true,
+                    resumen: {
+                        totalVendidoMXN: 0,
+                        totalCostoMXN: 0,
+                        utilidadBrutaMXN: 0,
+                        margenUtilidad: 0
+                    },
+                    desglose: []
+                });
+                return;
+            }
+        }
+
         // Construir filtro de fechas para los pedidos
-        const queryPedido = { status: 'Entregado' }; // Solo pedidos completados/entregados
+        const queryPedido = { status: { $in: ['Entregado', 'Enviado'] } }; // Solo pedidos completados/entregados
         if (fecha_inicio || fecha_fin) {
             queryPedido.fecha_entregado = {};
             if (fecha_inicio) queryPedido.fecha_entregado.$gte = new Date(fecha_inicio);
             if (fecha_fin) queryPedido.fecha_entregado.$lte = new Date(fecha_fin);
+        } else if (!id_pedimento) {
+            // Rango por defecto si no hay fechas ni pedimento: últimos 30 días para evitar lentitud
+            const hace30Dias = new Date();
+            hace30Dias.setDate(hace30Dias.getDate() - 30);
+            queryPedido.fecha_entregado = { $gte: hace30Dias };
         }
 
-        // Obtener todos los pedidos
+        // Si filtramos por pedimento, optimizamos la consulta en la BD para traer solo pedidos vinculados
+        if (id_pedimento && pedimentoFiltrado) {
+            const prodIds = (pedimentoFiltrado.productos || []).map(p => {
+                const id = p.producto && p.producto._id ? p.producto._id : p.producto;
+                return id ? id.toString() : null;
+            }).filter(Boolean);
+
+            queryPedido.$or = [
+                { 'lista.producto._id': { $in: prodIds } },
+                { 'lista.pedimento_origen': id_pedimento }
+            ];
+        }
+
+        // Obtener pedidos filtrados
         const pedidos = await Pedido.find(queryPedido).lean().exec();
-
-        // Si se filtra por un pedimento específico, cargamos ese pedimento
-        let pedimentoFiltrado = null;
-        if (id_pedimento) {
-            pedimentoFiltrado = await Pedimento.findById(id_pedimento).lean().exec();
-        }
 
         // Mapeo rápido para costos de productos de pedimentos en memoria
         const cacheCostos = {}; 
@@ -41,6 +72,49 @@ export async function post(req, res, next) {
             .sort({ fecha_arribo: -1 })
             .lean()
             .exec();
+
+        // 1. Recopilar IDs únicos de productos y de pedimentos de preventa de una sola vez
+        const idsProductosSet = new Set();
+        const idsPedimentosOrigenSet = new Set();
+
+        for (const pedido of pedidos) {
+            if (!pedido.lista || !Array.isArray(pedido.lista)) continue;
+            for (const item of pedido.lista) {
+                if (item.producto) {
+                    const prodId = item.producto._id || item.producto;
+                    if (prodId) {
+                        idsProductosSet.add(prodId.toString());
+                    }
+                }
+                if (item.preventa && item.pedimento_origen) {
+                    idsPedimentosOrigenSet.add(item.pedimento_origen.toString());
+                }
+            }
+        }
+
+        const idsProductos = Array.from(idsProductosSet);
+        const idsPedimentosOrigen = Array.from(idsPedimentosOrigenSet);
+
+        // 2. Consultar costos base de productos involucrados en una sola consulta
+        const productosInfo = await Producto.find(
+            { _id: { $in: idsProductos } },
+            'precio_compra'
+        ).lean().exec();
+
+        const mapaPreciosCompra = {};
+        for (const p of productosInfo) {
+            mapaPreciosCompra[p._id.toString()] = p.precio_compra || 0;
+        }
+
+        // 3. Consultar todos los pedimentos de preventa involucrados de una sola consulta
+        const pedimentosOrigenInfo = await Pedimento.find({
+            _id: { $in: idsPedimentosOrigen }
+        }).lean().exec();
+
+        const mapaPedimentosOrigen = {};
+        for (const ped of pedimentosOrigenInfo) {
+            mapaPedimentosOrigen[ped._id.toString()] = ped;
+        }
 
         let totalVendidoMXN = 0;
         let totalCostoMXN = 0;
@@ -71,7 +145,7 @@ export async function post(req, res, next) {
                     if (cacheCostos[cacheKey] !== undefined) {
                         costoFiscalUnitario = cacheCostos[cacheKey];
                     } else {
-                        const pedObj = await Pedimento.findById(item.pedimento_origen).lean().exec();
+                        const pedObj = mapaPedimentosOrigen[pedimentoUsadoId];
                         if (pedObj) {
                             pedimentoUsadoNumero = pedObj.numero_pedimento;
                             const prodItem = pedObj.productos.find(p => p.producto.toString() === prodIdStr);
@@ -84,6 +158,10 @@ export async function post(req, res, next) {
                 } else {
                     if (id_pedimento) {
                         if (!pedimentoFiltrado) continue;
+                        // Solo califica si el pedimento ya había arribado para la fecha de entrega del pedido
+                        if (pedimentoFiltrado.fecha_arribo && new Date(pedimentoFiltrado.fecha_arribo) > new Date(pedido.fecha_entregado)) {
+                            continue;
+                        }
                         const prodItem = pedimentoFiltrado.productos.find(p => p.producto.toString() === prodIdStr);
                         if (!prodItem) {
                             continue; // No califica para este pedimento
@@ -92,15 +170,19 @@ export async function post(req, res, next) {
                         pedimentoUsadoId = id_pedimento;
                         pedimentoUsadoNumero = pedimentoFiltrado.numero_pedimento;
                     } else {
-                        const pedMatch = todosPedimentos.find(p => p.productos.some(prod => prod.producto.toString() === prodIdStr));
+                        // Buscar el último pedimento arribado antes de la entrega del pedido
+                        const pedMatch = todosPedimentos.find(p => 
+                            p.fecha_arribo && 
+                            new Date(p.fecha_arribo) <= new Date(pedido.fecha_entregado) &&
+                            p.productos.some(prod => prod.producto.toString() === prodIdStr)
+                        );
                         if (pedMatch) {
                             pedimentoUsadoId = pedMatch._id.toString();
                             pedimentoUsadoNumero = pedMatch.numero_pedimento;
                             const prodItem = pedMatch.productos.find(p => p.producto.toString() === prodIdStr);
                             costoFiscalUnitario = prodItem.costo_fiscal_unitario_mxn || 0;
                         } else {
-                            const prodObj = await Producto.findById(item.producto._id).lean().exec();
-                            costoFiscalUnitario = prodObj ? (prodObj.precio_compra || 0) : 0;
+                            costoFiscalUnitario = mapaPreciosCompra[prodIdStr] || 0;
                         }
                     }
                 }

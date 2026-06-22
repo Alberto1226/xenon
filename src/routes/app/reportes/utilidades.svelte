@@ -24,6 +24,9 @@
 
   onMount(async () => {
     await cargarPedimentos();
+    if (listPedimentos && listPedimentos.length > 0) {
+      idPedimento = listPedimentos[0]._id;
+    }
     await generarReporte();
   });
 

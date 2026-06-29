@@ -24,6 +24,8 @@
     var lista_filtrada = [];
     var filtrar_selectos = false;
     var guardando_folios = false;
+    var modoUnSoloTipo = false;
+    var codigoProductoBase = "";
 
     import { usuario_db, mensajes_app, postData } from "./../../../stores";
     import { Button } from "svelte-mui/src";
@@ -37,6 +39,9 @@
         // console.log({ selectos });
         seleccionar_las_que_ya_estaban_selectas();
     }
+    $: codigoProductoBase = normalizarCodigoProducto(
+        producto && producto.codigo ? producto.codigo : "",
+    );
 
     function cambiar_folios() {
         if (foliosMaster.length > cantidad) {
@@ -74,6 +79,8 @@
             producto_id: producto._id,
             cantidad,
             folios: foliosMaster,
+            modo_un_solo_tipo: modoUnSoloTipo,
+            codigo_producto_base: codigoProductoBase,
         };
         //console.log(registro);
         postData("/app/pedidos/editar/cambiar_lista_de_folios_Master", {
@@ -134,6 +141,8 @@
 
     function cerrar(params) {
         foliosMaster = [];
+        modoUnSoloTipo = false;
+        InserFolio = "";
         visible = false;
         DesactivarInput();
         // dispatch("actualizar_folios");
@@ -184,8 +193,57 @@
         // console.log(lista_filtrada.length);
     }
 
+    function normalizarFolio(dato) {
+        return (dato || "").toUpperCase().replace(/\s+/g, "");
+    }
+
+    function normalizarCodigoProducto(dato) {
+        return (dato || "").toUpperCase().replace(/[\s-]+/g, "");
+    }
+
+    function folioCoincideConCodigoProducto(folio) {
+        if (!codigoProductoBase) {
+            return false;
+        }
+
+        const folioNormalizadoParaComparar = normalizarCodigoProducto(folio);
+        return folioNormalizadoParaComparar.startsWith(codigoProductoBase);
+    }
+
+    function obtenerCodigoDetectadoEnFolio(folio) {
+        const folioComparable = normalizarCodigoProducto(folio);
+        if (!codigoProductoBase) {
+            return folioComparable;
+        }
+        return folioComparable.slice(0, codigoProductoBase.length);
+    }
+
+    function toggleModoUnSoloTipo() {
+        modoUnSoloTipo = !modoUnSoloTipo;
+        InserFolio = "";
+
+        if (modoUnSoloTipo) {
+            if (!codigoProductoBase) {
+                modoUnSoloTipo = false;
+                $mensajes_app.push({
+                    tipo: "error",
+                    mensaje:
+                        "No se pudo determinar el código base del producto",
+                });
+                $mensajes_app = $mensajes_app;
+                return;
+            }
+            ProdIndividual = true;
+            BoxProd = false;
+            return;
+        }
+    }
+
     function AgregarFolio(dato) {
-        let dato2 = dato.toUpperCase().replace(/\s+/g, "");
+        let dato2 = normalizarFolio(dato);
+        if (dato2.length === 0) {
+            return;
+        }
         if (!foliosMaster.includes(dato2)) {
             foliosMaster = [...foliosMaster, dato2];
             // console.log("Arreglo de folios actualizado:", foliosMaster);
@@ -200,8 +258,79 @@
         }
     }
 
+    function agregarFolioMismoTipo(dato) {
+        let dato2 = normalizarFolio(dato);
+
+        if (dato2.length === 0) {
+            return;
+        }
+
+        if (foliosMaster.length >= cantidad) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "Ya se registró la cantidad exacta de folios",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
+        if (checar_que_sea_unico(dato2)) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje:
+                    "El folio ya existe en la lista, por favor escanea otro",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
+        if (!folioCoincideConCodigoProducto(dato2)) {
+            const codigoDetectado = obtenerCodigoDetectadoEnFolio(dato2);
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: `El folio no coincide con el código base. Detectado: ${codigoDetectado || "(vacío)"} | Esperado: ${codigoProductoBase}`,
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
+        if (foliosMaster.length === 0) {
+            foliosMaster = [...foliosMaster, dato2];
+            DesactivarInput();
+            return;
+        }
+
+        foliosMaster = [...foliosMaster, dato2];
+        DesactivarInput();
+    }
+
     function GenerarFolios(dato) {
-        let dato2 = dato.toUpperCase().replace(/\s+/g, "");
+        let dato2 = normalizarFolio(dato);
+        let codigoBase = codigoProductoBase;
+
+        if (dato2.length === 0) {
+            return;
+        }
+
+        if (!codigoBase) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje:
+                    "No se pudo determinar el código del producto para generar folios",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
+        if (!normalizarCodigoProducto(dato2).includes(codigoBase)) {
+            let codigoDetectado = obtenerCodigoDetectadoEnFolio(dato2);
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: `El folio no coincide con el código base. Detectado: ${codigoDetectado || "(vacío)"} | Esperado: ${codigoBase}`,
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
 
         let resultado_ya_existia = checar_que_sea_unico(dato2);
         if (resultado_ya_existia) {
@@ -213,74 +342,48 @@
             return;
         }
 
-        let parteInicial = dato2; // Iniciamos con el folio completo
-        let ultimosCuatro = dato2.slice(-4); // Últimos 4 caracteres
-        let lista = [];
-        let numeroBase = "";
-        let letrasFinales = ""; // Letras después del número
-        let leadingZeros = "";
-        let leadingZerosStr = "";
+        let folioComparable = normalizarCodigoProducto(dato2);
+        let indiceInicioSobrante =
+            folioComparable.indexOf(codigoBase) + codigoBase.length;
+        let parteSecuencialStr = folioComparable.slice(indiceInicioSobrante);
+        let matchNumero = parteSecuencialStr.match(/(\d+)$/);
 
-        // Comprobamos si los últimos 4 caracteres tienen letras
-        let tieneLetras = /[A-Z]/.test(ultimosCuatro);
-        let tieneNumeros = /^\d+$/.test(ultimosCuatro);
-
-        if (tieneLetras) {
-            // Recorremos los últimos caracteres para encontrar el número base
-            for (let i = ultimosCuatro.length - 1; i >= 0; i--) {
-                if (isNaN(ultimosCuatro[ultimosCuatro.length - 1])) {
-                    parteInicial = dato2.slice(0, -ultimosCuatro.length + i);
-                    numeroBase = 0;
-                    break;
-                }
-
-                if (!isNaN(ultimosCuatro[i])) {
-                    numeroBase = parseInt(ultimosCuatro.slice(i));
-                    parteInicial = dato2.slice(0, -ultimosCuatro.length + i);
-                    // break;
-                }
-            }
-            for (let i = 0; i < CantidadArreglo; i++) {
-                let nuevoNumero = (numeroBase + i).toString();
-                // let folioGenerado = `${parteInicial}${nuevoNumero}${letrasFinales}`;
-                let folioGenerado = `${parteInicial}${nuevoNumero}`;
-                // console.log("FOLg", folioGenerado);
-                lista.push(folioGenerado);
-            }
+        if (!matchNumero) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje:
+                    "No se detectó un número secuencial al final del folio.",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
         }
-        if (tieneNumeros) {
-            numeroBase = parseInt(ultimosCuatro, 10);
-            leadingZeros = ultimosCuatro.length - numeroBase.toString().length;
-            leadingZerosStr = "0".repeat(leadingZeros);
-            parteInicial = dato2.slice(0, -ultimosCuatro.toString().length);
-            // console.log(
-            //     "todosnumeros",
-            //     ultimosCuatro,
-            //     "base",
-            //     numeroBase,
-            //     "zeros",
-            //     leadingZeros,
-            //     "Zstring",
-            //     leadingZerosStr,
-            // );
-            if (leadingZeros === 0) {
-                for (let i = 0; i < CantidadArreglo; i++) {
-                    let nuevoNumero = (numeroBase + i).toString();
-                    // let folioGenerado = `${parteInicial}${nuevoNumero}${letrasFinales}`;
-                    let folioGenerado = `${parteInicial}${nuevoNumero}`;
-                    // console.log("FOLg", folioGenerado);
-                    lista.push(folioGenerado);
-                }
-            }
-            if (leadingZeros > 0) {
 
-                for (let i = 0; i < CantidadArreglo; i++) {
-                    let folio3dfd = (numeroBase + i)
-                        .toString()
-                        .padStart(4, "0");
-                    let folioGenerado = `${parteInicial}${folio3dfd}`;
-                    lista.push(folioGenerado);
-                }
+        let numeroBaseStr = matchNumero[0];
+        let prefijoIntermedio = parteSecuencialStr.slice(
+            0,
+            -numeroBaseStr.length,
+        );
+        let numeroBase = parseInt(numeroBaseStr, 10);
+        let padding = numeroBaseStr.length;
+        let lista = [];
+        let espaciosDisponibles = cantidad - foliosMaster.length;
+        let totalAGenerar = Math.min(Number(CantidadArreglo), espaciosDisponibles);
+
+        if (totalAGenerar <= 0) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "Ya no hay espacio para generar más folios",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
+        for (let i = 0; i < totalAGenerar; i++) {
+            let nuevoNumero = (numeroBase + i).toString().padStart(padding, "0");
+            let nuevoFolio = `${codigoBase}${prefijoIntermedio}${nuevoNumero}`;
+
+            if (!foliosMaster.includes(nuevoFolio)) {
+                lista.push(nuevoFolio);
             }
         }
 
@@ -292,11 +395,21 @@
             }
         }
 
+        if (lista.length === 0) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje:
+                    "No se generaron folios nuevos porque todos ya existían en la lista",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+
         // console.log("Lista generada:", foliosMaster);
     }
 
     function checar_que_sea_unico(folio) {
-        var encontrado = foliosMaster.find((elem) => elem.includes(folio));
+        var encontrado = foliosMaster.find((elem) => elem === folio);
         return encontrado;
     }
 
@@ -307,12 +420,7 @@
     }
 
     function DesactivarInput() {
-        if (foliosMaster.length >= cantidad) {
-            desactivar = true;
-        }
-        if (foliosMaster.length <= cantidad) {
-            desactivar = false;
-        }
+        desactivar = foliosMaster.length >= cantidad;
     }
 
     function SoloActivo(donde) {
@@ -321,9 +429,23 @@
             BoxProd = false;
         }
         if (donde == "BoxProd") {
+            if (modoUnSoloTipo) {
+                modoUnSoloTipo = false;
+            }
             ProdIndividual = false;
             BoxProd = true;
         }
+    }
+
+    function procesarCapturaIndividual() {
+        if (modoUnSoloTipo) {
+            agregarFolioMismoTipo(InserFolio);
+        } else {
+            AgregarFolio(InserFolio);
+            DesactivarInput();
+        }
+
+        InserFolio = "";
     }
 </script>
 
@@ -333,148 +455,171 @@
         in:scale={{ duration: 200 }}
         out:scale={{ duration: 100 }}
     >
-        <div class="flex">
-            <!-- <input
-                placeholder="buscador"
-                bind:value={buscando}
-                type="text"
-                on:keyup={filtra_con_texto}
-            /> -->
-
-            <!-- <button
-                class="altura-boton-guardar"
-                on:click={() => {
-                    filtrar_selectos = !filtrar_selectos;
-                }}
-            >
-                {#if filtrar_selectos == true}
-                    <i class="material-icons">visibility</i> Viendo solo selectos
-                {:else}
-                    <i class="material-icons">visibility</i> Viendo todos
-                {/if}
-            </button> -->
-            {#if guardando_folios == false}
-                <Button color="#2b78fe" raised dense on:click={cambiar_folios}>
-                    <i class="material-icons">save</i> Guardar
-                </Button>
-            {:else}
-                Guardando
-            {/if}
-        </div>
-        <div>Cantidad total de productos: <b>{cantidad} </b></div>
-        <div>Cantidad selecta de folios: <b>{foliosMaster.length}</b></div>
-        <!-- barcode_scanner -->
-        <!-- box_add -->
-        <div class="botones">
-            <button
-                class="BtnFolio"
-                color="#2b78fe"
-                on:click={() => {
-                    SoloActivo("ProdIndividual");
-                }}
-            >
-                <i class="material-icons">shopping_basket</i>
-            </button>
-            <button
-                class="BtnFolio"
-                on:click={() => {
-                    SoloActivo("BoxProd");
-                }}
-            >
-                <i class="material-icons">shopping_bag</i>
-            </button>
-
-            {#if actualizado == true}
-                <div class="guardando">
-                    Actualizado <i class="material-icons check-color">check</i>
-                </div>
-            {/if}
-        </div>
         <div
             class="relativo"
             in:fly={{ x: 400, duration: 200 }}
             out:fade={{ duration: 100 }}
         >
-            <div class="boton-cerrar">
-                <div>
+            <div class="encabezado-modal">
+                <div class="titulo-modal">
+                    <div class="titulo-principal">Asignar folios</div>
+                    <div class="titulo-secundario">
+                        Captura exacta para {cantidad} unidades
+                    </div>
+                </div>
+                <div class="acciones-header">
+                    {#if actualizado == true}
+                        <div class="guardando estado-ok">
+                            Actualizado
+                            <i class="material-icons check-color">check</i>
+                        </div>
+                    {/if}
+                    {#if guardando_folios == false}
+                        <Button
+                            color="#2b78fe"
+                            raised
+                            dense
+                            on:click={cambiar_folios}
+                        >
+                            <i class="material-icons">save</i> Guardar
+                        </Button>
+                    {:else}
+                        <div class="estado-guardando">Guardando...</div>
+                    {/if}
                     <Button raised icon dense on:click={cerrar}>
                         <i class="material-icons">close</i>
                     </Button>
                 </div>
             </div>
 
-            {#if ProdIndividual}
-                <div class="ProdIndividual">
-                    <!-- <p>asfdaqwedf</p> -->
-                    <input
-                        class="InputFolios"
-                        placeholder="Folio"
-                        bind:value={InserFolio}
-                        type="text"
-                        disabled={desactivar}
-                        on:keyup={(event) => {
-                            if (event.key === "Enter") {
-                                // if (
-                                //     InserFolio.trim().length > 0 &&
-                                //     !foliosMaster.includes(InserFolio)
-                                // ) {
-                                AgregarFolio(InserFolio);
-                                InserFolio = ""; // Limpiar el input después de agregar el folio
-                                DesactivarInput();
-                                // }
-                            }
-                        }}
-                    />
+            <div class="resumen-grid">
+                <div class="resumen-card">
+                    <span class="resumen-label">Cantidad total</span>
+                    <b>{cantidad}</b>
                 </div>
-            {/if}
+                <div class="resumen-card">
+                    <span class="resumen-label">Folios capturados</span>
+                    <b>{foliosMaster.length}</b>
+                </div>
+            </div>
 
-            {#if BoxProd}
-                <div class="BoxProd">
-                    <input
-                        class="InputFolios"
-                        placeholder="Cantidad"
-                        bind:value={CantidadArreglo}
-                        type="number"
-                        disabled={desactivar}
-                    />
-                    <input
-                        class="InputFolios"
-                        placeholder="Folio"
-                        bind:value={InserFolio}
-                        type="text"
-                        disabled={desactivar}
-                        on:keyup={(event) => {
-                            if (event.key === "Enter") {
-                                // if (
-                                //     InserFolio.trim().length > 0 &&
-                                //     !foliosMaster.includes(InserFolio)
-                                // ) {
-                                GenerarFolios(InserFolio);
-                                InserFolio = ""; // Limpiar el input después de agregar el folio
-                                DesactivarInput();
-                                // }
-                            }
-                        }}
-                    />
+            <div class="modo-secuencial-wrap">
+                <div class="switch-linea">
+                    <button
+                        class="switch-secuencial"
+                        class:activo={modoUnSoloTipo}
+                        on:click={toggleModoUnSoloTipo}
+                        type="button"
+                    >
+                        <i class="material-icons"
+                            >{modoUnSoloTipo ? "toggle_on" : "toggle_off"}</i
+                        >
+                        Un solo tipo de folio
+                    </button>
+                    {#if (modoUnSoloTipo || BoxProd) && codigoProductoBase}
+                        <div class="tipo-base-pill">
+                            Base: <b>{codigoProductoBase}</b>
+                        </div>
+                    {/if}
                 </div>
-            {/if}
+                {#if modoUnSoloTipo}
+                    <div class="ayuda-secuencial">
+                            {#if foliosMaster.length === 0}
+                                Escanea folios del producto. Se validan contra el
+                                código base del producto.
+                        {:else if desactivar}
+                            Se completó la captura del mismo tipo de folio.
+                        {/if}
+                    </div>
+                {/if}
+            </div>
+
+            <div class="botones">
+                <button
+                    class="BtnFolio"
+                    class:activo={ProdIndividual}
+                    color="#2b78fe"
+                    on:click={() => {
+                        SoloActivo("ProdIndividual");
+                    }}
+                >
+                    <i class="material-icons">shopping_basket</i>
+                    <span>Individual</span>
+                </button>
+                <button
+                    class="BtnFolio"
+                    class:activo={BoxProd}
+                    on:click={() => {
+                        SoloActivo("BoxProd");
+                    }}
+                    disabled={modoUnSoloTipo}
+                >
+                    <i class="material-icons">shopping_bag</i>
+                    <span>Por caja</span>
+                </button>
+            </div>
+
+            <div class="captura-panel">
+
+                {#if ProdIndividual}
+                    <div class="ProdIndividual">
+                        <input
+                            class="InputFolios"
+                            placeholder="Escanear o escribir folio"
+                            bind:value={InserFolio}
+                            type="text"
+                            disabled={desactivar}
+                            on:keyup={(event) => {
+                                if (event.key === "Enter") {
+                                    procesarCapturaIndividual();
+                                }
+                            }}
+                        />
+                    </div>
+                {/if}
+
+                {#if BoxProd}
+                    <div class="BoxProd">
+                        <input
+                            class="InputFolios input-cantidad"
+                            placeholder="Cantidad"
+                            bind:value={CantidadArreglo}
+                            type="number"
+                            disabled={desactivar}
+                        />
+                        <input
+                            class="InputFolios"
+                            placeholder="Folio base"
+                            bind:value={InserFolio}
+                            type="text"
+                            disabled={desactivar}
+                            on:keyup={(event) => {
+                                if (event.key === "Enter") {
+                                    GenerarFolios(InserFolio);
+                                    InserFolio = "";
+                                    DesactivarInput();
+                                }
+                            }}
+                        />
+                    </div>
+                {/if}
+            </div>
+
             {#if foliosMaster.length > 0}
                 <div class="lista">
                     {#each foliosMaster as item, i}
-                        <!-- {console.log(item)} -->
                         <div
                             class="item"
                             class:repetido={foliosRepetidos.includes(item)}
                         >
-                            <span class="indices">{i + 1})</span>
-                            {item}
+                            <div class="item-contenido">
+                                <span class="indices">{i + 1})</span>
+                                <span class="folio-txt">{item}</span>
+                            </div>
                             <button
                                 class="removerFolio"
                                 on:click={() => {
                                     quitarFolio(item);
-                                    // foliosMaster.splice(i, 1);
-                                    // console.log("Folio eliminado:", item);
-                                    // console.log(foliosMaster);
                                 }}
                             >
                                 <i class="material-icons">delete_forever</i>
@@ -569,102 +714,228 @@
         color: rgb(43, 120, 254);
     }
     .guardando {
-        padding-right: 23px;
-        padding-top: 23px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
     }
     button {
         cursor: pointer;
     }
     input {
-        border-radius: 10px 0px 0px 10px;
+        border-radius: 12px;
+        border: 1px solid #d3d9e4;
     }
-    .flex {
+    .encabezado-modal {
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 14px;
     }
-    .altura-boton-guardar {
-        height: 32px;
-    }
-    .selecto {
+    .titulo-principal {
+        font-size: 1.15rem;
         font-weight: 800;
-        text-decoration: underline;
-        color: #40f;
+        color: #1f3042;
+    }
+    .titulo-secundario {
+        margin-top: 4px;
+        color: #506172;
+        font-size: 0.92rem;
     }
     .relativo {
         position: relative;
     }
-    .fecha {
-        position: absolute;
-        right: 20px;
+    .acciones-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
-    .boton-cerrar {
-        position: absolute;
-        top: -101px;
-        text-align: right;
-        right: -32px;
+    .estado-ok {
+        color: #245d37;
+        font-weight: 700;
     }
-    .id {
-        font-size: 12px;
+    .estado-guardando {
+        font-weight: 700;
+        color: #4d5a67;
+    }
+    .resumen-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+    .resumen-card {
+        background: #eef3f8;
+        border: 1px solid #d6dee8;
+        border-radius: 14px;
+        padding: 10px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        color: #1f3042;
+    }
+    .resumen-label {
+        font-size: 0.82rem;
+        color: #5f6f80;
     }
     .item {
-        cursor: pointer;
-        padding: 5px;
-        border-bottom: gray solid 1px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 6px;
+        border-bottom: #d8dee6 solid 1px;
     }
     .item:hover {
-        background: gray;
-        color: white;
+        background: #f4f7fa;
+        color: #203040;
     }
     .contenedor {
         position: absolute;
-        width: 36vw;
-        /* height: 72vh; */
-        left: 25vw;
-        background: #a9a9a9;
-        border-radius: 5px;
-        border: 1px solid gray;
+        width: min(42rem, calc(100vw - 32px));
+        left: 50%;
+        transform: translateX(-50%);
+        background: #f1f4f8;
+        border-radius: 18px;
+        border: 1px solid #cad3de;
         top: 49px;
         z-index: 2;
-        padding: 15px;
+        padding: 18px;
+        box-shadow: 0 18px 38px rgba(29, 42, 55, 0.22);
     }
     .lista {
-        -webkit-user-select: none; /* Safari */
-        -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* IE10+/Edge */
-        user-select: none; /* Standard */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
         background: white;
         height: 18rem;
         overflow-y: auto;
-        padding: 10px;
-        border-radius: 4px;
-        box-shadow: 0 0 10px grey inset;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid #d9e0e8;
+        box-shadow: inset 0 0 0 1px #f6f8fb;
     }
     .botones {
         display: flex;
-        justify-content: space-around;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+    .modo-secuencial-wrap {
+        margin: 2px 0 14px;
+    }
+    .switch-linea {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .switch-secuencial {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: none;
+        border-radius: 999px;
+        padding: 8px 14px;
+        background: #dfe8f2;
+        color: #2b2b2b;
+        font-weight: 700;
+    }
+    .switch-secuencial.activo {
+        background: #d7ebff;
+        color: #0e4f94;
+    }
+    .tipo-base-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #edf4fb;
+        border: 1px solid #cfe0f2;
+        color: #35516d;
+        font-size: 0.92rem;
+    }
+    .ayuda-secuencial {
+        margin-top: 8px;
+        font-size: 0.9rem;
+        color: #465564;
+        line-height: 1.35;
     }
     .BtnFolio {
-        border-radius: 0.5rem;
-        padding: 0.4rem 5rem;
+        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #ccd5df;
+        background: white;
+        color: #344454;
+        font-weight: 700;
+    }
+    .BtnFolio.activo {
+        background: #dfeeff;
+        border-color: #7aaef5;
+        color: #0f56a6;
     }
     .InputFolios {
-        border-radius: 0.5rem;
-        padding: 0.4rem 1rem;
+        width: 100%;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        background: white;
     }
     .BoxProd {
         display: flex;
-        justify-content: space-evenly;
+        gap: 10px;
     }
     .ProdIndividual {
         display: flex;
         justify-content: center;
     }
+    .captura-panel {
+        margin-bottom: 14px;
+    }
+    .input-cantidad {
+        max-width: 120px;
+    }
+    .item-contenido {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+    .folio-txt {
+        word-break: break-all;
+        color: #1f3042;
+    }
     .removerFolio {
         background: red;
         color: white;
         border: none;
-        border-radius: 5px;
+        border-radius: 8px;
         padding: 5px;
         cursor: pointer;
+    }
+    @media (max-width: 700px) {
+        .encabezado-modal,
+        .BoxProd,
+        .botones,
+        .acciones-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .resumen-grid {
+            grid-template-columns: 1fr;
+        }
+        .contenedor {
+            top: 16px;
+            max-height: calc(100vh - 32px);
+            overflow-y: auto;
+        }
+        .input-cantidad {
+            max-width: none;
+        }
     }
 </style>

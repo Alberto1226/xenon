@@ -28,11 +28,12 @@ var schema = new Schema({
         actual: { type: Number, default: 0 },
         minimo: { type: Number, default: 0 },
         maximo: { type: Number, default: 0 },
-        folios: []
+        folios: [],
+        masterBox: { type: Number, default: 0 }//se agrega este campo para poder hacer ventas de cajas de los productos
     },
     promo: {
         tiene_promo: { type: Boolean, default: false },
-        precio: { type: Number, default: 0 },//    precio del prodcuto con promocion
+        precio: { type: Number, default: 0 },//    precio del prodcuto con promocion,
         tipo_condicion: { type: Number, default: 0 },//    1: Sin condicion, 2: minimo de el mismo producto, 3: Minimo de combo
         id_promocion: { type: String, default: "" },//    id de la promocion, nunca se debe de borrar las promos solo virtualmente
     },
@@ -47,6 +48,7 @@ var schema = new Schema({
     nombre: { type: String, default: 0 },
     para_venta_publico: { type: Boolean, default: true },
     precio: { type: Number, default: 0 },
+    precio_compra: { type: Number, default: 0 },//    precio de compra del producto 
     recomendar_como_paqueteria: { type: Boolean, default: false },
     unidad: { type: String, default: '' },
     uid_previo: { type: String, default: '' },

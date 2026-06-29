@@ -13,7 +13,7 @@
     buscadores,
     paginas_actuales,
   } from "./../../../stores";
-import {get_productos} from "./../../productos/storez"
+  import { get_productos } from "./../../productos/storez";
 
   import Row_productos from "./Row_producto.svelte";
   import Row_productos_pedido from "./Row_producto_pedido.svelte";
@@ -43,8 +43,7 @@ import {get_productos} from "./../../productos/storez"
   let coincidencias = 0;
 
   onMount(() => {
-
-    return goto("app/pedidos")
+    return goto("app/pedidos");
     buscar = $buscadores.productos;
     pedido_nuevo.descuento = cliente.perfil.porcentaje;
     descuento_a_usar = pedido_nuevo.descuento;
@@ -55,7 +54,7 @@ import {get_productos} from "./../../productos/storez"
       lista = $productos.lista;
       return;
     }
-     obtener_productos_por_pagina();
+    obtener_productos_por_pagina();
     //obtener_lista_productos();
   });
 
@@ -106,7 +105,7 @@ import {get_productos} from "./../../productos/storez"
     }
     total_dinero = $lista_productos_en_pedido_nuevo.reduce(
       (a, b) => +a + +b.producto.precio * +b.cantidad,
-      0
+      0,
     );
     return total_dinero;
   }
@@ -114,7 +113,7 @@ import {get_productos} from "./../../productos/storez"
   function mostrar_cargando() {
     $cargando_mensajes_app.push({
       tipo: "info",
-      mensaje: `El pedido está siendo procesado, <br> <span class="indice_row">El proceso puede tardar de 5 segundos a 1 minuto.</span>`
+      mensaje: `El pedido está siendo procesado, <br> <span class="indice_row">El proceso puede tardar de 5 segundos a 1 minuto.</span>`,
     });
     $cargando_mensajes_app = $cargando_mensajes_app;
   }
@@ -124,9 +123,7 @@ import {get_productos} from "./../../productos/storez"
     $cargando_mensajes_app = $cargando_mensajes_app;
   }
 
-
-  
-/*
+  /*
   function guardar_en_DB() {
     ////console.log(pedido_nuevo);
     ////console.log(cliente);
@@ -189,7 +186,7 @@ import {get_productos} from "./../../productos/storez"
     let respuesta = await get_productos(
       $buscadores.productos,
       $productos.pagina_actual,
-      true
+      true,
     );
     http_ocupado = false;
     if (respuesta.ok === false) {
@@ -199,8 +196,9 @@ import {get_productos} from "./../../productos/storez"
     $productos.lista_actualizada = new Date();
     $productos.lista = respuesta.lista;
     //lista = respuesta.lista;
-    $productos.paginas = respuesta.paginas;    
-    if($buscadores.productos==="")$productos.total_registros = respuesta.numero_total;
+    $productos.paginas = respuesta.paginas;
+    if ($buscadores.productos === "")
+      $productos.total_registros = respuesta.numero_total;
     $productos.coincidencias = respuesta.coincidencias;
   };
 
@@ -209,20 +207,267 @@ import {get_productos} from "./../../productos/storez"
   function handle_buscar(evt) {
     if (http_ocupado === true) return;
 
-    if (evt.key === "Backspace" && buscar==="") {
+    if (evt.key === "Backspace" && buscar === "") {
       $buscadores.productos = buscar;
-      $productos.pagina_actual= 1;
+      $productos.pagina_actual = 1;
       obtener_productos_por_pagina();
       return;
     }
     if (evt.key === "Enter") {
       $buscadores.productos = buscar;
-      $productos.pagina_actual= 1;
+      $productos.pagina_actual = 1;
       obtener_productos_por_pagina();
       return;
     }
   }
 </script>
+
+<div class="grid-container">
+  <!-- BUSCAR PRODUCTOS-->
+  <div
+    class="titulo_1 titulo_formulario subtitulo_"
+    style="border-right: 1px solid white;"
+  >
+    Buscar productos
+  </div>
+  <div class="titulo_2 titulo_formulario subtitulo_">
+    <table style="width:100%;margin: -10px 0 0 0;">
+      <tr>
+        <td>Lista de pedido nuevo</td>
+        <td style="text-align:right">
+          <Button
+            on:click={() => {
+              $lista_productos_en_pedido_nuevo = [];
+            }}
+            icon
+            title="Borrar todos los productos en la lista !"
+            color="#4040a9"
+            raised
+            dense
+          >
+            <i class="material-icons">delete</i>
+          </Button>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="listas">
+    <!-- BUSCADOR-->
+    <table style="margin: -21px 0px 0 55px;">
+      <tr>
+        <td>
+          <Textfield
+            id="input_buscar"
+            on:keyup={handle_buscar}
+            bind:value={buscar}
+            placeholder="Buscar con nombre de producto"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </td>
+        <td>
+          <Button
+            on:click={() => {
+              // pagina_actual = 1;
+              $productos.pagina_actual = 1;
+              obtener_productos_por_pagina();
+            }}
+            icon
+          >
+            <i class="material-icons">search</i>
+          </Button>
+        </td>
+        <td class="pointer">
+          <Button
+            on:click={() => {
+              buscar = "";
+              $buscadores.productos = "";
+              lista = $productos.lista;
+              $productos.pagina_actual = 1;
+              obtener_productos_por_pagina();
+              selecionar_input_buscar();
+            }}
+            icon
+          >
+            <i class="material-icons">cancel</i>
+          </Button>
+        </td>
+      </tr>
+    </table>
+    <!-- paginacion -->
+    <table style="margin: -23px 0 0 39px;">
+      <tr>
+        <td>
+          <Button
+            dense
+            icon
+            on:click={() => {
+              if ($productos.pagina_actual == 1) return;
+              $productos.pagina_actual--;
+              obtener_productos_por_pagina();
+            }}
+          >
+            <i class="material-icons">arrow_left</i>
+          </Button>
+        </td>
+        <td>
+          pag: {$productos.pagina_actual}
+          <span title="total de páginas">de {$productos.paginas}</span>
+        </td>
+
+        <td>
+          <Button
+            dense
+            disabled={$productos.pagina_actual == $productos.paginas}
+            icon
+            on:click={() => {
+              if ($productos.pagina_actual == $productos.paginas) return;
+              $productos.pagina_actual++;
+              obtener_productos_por_pagina();
+            }}
+          >
+            <i class="material-icons">arrow_right</i>
+          </Button>
+        </td>
+        <td>
+          {#if buscar != ""}
+            <!-- content here -->
+            <span class="indice_row">coinciden {$productos.coincidencias}</span>
+          {:else}
+            <span class="indice_row">total {$productos.total_registros}</span>
+          {/if}
+        </td>
+      </tr>
+    </table>
+    {#if http_ocupado}
+      <!-- content here -->
+      <div class="centrado">cargando...</div>
+    {:else}
+      <!-- else content here -->
+      <div class="contenedor_lista_busqueda">
+        {#each $productos.lista as producto, i (producto._id)}
+          <!-- content here -->
+
+          <!-- content here -->
+          <Row_productos
+            bind:descuento_a_usar
+            {producto}
+            indice={10 * $productos.pagina_actual + i + 1 - 10}
+          />
+        {:else}
+          <!-- empty list -->
+          {#if buscar != ""}
+            <!-- content here -->
+            No existen registros que coincidan con la busqueda "
+            <b>{buscar}</b>
+            "
+          {:else if $productos.total_registros === 0}
+            No existen productos registrados en Base de datos.
+          {/if}
+        {/each}
+      </div>
+    {/if}
+  </div>
+  <div class="lista_de_pedido">
+    {#each $lista_productos_en_pedido_nuevo as item, i (item.producto._id)}
+      <!-- content here -->
+      <Row_productos_pedido
+        id={item.producto.codigo}
+        on:actualizar_totales={sumar_cantidades}
+        bind:descuento_a_usar
+        bind:item_pedido={item}
+        indice={i}
+      />
+    {:else}
+      <!-- empty list -->
+      <div class="lista_vacia">[ Lista vacía ]</div>
+    {/each}
+  </div>
+  <div class="barra_2">
+    <!--  BARRA DE ABAJO-->
+    {#if procesando_pedido}
+      <!-- Procesando -->
+      <div class="centrado">
+        {mensaje_boton_terminar}
+        <br />
+        <div id="wave1_subir_pedido" />
+      </div>
+    {:else}
+      <!-- Sin acciones , total y boton mandar -->
+      <table>
+        <tr>
+          {#if ficha_de_descuento == null}
+            <!-- SIN FICHA DE DESCUENTO -->
+
+            <td>Total con descuento</td>
+            <td class="total_final">
+              $ {formato_precio(total)}
+              <span class="indice_row">
+                ,descuento {formato_precio(pedido_nuevo.descuento)} %
+              </span>
+            </td>
+          {:else}
+            <!-- CON FICHA -->
+            <td title={total_pedido}>Total con descuento en Ficha</td>
+            <td class="total_final existe_ficha">
+              <i
+                title="Tiene ficha de descuento"
+                class="material-icons vertical-alineado"
+              >
+                loyalty
+              </i>
+              $ {formato_precio(total)}
+              <span class="indice_row">
+                ,descuento en ficha {descuento_a_usar} %
+              </span>
+            </td>
+          {/if}
+
+          <td>
+            <Button
+              raised={$lista_productos_en_pedido_nuevo.length != 0}
+              color={$lista_productos_en_pedido_nuevo.length != 0
+                ? "#40f"
+                : "gray"}
+              disabled={guardando ||
+                confirmaciones >= 3 ||
+                $lista_productos_en_pedido_nuevo.length == 0}
+              on:click={terminar}
+            >
+              <i class="material-icons">check</i>
+              {mensaje_boton_terminar}
+            </Button>
+          </td>
+        </tr>
+      </table>
+    {/if}
+  </div>
+  <div class="barra_1">
+    <div style="padding-top: 10px;">
+      <b>{pedido_nuevo.cliente_nombre}</b>
+    </div>
+    <div style="padding-top: 10px;">
+      <i
+        style="color: gray; font-size: 1em;"
+        class="material-icons vertical-alineado"
+      >
+        email
+      </i>
+      {pedido_nuevo.cliente_correo}
+    </div>
+
+    <div class="indice_row">
+      <i
+        style="color: gray; font-size: 1em;"
+        class="material-icons vertical-alineado"
+      >
+        place
+      </i>
+      {pedido_nuevo.cliente_direccion}
+    </div>
+  </div>
+</div>
 
 <style>
   .grid-container {
@@ -303,234 +548,3 @@ import {get_productos} from "./../../productos/storez"
     color: gray;
   }
 </style>
-
-<div class="grid-container">
-<!-- BUSCAR PRODUCTOS-->
-  <div
-    class="titulo_1 titulo_formulario subtitulo_"
-    style="border-right: 1px solid white;">
-    Buscar productos
-  </div>
-  <div class="titulo_2 titulo_formulario subtitulo_">
-    <table style="width:100%;margin: -10px 0 0 0;">
-      <tr>
-        <td>Lista de pedido nuevo</td>
-        <td style="text-align:right">
-          <Button
-            on:click={() => {
-              $lista_productos_en_pedido_nuevo = [];
-            }}
-            icon
-            title="Borrar todos los productos en la lista !"
-            color="#4040a9"
-            raised
-            dense>
-            <i class="material-icons">delete</i>
-          </Button>
-        </td>
-      </tr>
-    </table>
-
-  </div>
-  <div class="listas">
-<!-- BUSCADOR-->
-    <table style="margin: -21px 0px 0 55px;">
-      <tr>
-        <td>
-          <Textfield
-            id="input_buscar"
-            on:keyup={handle_buscar}
-            bind:value={buscar}
-            placeholder="Buscar con nombre de producto" />
-        </td>
-        <td>
-          <Button  on:click={() => {
-             // pagina_actual = 1;
-              $productos.pagina_actual= 1;
-              obtener_productos_por_pagina();
-            }} icon>
-            <i class="material-icons">search</i>
-          </Button>
-        </td>
-        <td class="pointer">
-          <Button
-            on:click={() => {
-              buscar = '';
-              $buscadores.productos = '';
-              lista = $productos.lista;
-              $productos.pagina_actual= 1;
-              obtener_productos_por_pagina();
-              selecionar_input_buscar();
-            }}
-            icon>
-            <i class="material-icons ">cancel</i>
-          </Button>
-        </td>
-      </tr>
-    </table>
-    <!-- paginacion -->
-    <table style="margin: -23px 0 0 39px;">
-      <tr>
-        <td>
-          <Button
-            dense
-            icon
-            on:click={() => {
-              if ($productos.pagina_actual== 1) return;
-              $productos.pagina_actual--;
-              obtener_productos_por_pagina();
-            }}>
-            <i class="material-icons">arrow_left</i>
-          </Button>
-        </td>
-        <td>
-          pag: {$productos.pagina_actual}
-          <span title="total de páginas">de {$productos.paginas}</span>
-        </td>
-
-        <td>
-          <Button
-            dense
-            disabled={$productos.pagina_actual== $productos.paginas}
-            icon
-            on:click={() => {
-              if ($productos.pagina_actual== $productos.paginas) return;
-              $productos.pagina_actual++;
-              obtener_productos_por_pagina();
-            }}>
-            <i class="material-icons">arrow_right</i>
-          </Button>
-        </td>
-        <td>
-          {#if buscar != ''}
-            <!-- content here -->
-            <span class="indice_row">coinciden {$productos.coincidencias}</span>
-          {:else}
-            <span class="indice_row">total {$productos.total_registros}</span>
-          {/if}
-        </td>
-      </tr>
-    </table>
-    {#if http_ocupado}
-      <!-- content here -->
-      <div class="centrado">cargando...</div>
-    {:else}
-      <!-- else content here -->
-      <div class="contenedor_lista_busqueda">
-
-        {#each $productos.lista as producto, i (producto._id)}
-          <!-- content here -->
-          
-            <!-- content here -->
-            <Row_productos
-              bind:descuento_a_usar
-              {producto}
-              indice={10 * $productos.pagina_actual+ i + 1 - 10} />
-         
-        {:else}
-          <!-- empty list -->
-          {#if buscar != ''}
-            <!-- content here -->
-            No existen registros que coincidan con la busqueda "
-            <b>{buscar}</b>
-            "
-          {:else if $productos.total_registros === 0}
-            No existen productos registrados en Base de datos.
-          {/if}
-        {/each}
-      </div>
-    {/if}
-
-  </div>
-  <div class="lista_de_pedido">
-    {#each $lista_productos_en_pedido_nuevo as item, i (item.producto._id)}
-      <!-- content here -->
-      <Row_productos_pedido
-        id={item.producto.codigo}
-        on:actualizar_totales={sumar_cantidades}
-        bind:descuento_a_usar
-        bind:item_pedido={item}
-        indice={i} />
-    {:else}
-      <!-- empty list -->
-      <div class="lista_vacia">[ Lista vacía ]</div>
-    {/each}
-  </div>
-  <div class="barra_2">
-    <!--  BARRA DE ABAJO-->
-    {#if procesando_pedido}
-      <!-- Procesando -->
-      <div class="centrado">
-        {mensaje_boton_terminar}
-        <br />
-        <div id="wave1_subir_pedido" />
-
-      </div>
-    {:else}
-      <!-- Sin acciones , total y boton mandar -->
-      <table>
-        <tr>
-          {#if ficha_de_descuento == null}
-            <!-- SIN FICHA DE DESCUENTO -->
-
-            <td>Total con descuento</td>
-            <td class="total_final">
-              $ {formato_precio(total)}
-              <span class="indice_row">
-                ,descuento {formato_precio(pedido_nuevo.descuento)} %
-              </span>
-            </td>
-          {:else}
-            <!-- CON FICHA -->
-            <td title={total_pedido}>Total con descuento en Ficha</td>
-            <td class="total_final existe_ficha">
-              <i
-                title="Tiene ficha de descuento"
-                class="material-icons vertical-alineado">
-                loyalty
-              </i>
-              $ {formato_precio(total)}
-              <span class="indice_row">
-                ,descuento en ficha {descuento_a_usar} %
-              </span>
-            </td>
-          {/if}
-
-          <td>
-            <Button
-              raised={$lista_productos_en_pedido_nuevo.length != 0}
-              color={$lista_productos_en_pedido_nuevo.length != 0 ? '#40f' : 'gray'}
-              disabled={guardando || confirmaciones >= 3 || $lista_productos_en_pedido_nuevo.length == 0}
-              on:click={terminar}>
-              <i class="material-icons">check</i>
-              {mensaje_boton_terminar}
-            </Button>
-          </td>
-        </tr>
-      </table>
-    {/if}
-
-  </div>
-  <div class="barra_1">
-    <div style="padding-top: 10px;">
-      <b>{pedido_nuevo.cliente_nombre}</b>
-    </div>
-    <div style="padding-top: 10px;">
-      <i
-        style="color: gray; font-size: 1em;"
-        class="material-icons vertical-alineado">
-        email
-      </i>
-      {pedido_nuevo.cliente_correo}
-    </div>
-
-    <div class="indice_row">
-      <i
-        style="color: gray; font-size: 1em;"
-        class="material-icons vertical-alineado">
-        place
-      </i>
-      {pedido_nuevo.cliente_direccion}
-    </div>
-  </div>
-</div>

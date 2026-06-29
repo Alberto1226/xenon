@@ -22,7 +22,7 @@ export async function post(req, res, next) {
     us = req.body.us;
     d = req.body.donde;
     if (m) {
-        console.log(us);
+        // console.log(us);
         try {
 
             if (us.rol === "vendedor" && d === "layout") {
@@ -50,6 +50,7 @@ export async function post(req, res, next) {
                     });
                 }
             }
+
             if (us.rol === "vendedor" && d === "clientes") {
                 const resultadoClientes = await consultar_clientes(us._id);
                 const resultadoPedidos = await consultar_pedidos_por_agente(m, us._id);
@@ -234,7 +235,7 @@ function consultar_clientes(id) {
                         .sort({ nombre: 1 })
                         .exec()
                         .then(async (resDB) => {
-                            console.log(resDB)
+                            // console.log(resDB)
                             resolve({ ok: true, lista: resDB, numero_total });
                         })
                 })
@@ -266,7 +267,7 @@ function consultar_clientes_admin() {
                         .sort({ nombre: 1 })
                         .exec()
                         .then(async (resDB) => {
-                            console.log(resDB)
+                            // console.log(resDB)
                             resolve({ ok: true, lista: resDB, numero_total });
                         })
                 })
@@ -310,7 +311,7 @@ function consultar_productos() {
                         .sort({ codigo: -1 })
                         .exec()
                         .then(async (resDB) => {
-                            console.log(resDB)
+                            // console.log(resDB)
                             resolve({ ok: true, lista: resDB, numero_total, paginas: Math.floor((numero_total + 10 - 1) / (10)) });
                         })
                 })
@@ -356,7 +357,7 @@ function consultar_pedidos(m) {
                         .sort({ folio: -1 })
                         .exec()
                         .then(async (resDB) => {
-                            console.log(resDB)
+                            // console.log(resDB)
                             //let lista_filtrada= await filtrar_lista(buscando,resDB);
                             resolve({ ok: true, lista: resDB, /*query,*/ numero_total, paginas: Math.floor((numero_total + 10 - 1) / (10)) });
                         })
@@ -392,7 +393,7 @@ function consultar_pedidos_por_agente(m, id) {
                         .sort({ folio: -1 })
                         .exec()
                         .then(async (resDB) => {
-                            console.log(resDB)
+                            // console.log(resDB)
                             //let lista_filtrada= await filtrar_lista(buscando,resDB);
                             resolve({ ok: true, lista: resDB, numero_total, paginas: Math.floor((numero_total + 10 - 1) / (10)) });
                         })
@@ -455,7 +456,7 @@ function consultar_carritos(m) {
                         .sort({ folio: -1 })
                         .exec()
                         .then(async (resDB) => {
-                            console.log(resDB)
+                            // console.log(resDB)
                             //let lista_filtrada= await filtrar_lista(buscando,resDB);
                             resolve({ ok: true, lista: resDB, numero_total, paginas: Math.floor((numero_total + 10 - 1) / (10)) });
                         })
@@ -501,7 +502,7 @@ function consultar_carritos_por_agente(m, id) {
                         .sort({ folio: -1 })
                         .exec()
                         .then(async (resDB) => {
-                            console.log(resDB)
+                            // console.log(resDB)
                             //let lista_filtrada= await filtrar_lista(buscando,resDB);
                             resolve({ ok: true, lista: resDB, numero_total, paginas: Math.floor((numero_total + 10 - 1) / (10)) });
                         })
@@ -584,11 +585,11 @@ function obtenerIdsClientesAdmin(arr1, arr2) {
 function filtrarDatosClientes(idsClientes, datosClientes) {
     // Obtener solo los ids del arreglo de objetos idsAgentes
     const idsSolo = idsClientes.map(item => item.id);
-    console.log("IDs Solo:", idsSolo);
+    // console.log("IDs Solo:", idsSolo);
 
     // Filtrar los datos del segundo arreglo
     const datosFiltrados = datosClientes.filter(cliente => !idsSolo.includes(cliente.id));
-    console.log("Datos Filtrados:", datosFiltrados);
+    // console.log("Datos Filtrados:", datosFiltrados);
 
     return datosFiltrados;
 }

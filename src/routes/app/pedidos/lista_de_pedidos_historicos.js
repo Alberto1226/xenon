@@ -65,7 +65,7 @@ const arreglo_de_buscando_separado_por_comas = (buscando, usuario) => {
                 }
 
             }
-            if (usuario.rol === 'vendedor') {
+            if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
                 query = {
                     $and: [query, {
                         $or: [{ "usuario_que_registro.id": usuario._id }, { "agente.id": usuario._id }]
@@ -103,7 +103,7 @@ function consullta_con_texto(query, res, pagina_actual) {
                         .exec()
                         .then(async (resDB) => {
                             //let lista_filtrada= await filtrar_lista(buscando,resDB);
-                            console.log(resDB)
+                            // console.log(resDB)
                             //console.log(numero_total)
                             let paginas;
                             let coincidencias;
@@ -199,25 +199,35 @@ const mongoose = require('mongoose');
 function consulta(pagina_actual, usuario) {
     return new Promise((resolve, reject) => {
         let query;
-        if (usuario.rol === 'vendedor') {
-            query = JSON.stringify({
-                $or: [{ "usuario_que_registro.id": usuario._id }, { "agente.id": usuario._id }]
-            });
+        if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
+            query = {
+                $or: [
+                    { "usuario_que_registro.id": String(usuario._id) },
+                    { "agente.id": String(usuario._id) }
+                ]
+            };
         } else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
             query = {};
         }
-
         try {
-            Pedido.countDocuments(query)
+            // console.log('query', query);
+            mongoose.connection.collection('vistaPedidosDatos')
+                .countDocuments(query)
                 .then((numero_total) => {
+                    // console.log('total', numero_total);
                     mongoose.connection.collection('vistaPedidosDatos')
                         .find(query)
-                        .sort({ fecha: -1 })
+                        .sort({ folio: -1 })
                         .limit(10)
                         .skip(pagina_actual * 10)
                         .toArray()
                         .then((resDB) => {
-                            const ids = resDB.map(doc => doc._id);
+                            resDB.forEach(doc => {
+                                // console.log('doc', doc.agente.id);
+                                if (!doc.fecha_creado) {
+                                    doc.fecha_creado = doc.fecha;
+                                }
+                            });
                             resolve({
                                 ok: true,
                                 lista: resDB,

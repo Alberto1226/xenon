@@ -110,29 +110,7 @@
         rfOptions2 = [],
         listaAgente = [];
 
-    let mostrarConfirmModal = false;
-    let confirmModalResolve = null;
-    let nameToReplace = "";
-    let currentName = "";
 
-    function confirmarReemplazo(actual, nuevo) {
-        currentName = actual;
-        nameToReplace = nuevo;
-        mostrarConfirmModal = true;
-        return new Promise((resolve) => {
-            confirmModalResolve = resolve;
-        });
-    }
-
-    function handleConfirmModalAccept() {
-        mostrarConfirmModal = false;
-        if (confirmModalResolve) confirmModalResolve(true);
-    }
-
-    function handleConfirmModalCancel() {
-        mostrarConfirmModal = false;
-        if (confirmModalResolve) confirmModalResolve(false);
-    }
 
     var tp = ["FISICA", "MORAL"];
 
@@ -489,16 +467,7 @@
                         // Asignar datos fiscales
                         if (info.rfc) cliente.datos_fiscales.rfc = info.rfc;
                         if (info.tipoPersona) cliente.datos_fiscales.tipo_persona = info.tipoPersona;
-                        if (info.nombre) {
-                            let reemplazar = true;
-                            if ($donde === "editar") {
-                                reemplazar = await confirmarReemplazo(cliente.nombre, info.nombre);
-                            }
-                            if (reemplazar) {
-                                cliente.nombre = info.nombre;
-                                cliente.datos_fiscales.nombre = info.nombre;
-                            }
-                        }
+
 
                         // Asignar datos de dirección
                         if (info.cp) direccion.cp = info.cp;
@@ -1291,47 +1260,7 @@
     </form>
 </div>
 
-{#if mostrarConfirmModal}
-    <div class="modal-backdrop-custom" transition:fade={{ duration: 150 }} on:click={handleConfirmModalCancel}>
-        <div class="modal-card-custom" transition:scale={{ duration: 200, start: 0.95 }} on:click|stopPropagation>
-            <div class="modal-header-custom">
-                <div class="modal-icon-container">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-person-lines-fill" viewBox="0 0 16 16">
-                      <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z"/>
-                    </svg>
-                </div>
-                <h3>Actualizar Nombre y Alias</h3>
-            </div>
-            <div class="modal-body-custom">
-                <p>Se ha detectado un nombre diferente en la constancia SAT cargada. ¿Desea actualizar el nombre y el alias del cliente con los nuevos datos?</p>
-                <div class="names-container">
-                    <div class="name-box current-name">
-                        <span class="label">Nombre Registrado</span>
-                        <span class="value">{currentName}</span>
-                    </div>
-                    <div class="name-box new-name">
-                        <span class="label">Nombre en Constancia SAT</span>
-                        <span class="value">{nameToReplace}</span>
-                    </div>
-                </div>
-                <div class="modal-alert-box">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi me-2" viewBox="0 0 16 16">
-                      <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
-                    </svg>
-                    <span>Si selecciona <strong>"Mantener actual"</strong>, se conservará el nombre actual pero se completará el resto de la dirección.</span>
-                </div>
-            </div>
-            <div class="modal-footer-custom">
-                <button type="button" class="btn-custom btn-secondary-custom" on:click={handleConfirmModalCancel}>
-                    Mantener actual
-                </button>
-                <button type="button" class="btn-custom btn-primary-custom" on:click={handleConfirmModalAccept}>
-                    Reemplazar datos
-                </button>
-            </div>
-        </div>
-    </div>
-{/if}
+
 
 <style>
     .form-container {

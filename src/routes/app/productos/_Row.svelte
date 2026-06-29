@@ -481,7 +481,7 @@
     <!-- content here -->
     <div class="once">
       <ButtonGroup>
-        {#if $usuario_db.rol != "diseñador" && $usuario_db.rol != "ComercioExterior"}
+        {#if $usuario_db.rol != "diseñador" && $usuario_db.rol != "ComercioExterior" && $usuario_db.rol != "marketing"}
           {#if producto.activo}
             <!-- content here -->
             <Button
@@ -513,7 +513,7 @@
 
         {#if $usuario_db.rol != "vendedor"}
           {#if $usuario_db.rol != "diseñador"}
-            {#if $usuario_db.rol != "ComercioExterior"}
+            {#if $usuario_db.rol != "ComercioExterior" && $usuario_db.rol != "marketing"}
               <Button
                 icon
                 dense
@@ -565,7 +565,7 @@
       <br />
 
       <ButtonGroup>
-        {#if $usuario_db.rol != "vendedor" && $usuario_db.rol != "diseñador" && $usuario_db.rol != "ComercioExterior"}
+        {#if $usuario_db.rol != "vendedor" && $usuario_db.rol != "diseñador" && $usuario_db.rol != "ComercioExterior" && $usuario_db.rol != "marketing"}
           <Button
             icon
             dense

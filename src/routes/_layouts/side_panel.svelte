@@ -29,20 +29,20 @@
       url: "/app/inicio",
       titulo: "Inicio",
       icono: "home",
-      roles: ["administrador", "vendedor", "almacen", "gerente"],
+      roles: ["administrador", "vendedor", "almacen", "gerente", "marketing", "ComercioExterior"],
     },
 
     {
       url: "/app/pedidos",
       titulo: "Pedidos",
       icono: "shopping_cart",
-      roles: ["administrador", "almacen", "vendedor", "gerente"],
+      roles: ["administrador", "almacen", "vendedor", "gerente", "marketing", "ComercioExterior"],
     },
     {
       url: "/app/productos",
       titulo: "Productos",
       icono: "view_list",
-      roles: ["administrador", "vendedor", "almacen", "gerente", "diseñador", "ComercioExterior"],
+      roles: ["administrador", "vendedor", "almacen", "gerente", "diseñador", "ComercioExterior", "marketing"],
     },
     {
       url: "/app/Catalogos",
@@ -54,7 +54,7 @@
       url: "/app/clientes",
       titulo: "Clientes",
       icono: "people",
-      roles: ["administrador", "vendedor", "gerente"],
+      roles: ["administrador", "vendedor", "gerente", "marketing", "ComercioExterior"],
     },
 
     {

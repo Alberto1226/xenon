@@ -95,7 +95,7 @@ export function post(req, res, next) {
 
 function AcomodarCliente(cliente, direccion, usuario, accion) {
     let cliente_nuevo_tmp = cliente;
-    if (usuario.rol === 'vendedor') {
+    if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
         cliente_nuevo_tmp.agente = {
             id: usuario._id,
             nombre: usuario.nombre,

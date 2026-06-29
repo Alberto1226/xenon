@@ -65,7 +65,7 @@ const arreglo_de_buscando_separado_por_comas = (buscando, usuario) => {
                 }
 
             }
-            if (usuario.rol === 'vendedor') {
+            if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
                 query = {
                     $and: [query, {
                         $or: [{ "usuario_que_registro.id": usuario._id }, { "agente.id": usuario._id }]
@@ -131,7 +131,7 @@ function consulta(pagina_actual, usuario) {
     return new Promise((resolve, reject) => {
         let query={};
         //let objectId = mongoose.Types.ObjectId;
-        if (usuario.rol === 'vendedor') {
+        if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
             query = {
                  "agente.id":String(usuario._id )
             };

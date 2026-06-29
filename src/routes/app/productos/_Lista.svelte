@@ -381,7 +381,7 @@ $: if($storeWithDebounce  ){
   <table style="width:100%;">
     <tr>
       <td style="width:150px;">
-        {#if $usuario_db.rol != "vendedor"}
+        {#if $usuario_db.rol != "vendedor" && $usuario_db.rol != "ComercioExterior"}
           <!-- content here -->
           <Button
             disabled={http_ocupado_archivo}

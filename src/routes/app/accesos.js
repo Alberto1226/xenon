@@ -23,7 +23,7 @@ export function tiene_permisos_administrativos(req) {
 export function tiene_permisos_vendedor(req) {
     var usuario = req.user;
     if (usuario == undefined) return false;
-    return usuario.rol == "vendedor";
+    return usuario.rol == "vendedor" || usuario.rol == "marketing" || usuario.rol == "ComercioExterior";
 }
 
 

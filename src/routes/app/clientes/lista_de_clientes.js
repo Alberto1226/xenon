@@ -47,7 +47,7 @@ const arreglo_de_buscando_separado_por_comas = (buscando,usuario) => {
             if (buscando.includes('"')) {
                 buscando_pipes = buscando.replace('"', '')
             }
-            if (usuario.rol === 'vendedor') {   //  Vendedores solo deben de ver a sus clientes
+            if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {   //  Vendedores solo deben de ver a sus clientes
 
                 query = {
                     $and:
@@ -141,7 +141,7 @@ function consulta(pagina_actual, usuario) {
         try {
             let query = {};
 
-            if (usuario.rol === 'vendedor') {
+            if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
                 query = 
                     { "agente.id": usuario._id }
             }

@@ -56,6 +56,12 @@
       icono: "people",
       roles: ["administrador", "vendedor", "gerente", "marketing", "ComercioExterior"],
     },
+    {
+      url: "/app/clientes/analisis_comercial",
+      titulo: "Análisis Comercial",
+      icono: "analytics",
+      roles: ["administrador", "vendedor", "gerente", "marketing", "ComercioExterior"],
+    },
 
     {
       url: "/app/clientes_nuevos",

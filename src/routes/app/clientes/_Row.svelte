@@ -51,6 +51,11 @@
     goto("app/clientes/pedidos");
   }
 
+  function ir_a_analisis_comercial() {
+    $cliente_selecto = cliente;
+    goto("app/clientes/analisis_comercial");
+  }
+
   function crear_lista_telefonos() {
     ////console.log(cliente.direcciones_asociadas);
 
@@ -364,6 +369,15 @@
                 <i class="material-icons">history</i>
               </Button>
             {/if}
+            <Button
+              icon
+              dense
+              color="indigo"
+              title="Análisis Comercial"
+              on:click={ir_a_analisis_comercial}
+            >
+              <i class="material-icons">analytics</i>
+            </Button>
           </ButtonGroup>
         </td>
       </tr>

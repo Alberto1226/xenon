@@ -26,34 +26,13 @@
   import { lista_archivos_uploads } from "./_componentes/stores_admon";
   import { goto } from "@sapper/app";
 
-  onMount(() => {
-    setTimeout(() => {
-      nuevo_producto = $editar_store.producto;
-    }, 500);
-  });
-  // $: if ($lista_archivos_uploads.length > 0 && !nuevo_producto.urlApi) {
-  //   MandarImagenApiPuente($lista_archivos_uploads);
-  // }
-  $: if ($editar_store.producto) {
-    nuevo_producto = $editar_store.producto;
-  }
-  var subiendo = false;
-  var subido = false;
-  var ancho_side_panel = 250;
-
-  let props = {
-    color: "primary",
-    name: "svelte",
-    value: "para venta al publico",
-  };
-  var nuevo_producto = {
+  const plantilla_producto = {
     codigo: "",
     nombre: "",
     precio: 0,
-    precio_compra:0,
+    precio_compra: 0,
     descripcion: "",
     marca: "",
-
     unidad: "Pieza",
     caracteristicas_tecnicas: [],
     galeria_imagenes: [],
@@ -65,40 +44,75 @@
     master_box: 0,
   };
 
+  var nuevo_producto = JSON.parse(JSON.stringify(plantilla_producto));
+
+  onMount(() => {
+    setTimeout(() => {
+      if ($editar_store.producto) {
+        nuevo_producto = $editar_store.producto;
+      } else {
+        nuevo_producto = JSON.parse(JSON.stringify(plantilla_producto));
+      }
+    }, 500);
+  });
+
+  $: if ($editar_store.producto) {
+    nuevo_producto = $editar_store.producto;
+  } else {
+    nuevo_producto = nuevo_producto._id ? JSON.parse(JSON.stringify(plantilla_producto)) : nuevo_producto;
+  }
+
+  var subiendo = false;
+  var subido = false;
+  var ancho_side_panel = 250;
+
+  let props = {
+    color: "primary",
+    name: "svelte",
+    value: "para venta al publico",
+  };
+
   function mostrar_error(error) {
     $mensajes_app.push({ tipo: "error", mensaje: "Error " + error });
     $mensajes_app = $mensajes_app;
   }
 
-  function mostrar_exito(mensaje) {
-    $mensajes_app.push({ tipo: "exito", mensaje: "Ficha creada" });
+  function mostrar_exito(mensaje = "Ficha guardada") {
+    $mensajes_app.push({ tipo: "exito", mensaje: mensaje });
     $mensajes_app = $mensajes_app;
   }
+
   function subir() {
     if (checar_formulario_falta_algo() == true) {
-      //console.log('algo falta');
-
       return;
     }
     var data = JSON.parse(JSON.stringify(nuevo_producto));
-
     subiendo = true;
-
     data.archivos = $lista_archivos_uploads;
 
-    //console.log(data);
-    var url = "app/productos/editar/editar_producto";
+    // Determinar endpoint según la presencia de _id (Creación vs Edición)
+    const es_creacion = !nuevo_producto._id;
+    const url = es_creacion 
+      ? "app/productos/nuevo/crear_producto" 
+      : "app/productos/editar/editar_producto";
+
     postData(url, data)
       .then((res) => {
-        //console.log(res);
-        mostrar_exito();
-        //var producto_tmp =res.producto;
-        //producto_tmp.fh_creado = new Date(producto_tmp.fh_creado)
-        let nueva_lista = $productos.lista;
-        let producto_en_lista = nueva_lista.find(
-          (element) => element._id === nuevo_producto._id,
-        );
-        producto_en_lista = nuevo_producto;
+        if (es_creacion) {
+          mostrar_exito("Producto creado con éxito");
+          var producto_tmp = res.producto;
+          if (producto_tmp) {
+            producto_tmp.fh_creado = new Date(producto_tmp.fh_creado);
+            $productos.lista.push(producto_tmp);
+            $productos.lista.sort((a, b) => (a.nombre > b.nombre ? 1 : -1));
+          }
+        } else {
+          mostrar_exito("Producto guardado con éxito");
+          let index = $productos.lista.findIndex(p => p._id === nuevo_producto._id);
+          if (index !== -1) {
+            $productos.lista[index] = nuevo_producto;
+          }
+        }
         $productos = $productos;
 
         setTimeout(() => {
@@ -395,17 +409,20 @@
         <div class="subtitulo">Existencias</div>
         <div class="contenido_caja">
           {#if $usuario_db.rol === "administrador"}
-            <!-- content here -->
-
-            <!-- <Textfield
-            outlined
-            bind:value={nuevo_producto.existencia.actual}
-            placeholder="Existencias"
-            message="Existencias"
-            type="number" /> -->
             <table>
               <tr>
-                <td>
+                <td colspan="2">
+                  <Textfield
+                    outlined
+                    bind:value={nuevo_producto.existencia.actual}
+                    placeholder="Existencia Actual*"
+                    message="Existencia Actual*"
+                    type="number"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td style="width: 50%;">
                   <Textfield
                     outlined
                     bind:value={nuevo_producto.existencia.minimo}
@@ -414,7 +431,7 @@
                     type="number"
                   />
                 </td>
-                <td>
+                <td style="width: 50%;">
                   <Textfield
                     outlined
                     bind:value={nuevo_producto.existencia.maximo}
@@ -422,19 +439,6 @@
                     message="Máximo"
                     type="number"
                   />
-                </td>
-              </tr>
-              <tr>
-                <td style="display: flex; align-items: center;">
-                  <i class="material-icons" style="margin-right: 8px;">inventory_2</i>
-                  <Textfield
-                  outlined
-                  bind:value={nuevo_producto.existencia.masterBox}
-                  placeholder="Master Box"
-                  message="Master Box"
-                  type="number"
-                  />
-                    <span style="margin-left: 8px;">Cantidad por MasterBox</span>
                 </td>
               </tr>
             </table>
@@ -478,85 +482,96 @@
       </div>
     {/if}
 
-    <div class="area_footer1" />
-    <div class="area_footer2">
-      <Button on:click={cancelar}>
-        <i class="material-icons">arrow_back</i> Cancelar
-      </Button>
-      <Button color="primary" on:click={subir}>
-        <i class="material-icons">create</i> Editar
-      </Button>
-    </div>
-    <div class="area_footer3" />
+  </div>
+
+  <div class="footer-acciones">
+    <Button on:click={cancelar} outlined color="primary" style="margin-right: 12px;">
+      <i class="material-icons" style="margin-right: 6px;">close</i> Cancelar
+    </Button>
+    <Button color="primary" raised on:click={subir}>
+      <i class="material-icons" style="margin-right: 6px;">save</i> Guardar
+    </Button>
   </div>
 </div>
 
 <style>
+  .contenedor_ventana {
+    height: calc(100vh - 85px) !important;
+    max-height: calc(100vh - 85px) !important;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    scrollbar-width: thin;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
   .grid-container {
-    height: calc(100vh - 130px);
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-    grid-template-rows: 1.7fr 0.8fr px;
-    grid-template-areas: "area_info_general area_info_general area_carac_tecnicas area_carac_tecnicas area_precios area_precios" "existencias existencias masterbox masterbox imagenes imagenes" "area_footer1 area_footer1 area_footer2 area_footer2 area_footer3 area_footer3";
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    flex-grow: 1;
   }
 
-  .area_info_general {
-    grid-area: area_info_general;
-    overflow: hidden;
-  }
-
-  .area_carac_tecnicas {
-    grid-area: area_carac_tecnicas;
-    overflow: hidden;
-  }
-
-  .area_precios {
-    grid-area: area_precios;
-    overflow: hidden;
-  }
-
-  .existencias {
-    grid-area: existencias;
-    overflow: hidden;
-  }
-
-  .masterbox {
-    grid-area: masterbox;
-    overflow: hidden;
-  }
-
-  .imagenes {
-    grid-area: imagenes;
-    overflow: hidden;
-  }
-
-  .area_footer1 {
-    grid-area: area_footer1;
-  }
-
-  .area_footer2 {
-    grid-area: area_footer2;
-  }
-
-  .area_footer3 {
-    grid-area: area_footer3;
-  }
   .margen {
     margin: 5px;
   }
+
   .subtitulo {
-    background-color: black;
-    color: white;
+    background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+    color: #cbd5e1;
+    font-weight: 700;
+    font-size: 0.9em;
     text-align: center;
-    padding: 4px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
+
   .caja {
-    border: 1px gray solid;
-    border-radius: 8px;
-    /* overflow: auto !important; */
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    transition: border-color 0.3s ease;
   }
+
+  .caja:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
   .contenido_caja {
-    padding: 9px;
-    /* overflow: hidden; */
+    padding: 16px;
+  }
+
+  .footer-acciones {
+    position: sticky;
+    bottom: 0;
+    background: #0b1320;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: flex-end;
+    z-index: 100;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  .vertical-alineado {
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+
+  .indice_row {
+    font-size: 1.2em;
+    color: #94a3b8;
+    margin-right: 8px;
   }
 </style>

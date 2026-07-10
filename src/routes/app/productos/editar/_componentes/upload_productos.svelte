@@ -4,7 +4,7 @@
   import { lista_archivos_uploads } from "./stores_admon";
   export var lista = [];
   export var multiple = true;
-  export var galeria_imagenes_original=[];
+  export var galeria_imagenes_original = [];
   var archivos = [];
   var files = [];
   var dragging = false;
@@ -41,8 +41,8 @@
     var input = document.getElementById("imgfile");
     var i = 0;
     const element = files[i];
-   //console.log(input.files[i]);
-   //console.log(i);
+    //console.log(input.files[i]);
+    //console.log(i);
 
     var file = files[i];
     var fr = new FileReader();
@@ -54,17 +54,16 @@
       $lista_archivos_uploads.push({
         name: file.name,
         size: file.size,
-        base64: img.src
+        base64: img.src,
       });
       $lista_archivos_uploads = $lista_archivos_uploads;
-     //console.log($lista_archivos_uploads);
+      //console.log($lista_archivos_uploads);
     };
     fr.readAsDataURL(input.files[i]);
   }
 
   function drag(evt) {
-   //console.log(evt);
-
+    //console.log(evt);
   }
 
   function dragend(evt) {
@@ -79,13 +78,11 @@
     //console.log("se entro en modo drag");
     dragging = false;
     //console.log("asdas");
-    
   }
-   function drop(evt) {
+  function drop(evt) {
     //console.log("se entro en modo drag");
     dragging = false;
     //console.log("asdas");
-    
   }
   /*
   function loadImage() {
@@ -152,6 +149,74 @@
   }*/
 </script>
 
+{#if $lista_archivos_uploads.length > 0 || galeria_imagenes_original.length > 0}
+  <div class="centrado"></div>
+{:else}
+  <div class="upload-btn-wrapper" class:dragenter={dragging}>
+    <button class="btn">Seleccionar archivo</button>
+    <input
+      id="imgfile"
+      type="file"
+      name="myfile"
+      class="custom-file-input pointer"
+      accept="image/png,image/gif,image/jpeg"
+      on:change={handleChange2}
+      on:drag={drag}
+      on:dragenter={drag_enter}
+      on:mouseout={drag_leave}
+      on:drop={drop}
+      ondragend="dragend()"
+    />
+  </div>
+  <p>Selecciona las fotografias para el producto</p>
+{/if}
+
+<!--  
+  galeria_imagenes_original 
+-->
+{#if galeria_imagenes_original.length}
+  <!-- El producto cuenta con imagen -->
+
+  <table>
+    <tbody>
+      <tr>
+        {#each galeria_imagenes_original as url, i}
+          <!-- <tr>
+        <td>{i})</td>
+        <td>{file.name}</td>
+        <td>{file.size}</td>
+        <td>{file.type}</td>
+        <td>
+          <img src={file.base64} alt="previsualizacion" class="miniatura" />
+        </td>
+      </tr> -->
+          <Archivo_en_servidor bind:url_archivo={url} />
+        {/each}
+      </tr>
+    </tbody>
+  </table>
+{:else}
+  <!-- El producto NO cuenta con imagen -->
+  <table>
+    <tbody>
+      <tr>
+        {#each $lista_archivos_uploads as file, i}
+          <!-- <tr>
+        <td>{i})</td>
+        <td>{file.name}</td>
+        <td>{file.size}</td>
+        <td>{file.type}</td>
+        <td>
+          <img src={file.base64} alt="previsualizacion" class="miniatura" />
+        </td>
+      </tr> -->
+          <Archivo bind:archivo={file} />
+        {/each}
+      </tr>
+    </tbody>
+  </table>
+{/if}
+
 <style>
   .custom-file-input::-webkit-file-upload-button {
     visibility: hidden;
@@ -204,8 +269,8 @@
   }
   .dragenter {
     border-radius: 5px;
-    padding:5px;
-    
+    padding: 5px;
+
     border-style: dashed;
     border-color: blueviolet;
     text-align: center;
@@ -225,74 +290,3 @@ margin-left: 1px;
 font-weight: 300;
 }*/
 </style>
-{#if $lista_archivos_uploads.length>0 || galeria_imagenes_original.length>0}
-   <div class="centrado">
-    
-   </div>
-{:else}
-   <div class="upload-btn-wrapper " class:dragenter={dragging} >
-  <button class="btn">Seleccionar archivo</button>
-  <input
-    id="imgfile"
-    type="file"
-    name="myfile"
-    class="custom-file-input pointer"
-    accept="image/png,image/gif,image/jpeg"
-    on:change={handleChange2}
-    on:drag={drag}
-    on:dragenter={drag_enter}
-    on:mouseout={drag_leave}
-    on:drop={drop}
-    ondragend="dragend()" />
-</div>
-<p>Selecciona las fotosgrafias para el producto</p>
-{/if}
-
-
-<!--  
-  galeria_imagenes_original 
--->
-{#if galeria_imagenes_original.length}
-   <!-- El producto cuenta con imagen -->
-
-<table>
-
-  <tbody>
-    <tr>
-      {#each galeria_imagenes_original as url, i}
-        <!-- <tr>
-        <td>{i})</td>
-        <td>{file.name}</td>
-        <td>{file.size}</td>
-        <td>{file.type}</td>
-        <td>
-          <img src={file.base64} alt="previsualizacion" class="miniatura" />
-        </td>
-      </tr> -->
-        <Archivo_en_servidor bind:url_archivo={url} />
-      {/each}
-    </tr>
-  </tbody>
-</table>
-
-{:else}
-   <!-- El producto NO cuenta con imagen -->
-<table>
-  <tbody>
-    <tr>
-      {#each $lista_archivos_uploads as file, i}
-        <!-- <tr>
-        <td>{i})</td>
-        <td>{file.name}</td>
-        <td>{file.size}</td>
-        <td>{file.type}</td>
-        <td>
-          <img src={file.base64} alt="previsualizacion" class="miniatura" />
-        </td>
-      </tr> -->
-        <Archivo bind:archivo={file} />
-      {/each}
-    </tr>
-  </tbody>
-</table>
-{/if}

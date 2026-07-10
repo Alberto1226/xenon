@@ -6,6 +6,7 @@
     buscadores,
     usuario_db,
     paginas_actuales,
+    editar_store,
   } from "./../../stores";
   import { storeWithDebounce, accion_buscar } from "./storez.js";
   //****import Nuevo from "./nuevo/nuevo.svelte";
@@ -31,6 +32,12 @@
 
   var estado_actual = "viendo lista"; // "creando producto"  "editando producto"
 
+  function nuevo_producto_action() {
+    $editar_store.producto = null;
+    estado_actual = "creando producto";
+    goto("app/productos/editar");
+  }
+
   function producto_seleccioando() {
     estado_actual = "viendo_carritos_reservados";
   }
@@ -43,8 +50,7 @@
       // console.log("usuario_db.rol", $usuario_db.rol);
       if (evt.key == "+") {
         evt.preventDefault();
-        estado_actual = "creando producto";
-        goto("app/productos/nuevo");
+        nuevo_producto_action();
         return;
       }
     }
@@ -116,10 +122,7 @@
               {#if $usuario_db.rol != "diseñador" && $usuario_db.rol != "vendedor" && $usuario_db.rol != "gerente" && $usuario_db.rol != "almacen" && $usuario_db.rol != "ComercioExterior"}
                 Nuevo
                 <Button
-                  on:click={() => {
-                    estado_actual = "creando producto";
-                    goto("app/productos/nuevo");
-                  }}
+                  on:click={nuevo_producto_action}
                   icon
                   raised
                   outlined

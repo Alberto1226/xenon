@@ -28,7 +28,7 @@ export async function post(req, res, next) {
     }
     const producto_const = JSON.parse(JSON.stringify(producto_const_proceso.producto))
     //      evitar sobreescribir existencia actual
-    producto.existencia.actual = producto_const.existencia.actual;
+    // producto.existencia.actual = producto_const.existencia.actual;
 
     //se quita el arreglo de archivos para que no se guarde en los logs el archivo en base 64 y sature el registro
     let productoSinB64 = { ...producto, archivos: undefined };

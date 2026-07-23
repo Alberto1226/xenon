@@ -686,71 +686,98 @@
     }
 
     function asignarDatosClienteSelecto() {
-        let clientSelect = $editar_store.cliente;
-        let direccionCliSelect = clientSelect.direcciones_asociadas[0];
-        direccion.calle = direccionCliSelect.calle;
-        direccion.colonia = direccionCliSelect.colonia;
-        direccion.cp = direccionCliSelect.cp;
-        direccion.entre_calle = direccionCliSelect.entre_calle;
-        direccion.estado = direccionCliSelect.estado;
-        direccion.idEstado = direccionCliSelect.idEstado;
-        direccion.localidad = direccionCliSelect.localidad;
-        direccion.localidad_nombre = direccionCliSelect.localidad_nombre;
-        direccion.municipio = direccionCliSelect.municipio;
-        direccion.idMunicipio = direccionCliSelect.idMunicipio;
-        direccion.nombre = direccionCliSelect.nombre;
-        direccion.notas = direccionCliSelect.notas;
-        direccion.numero_exterior = direccionCliSelect.numero_exterior;
-        direccion.numero_interior = direccionCliSelect.numero_interior;
-        direccion.pais = direccionCliSelect.pais;
-        direccion.idPais = direccionCliSelect.idPais;
-        direccion.y_calle = direccionCliSelect.y_calle;
-        direccion.tipo = direccionCliSelect.tipo;
-        direccion.rfc = direccionCliSelect.rfc;
-        direccion.cfdi = direccionCliSelect.cfdi;
-        direccion.rfiscal = direccionCliSelect.rfiscal;
-        direccion.tipo_persona = direccionCliSelect.tipo_persona;
-        direccion.telefono = direccionCliSelect.telefono;
-        direccion.correo = direccionCliSelect.correo;
-        direccion.predeterminada = direccionCliSelect.predeterminada;
+        let clientSelect = $editar_store.cliente || {};
+        let direcciones = clientSelect.direcciones_asociadas || [];
+        let direccionCliSelect = direcciones[0] || {};
 
-        cliente.nombre = clientSelect.nombre;
-        cliente.alias = clientSelect.alias;
-        cliente.correo = clientSelect.correo;
-        cliente.direcciones_asociadas = clientSelect.direcciones_asociadas;
-        cliente.fecha_nacimiento = new Date(clientSelect.fecha_nacimiento)
-            .toISOString()
-            .split("T")[0];
-        cliente.fecha_creacion = new Date(clientSelect.fecha_creacion);
-        cliente.fecha_update = new Date(clientSelect.fecha_update);
-        cliente.fecha_desactivacion = new Date(
-            clientSelect.fecha_desactivacion,
-        );
-        cliente.datos_fiscales.razon_social =
-            clientSelect.datos_fiscales.razon_social;
-        cliente.datos_fiscales.rfc = clientSelect.datos_fiscales.rfc;
-        cliente.datos_fiscales.nombre = clientSelect.datos_fiscales.nombre;
-        cliente.datos_fiscales.rfiscal = clientSelect.datos_fiscales.rfiscal;
-        cliente.datos_fiscales.tipo_persona =
-            clientSelect.datos_fiscales.tipo_persona;
-        cliente.datos_fiscales.cfdi = clientSelect.datos_fiscales.cfdi;
-        cliente.localidad = clientSelect.localidad;
-        cliente.localidad_nombre = clientSelect.localidad_nombre;
-        cliente.location.lat = clientSelect.location.lat;
-        cliente.location.lng = clientSelect.location.lng;
-        cliente.perfil.perfil = clientSelect.perfil.perfil || "Mayoreo";
-        cliente.perfil.porcentaje = clientSelect.perfil.porcentaje !== undefined ? clientSelect.perfil.porcentaje : 0;
-        cliente.perfil.mostrar = clientSelect.perfil.mostrar || `${cliente.perfil.porcentaje}%`;
-        cliente.plataforma = clientSelect.plataforma;
-        cliente.push_token = clientSelect.push_token;
-        cliente.region = clientSelect.region;
-        cliente.telefono = clientSelect.telefono;
-        cliente.uid = clientSelect.uid;
-        cliente.password = clientSelect.password;
-        cliente.observaciones = clientSelect.observaciones;
-        cliente.agente.id = clientSelect.agente.id;
-        // cliente.agente.nombre = clientSelect.agente.nombre;
-        // cliente.agente.correo = clientSelect.agente.correo;
+        direccion.calle = direccionCliSelect.calle || "";
+        direccion.colonia = direccionCliSelect.colonia || "";
+        direccion.cp = direccionCliSelect.cp || "";
+        direccion.entre_calle = direccionCliSelect.entre_calle || "";
+        direccion.estado = direccionCliSelect.estado || "";
+        direccion.idEstado = direccionCliSelect.idEstado || "";
+        direccion.localidad = direccionCliSelect.localidad || "";
+        direccion.localidad_nombre = direccionCliSelect.localidad_nombre || "";
+        direccion.municipio = direccionCliSelect.municipio || "";
+        direccion.idMunicipio = direccionCliSelect.idMunicipio || "";
+        direccion.nombre = direccionCliSelect.nombre || "";
+        direccion.notas = direccionCliSelect.notas || "";
+        direccion.numero_exterior = direccionCliSelect.numero_exterior || "";
+        direccion.numero_interior = direccionCliSelect.numero_interior || "";
+        direccion.pais = direccionCliSelect.pais || "México";
+        direccion.idPais = direccionCliSelect.idPais || "";
+        direccion.y_calle = direccionCliSelect.y_calle || "";
+        direccion.tipo = direccionCliSelect.tipo || "";
+        direccion.rfc = direccionCliSelect.rfc || "";
+        direccion.cfdi = direccionCliSelect.cfdi || "";
+        direccion.rfiscal = direccionCliSelect.rfiscal || "";
+        direccion.tipo_persona = direccionCliSelect.tipo_persona || "";
+        direccion.telefono = direccionCliSelect.telefono || "";
+        direccion.correo = direccionCliSelect.correo || "";
+        direccion.predeterminada = direccionCliSelect.predeterminada || false;
+
+        cliente.nombre = clientSelect.nombre || "";
+        cliente.alias = clientSelect.alias || "";
+        cliente.correo = clientSelect.correo || "";
+        cliente.direcciones_asociadas = direcciones;
+
+        if (clientSelect.fecha_nacimiento) {
+            try {
+                cliente.fecha_nacimiento = new Date(clientSelect.fecha_nacimiento)
+                    .toISOString()
+                    .split("T")[0];
+            } catch (e) {
+                cliente.fecha_nacimiento = "";
+            }
+        } else {
+            cliente.fecha_nacimiento = "";
+        }
+
+        cliente.fecha_creacion = clientSelect.fecha_creacion ? new Date(clientSelect.fecha_creacion) : new Date();
+        cliente.fecha_update = clientSelect.fecha_update ? new Date(clientSelect.fecha_update) : new Date();
+        
+        if (clientSelect.fecha_desactivacion) {
+            try {
+                cliente.fecha_desactivacion = new Date(clientSelect.fecha_desactivacion);
+            } catch (e) {
+                cliente.fecha_desactivacion = new Date();
+            }
+        } else {
+            cliente.fecha_desactivacion = new Date();
+        }
+
+        let df = clientSelect.datos_fiscales || {};
+        cliente.datos_fiscales.razon_social = df.razon_social || "";
+        cliente.datos_fiscales.rfc = df.rfc || "";
+        cliente.datos_fiscales.nombre = df.nombre || "";
+        cliente.datos_fiscales.rfiscal = df.rfiscal || "";
+        cliente.datos_fiscales.tipo_persona = df.tipo_persona || "";
+        cliente.datos_fiscales.cfdi = df.cfdi || "";
+
+        cliente.localidad = clientSelect.localidad || "";
+        cliente.localidad_nombre = clientSelect.localidad_nombre || "";
+
+        let loc = clientSelect.location || {};
+        cliente.location.lat = loc.lat || 0;
+        cliente.location.lng = loc.lng || 0;
+
+        let perf = clientSelect.perfil || {};
+        cliente.perfil.perfil = perf.perfil || "Mayoreo";
+        cliente.perfil.porcentaje = perf.porcentaje !== undefined ? perf.porcentaje : 0;
+        cliente.perfil.mostrar = perf.mostrar || `${cliente.perfil.porcentaje}%`;
+
+        cliente.plataforma = clientSelect.plataforma || "web";
+        cliente.push_token = clientSelect.push_token || "";
+        cliente.region = clientSelect.region || "";
+        cliente.telefono = clientSelect.telefono || direccionCliSelect.telefono || "";
+        cliente.uid = clientSelect.uid || "";
+        cliente.password = clientSelect.password || "";
+        cliente.observaciones = clientSelect.observaciones || "";
+
+        let ag = clientSelect.agente || {};
+        cliente.agente.id = ag.id || "";
+        cliente.agente.nombre = ag.nombre || "";
+        cliente.agente.correo = ag.correo || "";
     }
 
     async function EditarClienteSelecto() {
@@ -794,7 +821,7 @@
             cfdi: direccion.cfdi,
             rfiscal: direccion.rfiscal,
             tipo_persona: direccion.tipo_persona,
-            telefono: direccion.telefono,
+            telefono: cliente.telefono,
             correo: direccion.correo,
             predeterminada: direccion.predeterminada,
         };
@@ -859,7 +886,7 @@
         <div class="col-md-4">
             <div class="form-floating mb-3">
                 <input
-                    type="number"
+                    type="text"
                     class="form-control"
                     bind:value={cliente.telefono}
                     id="inputTelefono"

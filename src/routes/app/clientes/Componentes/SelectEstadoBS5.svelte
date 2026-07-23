@@ -21,6 +21,14 @@
     let lista = [];
     let listaSelect = [];
     var busqueda = "";
+    let valorSeleccionado = "";
+
+    $: if (listaSelect.length > 0 && estado) {
+        let encontrado = listaSelect.find(item => item.nombreEstado === estado || item._id === estado);
+        if (encontrado) {
+            valorSeleccionado = encontrado._id;
+        }
+    }
 
     const dispatch = createEventDispatcher();
 
@@ -28,8 +36,12 @@
         ObtenerEstados(false);
     });
 
-    $: if (IdPais) {
-        ObtenerEstados(true);
+    $: if (typeof window !== 'undefined') {
+        if (IdPais && IdPais !== "") {
+            ObtenerEstados(true);
+        } else if (Pais && Pais !== "") {
+            ObtenerEstados(false);
+        }
     }
 
     async function ObtenerEstados(control) {
@@ -79,14 +91,17 @@
             class="form-select"
             id="floatingSelectGrid"
             disabled={!Pais}
-            bind:value={estado}
-            on:change={() => {
+            bind:value={valorSeleccionado}
+            on:change={(event) => {
                 actualizar = true;
-                dispatch("estado_cambio", {
-                    id: event.target.value,
-                    nombre: event.target.options[event.target.selectedIndex]
-                        .text,
-                });
+                let itemSel = listaSelect.find(item => item._id === event.target.value);
+                if (itemSel) {
+                    estado = itemSel.nombreEstado;
+                    dispatch("estado_cambio", {
+                        id: itemSel._id,
+                        nombre: itemSel.nombreEstado,
+                    });
+                }
             }}
             aria-label="Floating label select example"
             required={required}

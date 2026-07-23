@@ -36,11 +36,12 @@ export async function post(req, res, next) {
 
         let estados = [];
 
-        if (req.body.control) {
+        if (req.body.control && req.body.IdPais && req.body.IdPais.match(/^[0-9a-fA-F]{24}$/)) {
             estados = await Pais.findOne({ _id: req.body.IdPais }, projection).exec();
-            // res.send({ ok: true, estados: estados ? estados.estados : [], mensaje: "Consulta de estados" });
-        } else {
+        } else if (req.body.pais) {
             estados = await Pais.findOne({ nombre: req.body.pais }, projection).exec();
+        } else {
+            estados = null;
         }
         res.send({ ok: true, estados: estados ? estados.estados : [], mensaje: "Consulta de estados" });
     }
@@ -54,8 +55,7 @@ export async function post(req, res, next) {
 
         let municipios = [];
 
-        if (req.body.control) {
-            // console.log(req.body.IdPais);
+        if (req.body.control && req.body.IdPais && req.body.IdPais.match(/^[0-9a-fA-F]{24}$/) && req.body.IdEstado && req.body.IdEstado.match(/^[0-9a-fA-F]{24}$/)) {
             let result = await Pais.findOne(
                 { _id: req.body.IdPais, estados: { $elemMatch: { _id: req.body.IdEstado } } },
                 projection
@@ -70,26 +70,24 @@ export async function post(req, res, next) {
                 "estados.municipios": 1 // Incluimos directamente el arreglo completo de municipios
             };
 
-            let result = await Pais.findOne(
-                {
-                    nombre: req.body.pais, // Filtramos por el nombre del país
-                    estados: { $elemMatch: { nombreEstado: req.body.estado } } // Filtramos por el nombre del estado
-                },
-                projection
-            ).exec();
+            let query = {};
+            if (req.body.pais) {
+                query.nombre = req.body.pais;
+            }
+            if (req.body.estado) {
+                query.estados = { $elemMatch: { nombreEstado: req.body.estado } };
+            }
 
-            // console.log(result, 'result');
-
-            // Obtenemos solo los municipios del estado específico
-            let municipios = [];
+            let result = null;
+            if (Object.keys(query).length > 0) {
+                result = await Pais.findOne(query, projection).exec();
+            }
 
             if (result && Array.isArray(result.estados)) {
                 // Buscamos el estado que coincide por nombre
                 let estado = result.estados.find(e => e.nombreEstado === req.body.estado);
                 municipios = estado ? estado.municipios : [];
             }
-            // Respuesta con el arreglo de municipios
-            // res.send({ ok: true, municipios, mensaje: "Consulta de municipios" });
         }
 
         // Respuesta con solo el arreglo de municipios

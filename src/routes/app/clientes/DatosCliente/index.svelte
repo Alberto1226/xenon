@@ -32,6 +32,47 @@
         return `${firstWord} ${abbreviated}`;
     }
 
+    // El tipo de teléfono no existe en la DB, se codifica como prefijo dentro del mismo campo "telefono"
+    const TIPOS_TELEFONO = ["Celular", "Fijo"];
+
+    function solo_digitos(valor) {
+        return (valor || "").replace(/\D/g, "").slice(0, 10);
+    }
+
+    function separar_telefono(valor) {
+        const match = /^(Celular|Fijo):\s*(.*)$/i.exec(valor || "");
+        if (!match) return { tipo: "Celular", numero: solo_digitos(valor) };
+        const tipoEncontrado = TIPOS_TELEFONO.find(
+            (t) => t.toLowerCase() === match[1].toLowerCase(),
+        );
+        return { tipo: tipoEncontrado || "Celular", numero: solo_digitos(match[2]) };
+    }
+
+    function componer_telefono(tipo, numero) {
+        return numero ? `${tipo}: ${numero}` : "";
+    }
+
+    // Formato solo visual (simulado); lo que se guarda en telefono_numero siempre son puros dígitos
+    function formatear_telefono(numero, tipo) {
+        const digitos = solo_digitos(numero);
+        const p1 = digitos.slice(0, 3);
+        const p2 = digitos.slice(3, 6);
+        const p3 = digitos.slice(6, 10);
+
+        if (tipo === "Fijo") {
+            let resultado = p1 ? `(${p1}` : "";
+            if (p1.length === 3) resultado += ")";
+            if (p2) resultado += ` ${p2}`;
+            if (p3) resultado += `-${p3}`;
+            return resultado;
+        }
+
+        let resultado = p1;
+        if (p2) resultado += `-${p2}`;
+        if (p3) resultado += `-${p3}`;
+        return resultado;
+    }
+
     let IdClientSelect = "";
 
     let cliente = {
@@ -109,6 +150,9 @@
         rfOptions = [],
         rfOptions2 = [],
         listaAgente = [];
+
+    let tipo_telefono = "Celular";
+    let telefono_numero = "";
 
 
 
@@ -405,6 +449,8 @@
 
     $: cliente.alias = generarAlias(cliente.nombre);
 
+    $: cliente.telefono = componer_telefono(tipo_telefono, telefono_numero);
+
     $: if (listaAgente.length > 0) {
         // console.log("Lista de agentes no está vacía", listaAgente);
         if ($donde === "editar") {
@@ -421,6 +467,17 @@
             if (agenteSeleccionado) {
                 cliente.agente.id = agenteSeleccionado._id;
                 cliente.agente.nombre = agenteSeleccionado.nombre;
+            }
+        } else if (cliente.agente.id === "") {
+            // Registro nuevo: preseleccionar al usuario logueado como agente
+            const agenteLogueado = listaAgente.find(
+                (item) => item._id === $usuario_db._id,
+            );
+
+            if (agenteLogueado) {
+                cliente.agente.id = agenteLogueado._id;
+                cliente.agente.nombre = agenteLogueado.nombre;
+                cliente.agente.correo = agenteLogueado.correo;
             }
         }
     }
@@ -770,6 +827,7 @@
         cliente.push_token = clientSelect.push_token || "";
         cliente.region = clientSelect.region || "";
         cliente.telefono = clientSelect.telefono || direccionCliSelect.telefono || "";
+        ({ tipo: tipo_telefono, numero: telefono_numero } = separar_telefono(cliente.telefono));
         cliente.uid = clientSelect.uid || "";
         cliente.password = clientSelect.password || "";
         cliente.observaciones = clientSelect.observaciones || "";
@@ -883,12 +941,30 @@
                 <div class="valid-feedback">¡Se ve bien!</div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-2">
+            <div class="form-floating">
+                <select
+                    class="form-select"
+                    id="inputTipoTelefono"
+                    aria-label="Tipo de telefono"
+                    bind:value={tipo_telefono}
+                >
+                    {#each TIPOS_TELEFONO as item}
+                        <option value={item}>{item}</option>
+                    {/each}
+                </select>
+                <label for="inputTipoTelefono" class="form-label">Tipo</label>
+            </div>
+        </div>
+        <div class="col-md-2">
             <div class="form-floating mb-3">
                 <input
                     type="text"
                     class="form-control"
-                    bind:value={cliente.telefono}
+                    value={formatear_telefono(telefono_numero, tipo_telefono)}
+                    on:input={(event) => {
+                        telefono_numero = solo_digitos(event.target.value);
+                    }}
                     id="inputTelefono"
                 />
                 <label for="inputTelefono" class="form-label">Telefono</label>
@@ -927,7 +1003,8 @@
             {/if}
         </div>
         -->
-        <div class="col-md-3">
+        <!-- Cumpleaños y Región ocultos (formulario simplificado), se mantienen en el modelo -->
+        <div class="col-md-3 d-none">
             <div class="form-floating mb-3">
                 <input
                     type="date"
@@ -940,7 +1017,7 @@
                 <div class="valid-feedback">¡Se ve bien!</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 d-none">
             <div class="form-floating">
                 <select
                     class="form-select"
@@ -1013,7 +1090,8 @@
             </div>
         </div>
         <hr />
-        <div class="col-md-3">
+        <!-- Ya no se gestiona la dirección por tipo; los datos fiscales se piden siempre y son opcionales -->
+        <div class="col-md-3 d-none">
             <div class="form-floating">
                 <select
                     class="form-select"
@@ -1029,7 +1107,6 @@
                 <label for="floatingSelect">Tipo de direccion</label>
             </div>
         </div>
-        {#if direccion.tipo === "Envio/Facturacion" || direccion.tipo == "Facturacion"}
             <div class="col-md-3">
                 <div class="d-flex align-items-center mb-3">
                     <input
@@ -1115,16 +1192,18 @@
                     <label for="floatingSelect">Regimen Fiscal</label>
                 </div>
             </div>
-        {/if}
         <hr />
-        <SelectPaisBs5
-            bind:donde={$donde}
-            bind:pais={direccion.pais}
-            bind:idPais={direccion.idPais}
-            on:pais_cambio={(event) =>
-                AsignarIdPais(event.detail.id, event.detail.nombre)}
-            size="col-md-4"
-        />
+        <!-- País oculto y fijo en México; Estado/Municipio funcionan por nombre de país sin necesitar el id -->
+        <div class="d-none">
+            <SelectPaisBs5
+                bind:donde={$donde}
+                bind:pais={direccion.pais}
+                bind:idPais={direccion.idPais}
+                on:pais_cambio={(event) =>
+                    AsignarIdPais(event.detail.id, event.detail.nombre)}
+                size="col-md-4"
+            />
+        </div>
         <SelectEstadoBs5
             bind:donde={$donde}
             bind:Pais={direccion.pais}

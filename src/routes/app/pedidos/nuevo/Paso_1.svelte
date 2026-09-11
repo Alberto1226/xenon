@@ -46,6 +46,11 @@
   let http_ultima_actividad_fecha = Date.now();
   let tipo_de_cambio_correcto = true;
   // var ficha_de_descuento =null;
+  let datos_completos = true;
+  let campos_faltantes = [];
+  let cotizaciones_con_datos_incompletos = 0;
+  let cotizaciones_disponibles = 3;
+  let bloqueado_por_datos_incompletos = false;
   $: cliente.direccion = direccion;
 
   $: if (moneda || cliente || direccion) {
@@ -120,6 +125,11 @@
           //console.log(res);
           // cliente_tiene_carrito = res.carrito != null;
           cliente_tiene_carrito = false;
+          datos_completos = res.datos_completos;
+          campos_faltantes = res.campos_faltantes || [];
+          cotizaciones_con_datos_incompletos = res.cotizaciones_con_datos_incompletos || 0;
+          cotizaciones_disponibles = res.cotizaciones_disponibles;
+          bloqueado_por_datos_incompletos = res.bloqueado_por_datos_incompletos;
         }
       })
       .catch((err) => {
@@ -456,6 +466,20 @@
         </span>
         <br />
       {/if}
+      {#if !datos_completos && cliente.nombre != "" && !bloqueado_por_datos_incompletos}
+        <span style="color:darkorange">
+          El cliente <b>{cliente.nombre}</b> tiene información pendiente ({campos_faltantes.join(", ")}).
+          Te quedan {cotizaciones_disponibles} cotización(es) antes de requerir completarla.
+        </span>
+        <br />
+      {/if}
+      {#if bloqueado_por_datos_incompletos && cliente.nombre != ""}
+        <span style="color:red">
+          El cliente <b>{cliente.nombre}</b> alcanzó el límite de cotizaciones con información
+          incompleta. Completa antes de continuar: {campos_faltantes.join(", ")}.
+        </span>
+        <br />
+      {/if}
       {direccion == "" ? "--" : "Perfil de cliente: " + cliente.perfil.perfil}
       <br />
       {cliente.agente == "" ? "--" : " Agente : " + cliente.agente.nombre}
@@ -521,13 +545,14 @@
       local_shipping
     </i>
     <br />
-    {#if cliente_tiene_carrito == false && direccion != "" && tipo_de_cambio_correcto}
+    {#if cliente_tiene_carrito == false && direccion != "" && tipo_de_cambio_correcto && !bloqueado_por_datos_incompletos}
       <!-- content here -->
       <div in:fade={{ duration: 400, delay: 400 }}>
         <Button
           disabled={cliente_tiene_carrito ||
             direccion == "" ||
-            !tipo_de_cambio_correcto}
+            !tipo_de_cambio_correcto ||
+            bloqueado_por_datos_incompletos}
           raised
           color="primary"
           title="Presiona el boton + "

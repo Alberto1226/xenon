@@ -236,7 +236,7 @@
 >
   <div class="uno">
     <i
-      style="vertical-align:middle; color: {cliente.newData ? 'black' : 'red'};"
+      style="vertical-align:middle; color: {cliente.datos_completos ? 'black' : 'red'};"
       class="material-icons"
     >
       account_circle
@@ -245,7 +245,7 @@
     {#if cliente.activo === false}
       <i
         class="material-icons icono_bloqueado no_select"
-        style="color: {cliente.newData ? 'red' : 'orange'};"
+        style="color: {cliente.datos_completos ? 'red' : 'orange'};"
         title="Cliente no activo para ser seleccionado por usuarios para pedidos"
         >block</i
       >
@@ -277,8 +277,11 @@
       ></span
     >
     <br />
-    {#if !cliente.newData}
-      <span style="color: red; font-size: 0.8rem;">Faltan datos</span>
+    {#if !cliente.datos_completos}
+      <span style="color: red; font-size: 0.8rem;"
+        >Faltan datos ({cliente.cotizaciones_con_datos_incompletos || 0}/3 cotizaciones
+        usadas)</span
+      >
     {/if}
   </div>
   <div class="tres">
@@ -288,10 +291,12 @@
       <br />
     {/each}
   </div>
-  <div class="cuatro">{fecha_nacimiento}</div>
-  <div class="cinco">{cliente.perfil.perfil}</div>
-  <div class="seis">{cliente.region == null ? `-` : cliente.region}</div>
-  <div class="siete">{cliente.plataforma}</div>
+  <div class="cuatro">
+    {(cliente.datos_fiscales && cliente.datos_fiscales.rfc) || cliente.rfc || (cliente.direcciones_asociadas && cliente.direcciones_asociadas[0] && cliente.direcciones_asociadas[0].rfc) || "-"}
+  </div>
+  <div class="cinco">
+    {(cliente.perfil && cliente.perfil.mostrar) || (cliente.perfil && cliente.perfil.porcentaje !== undefined ? cliente.perfil.porcentaje + '%' : '0%')}
+  </div>
   <div class="ocho pointer reactivo">
     <table>
       <tr>
@@ -565,51 +570,45 @@
   .grid-container {
     /* font-weight: 200; */
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1.2fr 2fr 1.2fr 1.3fr 0.8fr 1fr;
     grid-template-rows: 1fr;
-    grid-template-areas: "uno dos tres cuatro cinco seis siete ocho  ";
-    padding: 23px 1px;
+    grid-template-areas: "uno dos tres cuatro cinco ocho";
+    padding: 8px;
+    align-items: center;
   }
 
   .uno {
     grid-area: uno;
     text-align: left;
-    padding-top: 29px;
+    margin: auto 0;
   }
 
   .dos {
     grid-area: dos;
     margin: auto 0;
-    width: 13vw;
   }
 
   .tres {
     grid-area: tres;
     margin: auto 0;
+    text-align: center;
   }
 
   .cuatro {
     grid-area: cuatro;
     margin: auto 0;
+    text-align: center;
   }
 
   .cinco {
     grid-area: cinco;
     margin: auto 0;
-  }
-
-  .seis {
-    grid-area: seis;
-    margin: auto 0;
-  }
-
-  .siete {
-    grid-area: siete;
-    margin: auto 0;
+    text-align: center;
   }
 
   .ocho {
     grid-area: ocho;
+    margin: auto;
   }
 
   .reactivo:hover {

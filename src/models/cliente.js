@@ -9,6 +9,8 @@ import { Direccion } from './direccion_schema';
 
 var schema = new Schema({
     newData: { type: Boolean, default: false },
+    datos_completos: { type: Boolean, default: false },
+    cotizaciones_con_datos_incompletos: { type: Number, default: 0 },
     activo: { type: Boolean, default: true },
     agente: {
         nombre: { type: String, default: '' },

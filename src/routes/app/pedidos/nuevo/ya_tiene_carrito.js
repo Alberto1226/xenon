@@ -1,9 +1,11 @@
 
 
 import { Carrito } from "./../../../../models/carrito";
+import { Cliente } from "./../../../../models/cliente";
 import * as accesos from "./../../accesos"
+import { evaluar_datos_completos, LIMITE_COTIZACIONES_CON_DATOS_INCOMPLETOS } from "./../../clientes/_datos_completos";
 
-export function post(req, res, next) {
+export async function post(req, res, next) {
     if (accesos.esta_logueado(req) === false) {
         res.send({ ok: false, mensaje: "sesion expirada" })
         return;
@@ -15,16 +17,38 @@ export function post(req, res, next) {
     //var query = {'cliente.id': doc.id};
    //console.log(doc);
 
-    Carrito.findOne().or([{ 'cliente.id': doc.id, status: 'Pedido' }
-    ,{ 'cliente.id': doc.id, status: 'Ficha pago' }
-    ,{ 'cliente.id': doc.id, status: 'Pagado' }
-    ,{ 'cliente.id': doc.id, status: 'Empaque' }])
-        .then((resDB) => {
-            res.send({ ok: true, carrito: resDB });
-        })
-        .catch((err) => {
-            console.log(err);
-            res.send({ ok: false, mensaje: "error al buscar resultados." });
-        })
+    try {
+        const carrito = await Carrito.findOne().or([{ 'cliente.id': doc.id, status: 'Pedido' }
+            , { 'cliente.id': doc.id, status: 'Ficha pago' }
+            , { 'cliente.id': doc.id, status: 'Pagado' }
+            , { 'cliente.id': doc.id, status: 'Empaque' }]);
 
+        const cliente = await Cliente.findById(doc.id);
+
+        let datos_completos = true;
+        let campos_faltantes = [];
+        let cotizaciones_con_datos_incompletos = 0;
+        let cotizaciones_disponibles = LIMITE_COTIZACIONES_CON_DATOS_INCOMPLETOS;
+
+        if (cliente) {
+            const resultado = evaluar_datos_completos(cliente);
+            datos_completos = resultado.completos;
+            campos_faltantes = resultado.campos_faltantes;
+            cotizaciones_con_datos_incompletos = cliente.cotizaciones_con_datos_incompletos || 0;
+            cotizaciones_disponibles = Math.max(0, LIMITE_COTIZACIONES_CON_DATOS_INCOMPLETOS - cotizaciones_con_datos_incompletos);
+        }
+
+        res.send({
+            ok: true,
+            carrito,
+            datos_completos,
+            campos_faltantes,
+            cotizaciones_con_datos_incompletos,
+            cotizaciones_disponibles,
+            bloqueado_por_datos_incompletos: datos_completos === false && cotizaciones_disponibles <= 0,
+        });
+    } catch (err) {
+        console.log(err);
+        res.send({ ok: false, mensaje: "error al buscar resultados." });
+    }
 }

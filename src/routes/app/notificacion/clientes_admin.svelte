@@ -147,7 +147,7 @@
         <div class="dos centrado">Nombre</div>
         <div class="tres centrado">Teléfono</div>
         <!-- <div class="cuatro centrado">Fecha nacimiento</div> -->
-        <div class="cinco centrado">Perfil</div>
+        <div class="cinco centrado">Descuento</div>
         <div class="seis centrado">Agente</div>
         <!-- <div class="siete centrado">Plataforma</div> -->
         <!-- <div class="ocho centrado">Acciones</div> -->

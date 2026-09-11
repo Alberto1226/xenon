@@ -8,6 +8,7 @@ import * as accesos from "../../accesos";
 import { Producto } from "../../../../models/producto";
 import { Ficha_de_descuento } from "../../../../models/ficha_de_descuento";
 import { ChecarFolioEnCarritosCancelados } from "./ChecarFolioEnCarritosCancelados";
+import { evaluar_datos_completos, LIMITE_COTIZACIONES_CON_DATOS_INCOMPLETOS } from "../../clientes/_datos_completos";
 
 
 export async function post(req, res, next) {
@@ -52,13 +53,32 @@ export async function post(req, res, next) {
 
         console.log(data)
         console.log(data.pedido_nuevo.cliente._id);
-        
+
     //
+
+    //  Revalidar en backend el límite de cotizaciones con datos incompletos (no confiar solo en el front)
+    const cliente_db_validacion = await Cliente.findById(data.pedido_nuevo.cliente._id);
+    let resultado_datos_completos = { completos: true, campos_faltantes: [] };
+    if (cliente_db_validacion) {
+        resultado_datos_completos = evaluar_datos_completos(cliente_db_validacion);
+        const cotizaciones_previas = cliente_db_validacion.cotizaciones_con_datos_incompletos || 0;
+        if (!resultado_datos_completos.completos && cotizaciones_previas >= LIMITE_COTIZACIONES_CON_DATOS_INCOMPLETOS) {
+            res.send({
+                ok: false,
+                mensaje: "El cliente alcanzó el límite de cotizaciones con información incompleta. Completa: " + resultado_datos_completos.campos_faltantes.join(", "),
+            });
+            return;
+        }
+    }
 
     borrar_ficha_si_existe(
         data.pedido_nuevo.cliente._id
     ).then((borrado_ficha) => {
         crear_su_carrito(data, email, borrado_ficha.tenia_ficha, req.user,req).then((carrito_creado) => {
+
+            if (cliente_db_validacion && !resultado_datos_completos.completos) {
+                Cliente.findByIdAndUpdate(cliente_db_validacion._id, { $inc: { cotizaciones_con_datos_incompletos: 1 } }).catch((err) => console.log(err));
+            }
 
             res.send({
 

@@ -1,5 +1,6 @@
 import { Cliente } from "../../../../models/cliente";
 import * as accesos from "../../accesos";
+import { evaluar_datos_completos } from "../_datos_completos";
 
 /**
  * Maneja la solicitud POST para crear o editar un cliente.
@@ -44,6 +45,8 @@ export function post(req, res, next) {
                 return;
             }
 
+            cliente_Acomodado.datos_completos = evaluar_datos_completos(cliente_Acomodado, req.body.direccion).completos;
+
             let cliente_nuevo = new Cliente(cliente_Acomodado);
 
             cliente_nuevo.password = cliente_nuevo.encryptPassword(cliente_nuevo.password);
@@ -77,6 +80,12 @@ export function post(req, res, next) {
         if (!nuevo_cliente.agente || !nuevo_cliente.agente.id) {
             res.send({ ok: false, mensaje: "El agente es obligatorio" });
             return;
+        }
+
+        const resultado_completos = evaluar_datos_completos(nuevo_cliente, nuevo_cliente.direcciones_asociadas && nuevo_cliente.direcciones_asociadas[0]);
+        nuevo_cliente.datos_completos = resultado_completos.completos;
+        if (resultado_completos.completos) {
+            nuevo_cliente.cotizaciones_con_datos_incompletos = 0;
         }
 
         Cliente.findByIdAndUpdate(idCliente, { $set: nuevo_cliente }, { new: true })

@@ -119,7 +119,21 @@
       url: "/app/Precios",
       titulo: "Precios",
       icono: "attach_money",
-      roles: ["administrador", ],
+      roles: ["administrador"],
+    },
+    {
+      url: "/app/dev_tools/huerfanos",
+      titulo: "Dev Tools",
+      icono: "build",
+      roles: ["administrador"],
+      subitems: [
+        {
+          titulo: "Huérfanos",
+          url: "/app/dev_tools/huerfanos",
+          icono: "report_problem",
+          roles: ["administrador"],
+        }
+      ],
     },
   ];
 
@@ -161,6 +175,9 @@
         case "/app/productos/Almacen/Empaque":
           menu_actual = "almacen";
           break;
+        case "/app/dev_tools/huerfanos":
+          menu_actual = "dev-tools";
+          break;
         default:
           break;
       }
@@ -178,6 +195,7 @@
       {maximizado}
       titulo={item.titulo}
       url={item.url}
+      subitems={item.subitems}
     />
   {/if}
 {/each}

@@ -18,10 +18,12 @@ export async function post(req, res, next) {
    //console.log(doc);
 
     try {
-        const carrito = await Carrito.findOne().or([{ 'cliente.id': doc.id, status: 'Pedido' }
-            , { 'cliente.id': doc.id, status: 'Ficha pago' }
-            , { 'cliente.id': doc.id, status: 'Pagado' }
-            , { 'cliente.id': doc.id, status: 'Empaque' }]);
+        // Solo los estados en borrador/previos a pago ('Pedido' y 'Ficha pago') bloquean crear otro pedido simultáneo.
+        // Al estar en 'Pagado' o posterior, el pedido queda bloqueado y se permite crear un nuevo pedido para el cliente.
+        const carrito = await Carrito.findOne().or([
+            { 'cliente.id': doc.id, status: 'Pedido' },
+            { 'cliente.id': doc.id, status: 'Ficha pago' }
+        ]);
 
         const cliente = await Cliente.findById(doc.id);
 

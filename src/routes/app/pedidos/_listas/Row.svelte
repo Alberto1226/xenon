@@ -431,12 +431,12 @@
               </Button> -->
             {/if}
 
-            {#if pedido.status != "Envío"}
+            {#if !['Pagado', 'Empaque', 'Envío'].includes(pedido.status)}
               <Button
                 icon
                 dense
-                color={pedido.status !== "Envío" ? "green" : "gray"}
-                disabled={pedido.status === "Envío"}
+                color={!['Pagado', 'Empaque', 'Envío'].includes(pedido.status) ? "green" : "gray"}
+                disabled={['Pagado', 'Empaque', 'Envío'].includes(pedido.status)}
                 on:click={editar}
                 title="editar"
               >
@@ -519,7 +519,7 @@
               <Paqueteria bind:pedido bind:mensajeria={pedido.mensajeria} />
             {/if}
 
-            {#if ($usuario_db.rol === "administrador" || $usuario_db.rol === "gerente") && pedido.status != "Envío"}
+            {#if ($usuario_db.rol === "administrador" || $usuario_db.rol === "gerente") && !['Pagado', 'Empaque', 'Envío'].includes(pedido.status)}
               <Cambiar_descuento
                 bind:pedido
                 on:descuento_cambiado={handle_descuento_cambiado}

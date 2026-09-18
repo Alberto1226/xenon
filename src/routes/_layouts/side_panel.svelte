@@ -126,16 +126,45 @@
       titulo: "Dev Tools",
       icono: "build",
       roles: ["administrador"],
+      solo_usuario: ["isotech_Xenonymas", "Soporte Isotech"],
       subitems: [
         {
           titulo: "Huérfanos",
           url: "/app/dev_tools/huerfanos",
           icono: "report_problem",
           roles: ["administrador"],
+        },
+        {
+          titulo: "Prueba Sobrecarga",
+          url: "/app/dev_tools/sobrecarga",
+          icono: "flash_on",
+          roles: ["administrador"],
+          solo_local: true,
         }
       ],
     },
   ];
+
+  function me_permite_item(item, user) {
+    if (!item || !user) return false;
+    if (item.solo_usuario && (!item.solo_usuario.includes(user.usuario) && !item.solo_usuario.includes(user.nombre))) {
+      return false;
+    }
+    if (item.roles && !item.roles.includes(user.rol)) {
+      return false;
+    }
+    return true;
+  }
+
+  function filtrar_subitems(subitems, is_dev, user) {
+    if (!subitems || !Array.isArray(subitems)) return [];
+    return subitems.filter(sub => {
+      if (sub.solo_local && !is_dev) return false;
+      if (sub.solo_usuario && (!user || (!sub.solo_usuario.includes(user.usuario) && !sub.solo_usuario.includes(user.nombre)))) return false;
+      if (sub.roles && (!user || !sub.roles.includes(user.rol))) return false;
+      return true;
+    });
+  }
 
   function devolver_menu_actual() {
     setTimeout(() => {
@@ -189,13 +218,13 @@
   <!-- coment -->
 </div>
 {#each lista_De_menu as item}
-  {#if item.roles.includes($usuario_db.rol)}
+  {#if me_permite_item(item, $usuario_db)}
     <Item
       icono_o_imagen={item.icono}
       {maximizado}
       titulo={item.titulo}
       url={item.url}
-      subitems={item.subitems}
+      subitems={filtrar_subitems(item.subitems, development, $usuario_db)}
     />
   {/if}
 {/each}

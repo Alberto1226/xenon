@@ -15,34 +15,50 @@ export async function sincronizar_apartados_de_carrito(carrito_id, cliente_id, l
         if (!carrito_id) return { ok: false, mensaje: "carrito_id es requerido" };
         const id_obj = ObjectId(JSON.parse(JSON.stringify(carrito_id)));
 
-        // 1. Remover reservas previas asociadas a este carrito_id en todos los productos
+        // Buscar información del carrito para extraer el folio y cliente completos
+        const carrito_db = await Carrito.findById(id_obj).lean();
+        const folio_num = (carrito_db && carrito_db.folio != null) ? parseInt(carrito_db.folio) : null;
+        const cliente_info = (carrito_db && carrito_db.cliente) ? carrito_db.cliente : {};
+        const cliente_nombre = cliente_info.nombre || 'Cliente';
+        const cliente_correo = cliente_info.correo || '';
+
+        // 1. Remover reservas previas asociadas a este carrito_id o folio en todos los productos (Atómico)
+        let pull_conditions = [{ carrito_id: id_obj }];
+        if (folio_num != null) pull_conditions.push({ folio: folio_num });
+
         await Producto.updateMany(
-            { "carritos.carrito_id": id_obj },
-            { $pull: { carritos: { carrito_id: id_obj } } }
+            { $or: [{ "carritos.carrito_id": id_obj }, { "carritos.folio": folio_num }] },
+            { $pull: { carritos: { $or: pull_conditions } } }
         );
 
         // También remover reservas legadas asociadas a cliente.id si no tenían carrito_id
-        await Producto.updateMany(
-            { "carritos.cliente.id": String(cliente_id), "carritos.carrito_id": { $exists: false } },
-            { $pull: { carritos: { "cliente.id": String(cliente_id), carrito_id: { $exists: false } } } }
-        );
+        if (cliente_id) {
+            await Producto.updateMany(
+                { "carritos.cliente.id": String(cliente_id), "carritos.carrito_id": { $exists: false } },
+                { $pull: { carritos: { "cliente.id": String(cliente_id), carrito_id: { $exists: false } } } }
+            );
+        }
 
         if (!lista_productos || lista_productos.length === 0) {
             return { ok: true, mensaje: "Reservas liberadas (lista vacía)" };
         }
 
-        // 2. Insertar las nuevas reservas con carrito_id
+        // 2. Insertar las nuevas reservas con carrito_id, folio y cliente completos
         for (let item of lista_productos) {
             if (!item.producto || !item.producto._id) continue;
 
             const reserva = {
                 carrito_id: id_obj,
+                folio: folio_num,
                 cliente_id: String(cliente_id),
                 cantidad: parseInt(item.cantidad) || 0,
                 canMB: parseInt(item.canMB) || 0,
                 fecha: new Date(),
-                // Compatibilidad con código legado que busca cliente.id
-                cliente: { id: String(cliente_id) }
+                cliente: {
+                    id: String(cliente_id),
+                    nombre: cliente_nombre,
+                    correo: cliente_correo
+                }
             };
 
             await Producto.findByIdAndUpdate(item.producto._id, {
@@ -87,6 +103,7 @@ export async function liberar_apartados_de_carrito(carrito_id, cliente_id = null
 
 /**
  * Descuenta físicamente el inventario al cambiar a estado 'Envío' y remueve las reservas.
+ * Implementa operaciones atómicas ($inc y $pull) para prevenir condiciones de carrera.
  */
 export async function descontar_fisico_inventario(carrito, req) {
     try {
@@ -100,52 +117,55 @@ export async function descontar_fisico_inventario(carrito, req) {
             if (!producto_db) continue;
 
             const producto_constante = JSON.parse(JSON.stringify(producto_db));
-            const total_reservado = producto_db.total_reservado();
+            const total_reservado = producto_db.total_reservado ? producto_db.total_reservado() : 0;
+            const stock_actual = (producto_db.existencia && producto_db.existencia.actual != null)
+                ? producto_db.existencia.actual
+                : (producto_db.existencias != null ? producto_db.existencias : (producto_db.inventario || 0));
 
             existencias_log.push({
                 producto: producto_db.nombre,
                 cantidad_nueva: registro.cantidad,
                 id: producto_db._id,
                 total_reservado,
-                existencias_previas: producto_db.existencia.actual,
-                existencias_postEnvio: producto_db.existencia.actual - registro.cantidad
+                existencias_previas: stock_actual,
+                existencias_postEnvio: stock_actual - registro.cantidad
             });
 
-            // Restar existencias físicas
-            producto_db.existencia.actual -= registro.cantidad;
+            // ATÓMICO: Restar existencias físicas y remover apartado sin condiciones de carrera
+            const folio_num = parseInt(folio) || null;
+            let pull_conds = [{ carrito_id: id_obj }];
+            if (folio_num != null) pull_conds.push({ folio: folio_num });
+            if (cliente && cliente.id) pull_conds.push({ "cliente.id": String(cliente.id) });
 
-            // Quitar apartados asignados a este carrito_id o cliente.id
-            producto_db.carritos = producto_db.carritos.filter(elem => {
-                const match_carrito = elem.carrito_id && String(elem.carrito_id) === String(_id);
-                const match_cliente = elem.cliente && elem.cliente.id === cliente.id;
-                return !(match_carrito || match_cliente);
-            });
+            let update_op = {
+                $inc: { "existencia.actual": -registro.cantidad },
+                $pull: { carritos: { $or: pull_conds } }
+            };
 
-            // Quitar folios/números de serie usados si los tuviera
             if (registro.folios && registro.folios.length > 0) {
-                producto_db.existencia.folios = producto_db.existencia.folios.filter(
-                    f => !registro.folios.includes(f)
-                );
+                update_op.$pullAll = { "existencia.folios": registro.folios };
             }
 
-            await producto_db.save();
+            await Producto.updateOne({ _id: producto_db._id }, update_op);
 
             // Guardar snap log de auditoría
+            const usuario_req = (req && req.user) ? req.user : { nombre: 'Sistema', _id: null };
             await snap_por_cambio_en_pedido(
                 { nombre: producto_constante.nombre, id: producto_constante._id },
-                { nombre: req.user.nombre, id: req.user._id },
+                { nombre: usuario_req.nombre, id: usuario_req._id },
                 registro.cantidad,
                 registro.cantidad,
                 "2", // Acción 2: Descontar de inventario
-                { folio, cliente: { nombre: cliente.nombre, id: cliente.id } },
+                { folio, cliente: { nombre: cliente ? cliente.nombre : 'Cliente', id: cliente ? cliente.id : null } },
                 producto_constante,
                 registro.folios
             );
         }
 
+        const usuario_req = (req && req.user) ? req.user : { nombre: 'Sistema', _id: null };
         const id_log_previo = await accesos.logActividad(
             'pedidos/cambiar_status_a_envio',
-            req.user,
+            usuario_req,
             { folio, preproceso: existencias_log, fn: "descontar_fisico_inventario" },
             req
         );

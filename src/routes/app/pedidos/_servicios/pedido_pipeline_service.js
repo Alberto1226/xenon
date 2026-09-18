@@ -2,11 +2,13 @@ import { Carrito } from "../../../../models/carrito";
 import { Pedido } from "../../../../models/pedido";
 import { Carrito_cancelado } from "../../../../models/carrito_cancelado";
 import { Cliente } from "../../../../models/cliente";
+import { Producto } from "../../../../models/producto";
 import { Ficha_de_descuento } from "../../../../models/ficha_de_descuento";
 import { Usuario } from "../../../../models/usuario";
 import * as accesos from "../../accesos";
 import * as FolioService from "./folio_service";
 import * as InventarioReservaService from "./inventario_reserva_service";
+import { snap_por_cambio_en_pedido } from "../editar/_producto_snaplogs/snap_por_cambio_en_pedido";
 
 /**
  * Servicio Orquestador Central para el ciclo de vida del pedido.
@@ -183,7 +185,28 @@ export async function cancelar_pedido(carrito_id, usuario, req) {
             return { ok: false, mensaje: "El pedido no se puede cancelar en fase de Envío" };
         }
 
-        // 1. Liberar reservas específicas en productos
+        // 1. Liberar reservas específicas en productos y generar snaplog '4d'
+        if (Array.isArray(carrito.lista)) {
+            for (let item of carrito.lista) {
+                if (item.producto && item.producto._id) {
+                    try {
+                        const prod_db = await Producto.findById(item.producto._id).lean();
+                        if (prod_db) {
+                            await snap_por_cambio_en_pedido(
+                                { nombre: prod_db.nombre, id: prod_db._id },
+                                { nombre: usuario ? usuario.nombre : 'Sistema', id: usuario ? (usuario._id || usuario.id) : null },
+                                0, // Nueva cantidad
+                                item.cantidad || 0, // Cantidad anterior
+                                "4d", // Acción 4d: Borrado de pedido completo
+                                { folio: carrito.folio, cliente: { nombre: carrito.cliente ? carrito.cliente.nombre : 'Cliente', id: carrito.cliente ? carrito.cliente.id : null } },
+                                prod_db
+                            );
+                        }
+                    } catch (eSnap) { }
+                }
+            }
+        }
+
         await InventarioReservaService.liberar_apartados_de_carrito(carrito._id, carrito.cliente ? carrito.cliente.id : null);
 
         // 2. Trasladar a colección de cancelados

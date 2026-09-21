@@ -1,253 +1,96 @@
-
 import { Pedido } from "../../../models/pedido";
-import * as accesos from "../accesos"
+import * as accesos from "../accesos";
+import mongoose from 'mongoose';
 
-// import * as mongoose from 'mongoose';
-//  Se EMPLEA EN LISTA DE PEDIDIDOS QUE EN DB SE VE COMO Pedido
+function escaparRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
-import { Cliente } from "../../../models/cliente";
+function construirQueryPedido(buscando, usuario) {
+    let condiciones = [];
+
+    if (buscando && typeof buscando === 'string' && buscando.trim() !== '') {
+        const textoLimpio = buscando.trim();
+        const palabras = textoLimpio.split(/\s+/).filter(Boolean);
+
+        const condicionesTexto = palabras.map(palabra => {
+            const regex = new RegExp(escaparRegex(palabra), "i");
+            const orCondiciones = [
+                { 'cliente.alias': regex },
+                { 'cliente.nombre': regex },
+                { 'cliente.direccion': regex },
+                { 'usuario_que_registro.usuario': regex },
+                { 'agente.nombre': regex }
+            ];
+
+            if (!isNaN(palabra)) {
+                orCondiciones.push({ folio: parseInt(palabra) });
+            }
+
+            return { $or: orCondiciones };
+        });
+
+        if (condicionesTexto.length > 0) {
+            condiciones.push(...condicionesTexto);
+        }
+    }
+
+    if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
+        condiciones.push({
+            $or: [
+                { "usuario_que_registro.id": String(usuario._id) },
+                { "agente.id": String(usuario._id) }
+            ]
+        });
+    }
+
+    return condiciones.length > 0 ? { $and: condiciones } : {};
+}
 
 export async function post(req, res, next) {
-    if (accesos.esta_logueado(req) === false) {
-        res.send({ ok: false, mensaje: "sesion expirada" })
-        return;
+    try {
+        if (accesos.esta_logueado(req) === false) {
+            return res.send({ ok: false, mensaje: "sesion expirada" });
+        }
+
+        let usuario = req.user;
+        let buscando = req.body.buscando || "";
+        if (typeof buscando === 'string' && buscando.length > 60) {
+            return res.send({ ok: false, mensaje: 'error#876TLV' });
+        }
+
+        const pagina_actual = Math.max(0, (req.body.pagina_actual || 1) - 1);
+        const limite = 10;
+        const query = construirQueryPedido(buscando, usuario);
+
+        const collectionVista = mongoose.connection.collection('vistaPedidosDatos');
+
+        const [cuentaTotal, lista] = await Promise.all([
+            collectionVista.countDocuments(query),
+            collectionVista.find(query)
+                .sort({ folio: -1 })
+                .skip(pagina_actual * limite)
+                .limit(limite)
+                .toArray()
+        ]);
+
+        lista.forEach(doc => {
+            if (!doc.fecha_creado) {
+                doc.fecha_creado = doc.fecha;
+            }
+        });
+
+        const paginas = Math.ceil(cuentaTotal / limite) || 0;
+
+        return res.send({
+            ok: true,
+            lista,
+            numero_total: cuentaTotal,
+            paginas,
+            coincidencias: cuentaTotal
+        });
+    } catch (err) {
+        console.log("Error en lista_de_pedidos_historicos:", err);
+        return res.send({ ok: false, mensaje: "Error al buscar resultados." });
     }
-
-    let usuario = req.user;
-    let buscando = req.body.buscando;
-    if (buscando.length > 60 || buscando.includes('+')) return res.send({ ok: false, mensaje: 'error#876TLV' });
-    const pagina_actual = req.body.pagina_actual - 1;
-    //console.log(req.body);
-    //console.log("id usuairo = ",producto._id);    //  producto:{$ne: req.user.producto},  que no sea el mismo
-    //var query = buscando.length==0?{}:{$text:{$search:buscando}};
-    //let query = buscando===''? {} :{nombre:{$regex : buscando,$options:"gmi" }};
-
-
-    if (buscando === '') {
-        res.send(await consulta(pagina_actual, usuario));
-        return;
-    }
-    else {
-
-        let query = await arreglo_de_buscando_separado_por_comas(buscando, usuario);
-
-        res.send(await consullta_con_texto(query, res, pagina_actual));
-    }
 }
-
-
-
-const arreglo_de_buscando_separado_por_comas = (buscando, usuario) => {
-    return new Promise((resolve, reject) => {
-        try {
-
-            let buscando_pipes = String(buscando).replace(' ', '|');
-            //let palabras_a_buscar = buscando.split(' ');
-            //let array_resultado = [];
-            // //console.log(palabras_a_buscar);
-            let query;
-            if (buscando.includes('"')) {
-                buscando_pipes = buscando.replace('"', '')
-            }
-
-            if (!isNaN(buscando)) {
-                query = { folio: parseInt(buscando) }
-                // console.log('es numero', query);
-            }
-            else {
-
-                query = {
-                    $or: [
-                        { 'cliente.alias': { '$regex': buscando_pipes, '$options': "im" } },
-                        { 'cliente.nombre': { '$regex': buscando_pipes, '$options': "im" } },
-                        { 'cliente.direccion': { '$regex': buscando_pipes, '$options': "im" } },
-                    ]
-                }
-
-            }
-            if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
-                query = {
-                    $and: [query, {
-                        $or: [{ "usuario_que_registro.id": usuario._id }, { "agente.id": usuario._id }]
-                    }]
-                }
-            }
-            else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
-                // query ={}
-                //consulta = {}
-            }
-
-
-
-            resolve(query);
-
-        } catch (err) {
-            console.log(err);
-            reject([{ nombre: '' }])
-            return;
-        }
-    })
-}
-
-function consullta_con_texto(query, res, pagina_actual) {
-    return new Promise((resolve, reject) => {
-
-        try {
-
-            Pedido.aggregate().match(query).count("numero_total")
-                .then((numero_total) => {
-                    Pedido.find(query)
-                        .sort({ folio: -1 })
-                        .limit(10)
-                        .skip(pagina_actual * 10)
-                        .exec()
-                        .then(async (resDB) => {
-                            //let lista_filtrada= await filtrar_lista(buscando,resDB);
-                            // console.log(resDB)
-                            //console.log(numero_total)
-                            let paginas;
-                            let coincidencias;
-                            if (numero_total.length === 0) {
-                                paginas = 0;
-                                coincidencias = 0;
-                            }
-                            else {
-                                paginas = Math.floor((numero_total[0].numero_total + 10 - 1) / (10));
-                                coincidencias = numero_total[0].numero_total;
-                            }
-                            resolve({ ok: true, lista: resDB, numero_total, paginas, coincidencias });
-                        })
-
-                })
-        } catch (err) {
-            console.log(err);
-            reject({ ok: false, mensaje: "error al buscar resultados." });
-        }
-    })
-}
-
-
-
-// function consulta(pagina_actual, usuario) {
-//     return new Promise((resolve, reject) => {
-//         let query;
-//         if (usuario.rol === 'vendedor') {
-//             query = {
-//                 $or: [{ "usuario_que_registro.id": usuario._id }, { "agente.id": usuario._id }]
-//             };
-//         } else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
-//             query = {};
-//         }
-
-//         try {
-//             Pedido.countDocuments(query)
-//                 .then((numero_total) => {
-//                     Pedido.find(query)
-//                         .sort({ fecha: -1 })
-//                         .limit(10)
-//                         .skip(pagina_actual * 10)
-//                         .select({
-//                             folio: 1,
-//                             fecha: 1,
-//                             "usuario_que_registro.usuario": 1,
-//                             tenia_ficha: 1,
-//                             moneda: 1,
-//                             descuento: 1,
-//                             total_pedido: 1,
-//                             "cliente.nombre": 1,
-//                             "cliente.correo": 1,
-//                             "agente.nombre": 1,
-//                             "agente.correo": 1,
-//                             mensajeria: 1,
-//                             // lista: {
-//                             //     cantidad: 1,
-//                             //     "producto.nombre": 1,
-//                             //     "producto.descripcion": 1,
-//                             //     "producto.precio": 1,
-//                             // }
-//                         })
-//                         .allowDiskUse(true)
-//                         .exec()
-//                         .then(async (resDB) => {
-//                             resolve({
-//                                 ok: true,
-//                                 lista: resDB,
-//                                 numero_total,
-//                                 paginas: Math.floor((numero_total + 10 - 1) / 10)
-//                             });
-//                         })
-//                         .catch((err) => {
-//                             console.log(err);
-//                             reject({ ok: false, mensaje: "error al buscar resultados.", error: err });
-//                         });
-//                 })
-//                 .catch((err) => {
-//                     console.log(err);
-//                     reject({ ok: false, mensaje: "error al contar documentos.", error: err });
-//                 });
-//         } catch (err) {
-//             console.log(err);
-//             reject({ ok: false, mensaje: "error al buscar resultados.", error: err });
-//         }
-//     });
-// }
-
-
-
-const mongoose = require('mongoose');
-
-function consulta(pagina_actual, usuario) {
-    return new Promise((resolve, reject) => {
-        let query;
-        if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
-            query = {
-                $or: [
-                    { "usuario_que_registro.id": String(usuario._id) },
-                    { "agente.id": String(usuario._id) }
-                ]
-            };
-        } else if (usuario.rol === 'administrador' || usuario.rol === 'gerente') {
-            query = {};
-        }
-        try {
-            // console.log('query', query);
-            mongoose.connection.collection('vistaPedidosDatos')
-                .countDocuments(query)
-                .then((numero_total) => {
-                    // console.log('total', numero_total);
-                    mongoose.connection.collection('vistaPedidosDatos')
-                        .find(query)
-                        .sort({ folio: -1 })
-                        .limit(10)
-                        .skip(pagina_actual * 10)
-                        .toArray()
-                        .then((resDB) => {
-                            resDB.forEach(doc => {
-                                // console.log('doc', doc.agente.id);
-                                if (!doc.fecha_creado) {
-                                    doc.fecha_creado = doc.fecha;
-                                }
-                            });
-                            resolve({
-                                ok: true,
-                                lista: resDB,
-                                numero_total,
-                                paginas: Math.ceil(numero_total / 10)
-                            });
-                        })
-                        .catch((err) => {
-                            console.log(err);
-                            reject({ ok: false, mensaje: "Error al buscar resultados.", error: err });
-                        });
-                })
-                .catch((err) => {
-                    console.log(err);
-                    reject({ ok: false, mensaje: "Error al contar documentos.", error: err });
-                });
-        } catch (err) {
-            console.log(err);
-            reject({ ok: false, mensaje: "Error al buscar resultados.", error: err });
-        }
-    });
-}
-

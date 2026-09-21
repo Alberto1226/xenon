@@ -191,10 +191,22 @@
     }
   }
 
+  let timerBusquedaPedidos = null;
+
+  function ejecutar_busqueda_pedidos_inmediata() {
+    if (timerBusquedaPedidos) clearTimeout(timerBusquedaPedidos);
+    buscando_mandar = buscando;
+  }
+
   function handle_buscar(evt) {
     if (evt.key === "Enter") {
-      buscando_mandar = buscando;
+      ejecutar_busqueda_pedidos_inmediata();
+      return;
     }
+    if (timerBusquedaPedidos) clearTimeout(timerBusquedaPedidos);
+    timerBusquedaPedidos = setTimeout(() => {
+      ejecutar_busqueda_pedidos_inmediata();
+    }, 350);
   }
 
   function cerrar_dialogo_de_Folios() {
@@ -219,13 +231,13 @@
               <tr>
                 <td>
                   <Textfield
-                    placeholder="Buscar"
+                    placeholder="Buscar por folio o cliente..."
                     on:keyup={handle_buscar}
                     bind:value={buscando}
                   />
                 </td>
                 <td>
-                  <i class="material-icons">search</i>
+                  <i class="material-icons pointer" on:click={ejecutar_busqueda_pedidos_inmediata}>search</i>
                 </td>
                 <td>
                   <Button

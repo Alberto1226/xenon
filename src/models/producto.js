@@ -55,6 +55,11 @@ var schema = new Schema({
     master_box: { type: Number, default: 0 }
 });
 
+schema.index({ codigo: 1 });
+schema.index({ codigo_de_barras: 1 });
+schema.index({ nombre: 1 });
+schema.index({ marca: 1 });
+
 
 
 

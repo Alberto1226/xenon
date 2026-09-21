@@ -99,7 +99,13 @@ export async function post(req,res,next){
             " disponibles:"+disponibles +" solicitadas:" +registro.cantidad});
         }
         //  apartar producto
-        const proceso_apartado = await apartar_producto_sin_previo_apartado(producto_antes_de_cualquier_cambio,registro.cantidad ,carrito_en_DB.cliente,carrito_en_DB.folio)
+        const proceso_apartado = await apartar_producto_sin_previo_apartado(
+            producto_antes_de_cualquier_cambio,
+            registro.cantidad,
+            carrito_en_DB.cliente,
+            carrito_en_DB.folio,
+            carrito_en_DB._id
+        )
         .catch((err)=>{
             let error_body = JSON.stringify(err);
             registrar_error(error_body , 'pedidos/editar/cambiar_cantidad_nuevo-linea 105');

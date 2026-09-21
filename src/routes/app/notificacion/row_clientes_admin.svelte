@@ -288,7 +288,7 @@
         {/if}
     </div>
     <!-- <div class="cuatro">{fecha_nacimiento}</div> -->
-    <div class="cinco">{cliente.perfil.perfil}</div>
+    <div class="cinco">{(cliente.perfil && cliente.perfil.mostrar) || (cliente.perfil && cliente.perfil.porcentaje !== undefined ? cliente.perfil.porcentaje + '%' : '0%')}</div>
     <div class="seis">{cliente.agente.nombre == null ? `Sin Agente` : cliente.agente.nombre}</div>
     <!-- <div class="siete">{cliente.plataforma}</div> -->
     <!-- <div class="ocho pointer reactivo">

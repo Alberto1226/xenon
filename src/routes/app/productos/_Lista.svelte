@@ -275,24 +275,25 @@ $: if($storeWithDebounce  ){
     }, 500);
   };
 
-  function handle_buscar(evt) {
-    if (http_ocupado === true) return;
+  let timerBusqueda = null;
 
-    if (evt.key === "Backspace" && buscando === "") {
-      $buscadores.productos = buscando;
-      $productos.pagina_actual = 1;
-      $paginas_actuales.productos = 1;
-      obtener_productos_por_pagina();
-      return;
-    }
+  function ejecutar_busqueda_inmediata() {
+    if (timerBusqueda) clearTimeout(timerBusqueda);
+    $buscadores.productos = buscando;
+    $productos.pagina_actual = 1;
+    $paginas_actuales.productos = 1;
+    obtener_productos_por_pagina();
+  }
+
+  function handle_buscar(evt) {
     if (evt.key === "Enter") {
-      $buscadores.productos = buscando;
-      $productos.pagina_actual = 1;
-      $paginas_actuales.productos = 1;
-      obtener_productos_por_pagina();
+      ejecutar_busqueda_inmediata();
       return;
     }
-    //doSearch();
+    if (timerBusqueda) clearTimeout(timerBusqueda);
+    timerBusqueda = setTimeout(() => {
+      ejecutar_busqueda_inmediata();
+    }, 350);
   }
 
   const fn_obtener_productos_por_pagina2 = async () => {
@@ -328,7 +329,7 @@ $: if($storeWithDebounce  ){
     <tr>
       <td>
         <Textfield
-          placeholder="Buscar"
+          placeholder="Buscar por código, nombre o marca"
           class=""
           bind:value={buscando}
           on:keyup={handle_buscar}
@@ -336,11 +337,7 @@ $: if($storeWithDebounce  ){
       </td>
       <td>
         <Button
-          on:click={() => {
-            $productos.pagina_actual = 1;
-            $paginas_actuales.productos = 1;
-            obtener_productos_por_pagina();
-          }}
+          on:click={ejecutar_busqueda_inmediata}
           icon
         >
           <i class="material-icons">search</i>

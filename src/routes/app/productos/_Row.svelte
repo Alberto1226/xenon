@@ -383,65 +383,63 @@
     {/if}
   </div>
   <div class="seis centrado">
-    {producto.subcategoria.nombre ? producto.subcategoria.nombre : "--"}
+    {producto.subcategoria && producto.subcategoria.nombre ? producto.subcategoria.nombre : "--"}
   </div>
-  <div class="siete">
-    <Button
-      icon
-      dense
-      color="green"
-      on:click={solicitar_producto_actual}
-      title="recargar existencias y reservados"
-    >
-      <i class="material-icons icono_15px">refresh</i>
-    </Button>
-
-    {#if $usuario_db.rol === "administrador"}
-      <!-- content here -->
-
-      <Button
-        icon
-        dense
-        color="green"
-        on:click={() => (cambio_existencia_visible = true)}
-        title="Admin- Cambiar existencias"
-      >
-        <i class="material-icons icono_15px">create</i>
-      </Button>
+  <div class="masterbox centrado">
+    {#if producto.master_box}
+      <div style="font-weight: 600; color: #0065ff; font-size: 0.95em;">
+        {producto.master_box} <span style="font-size: 0.85em; color: #555; font-weight: 400;">{producto.unidad || "unidades"}</span>
+      </div>
+    {:else}
+      <span style="color: #b0b0b0; font-size: 0.9em;">--</span>
     {/if}
-    <!-- {#if $usuario_db.rol != "diseñador"}
+  </div>
+  <div class="siete centrado">
+    <div class="display-flex align-items-center justify-content-center" style="margin-bottom: 2px;">
       <Button
         icon
         dense
         color="green"
-        on:click={() => (viendo_masterbox_inyector = true)}
-        title="Inyectar usando Master-Box "
+        on:click={solicitar_producto_actual}
+        title="recargar existencias y reservados"
       >
-        <img src="imagenes/masterbox.svg" alt="" class="masterbox" />
+        <i class="material-icons icono_15px">refresh</i>
       </Button>
-    {/if} -->
-  </div>
-  <div>
-    <div class="display-flex">
-      <div
-        class="pointer reactivo centrado-margen"
-        on:click={() => {
-          if ($usuario_db.rol === "administrador") {
-            carritos_visibles = true;
-          } else {
-            alert("Necesitas ser administrador para ver este dato.");
-          }
-        }}
-      >
-        {producto.existencia.actual}
-      </div>
-      <div class="centrado-margen">
-        {total_reservado}
-      </div>
-    </div>
 
-    <div class="disponible centrado">
-      {Number(producto.existencia.actual) - Number(total_reservado)}
+      {#if $usuario_db.rol === "administrador"}
+        <Button
+          icon
+          dense
+          color="green"
+          on:click={() => (cambio_existencia_visible = true)}
+          title="Admin- Cambiar existencias"
+        >
+          <i class="material-icons icono_15px">create</i>
+        </Button>
+      {/if}
+    </div>
+    <div>
+      <div class="display-flex">
+        <div
+          class="pointer reactivo centrado-margen"
+          on:click={() => {
+            if ($usuario_db.rol === "administrador") {
+              carritos_visibles = true;
+            } else {
+              alert("Necesitas ser administrador para ver este dato.");
+            }
+          }}
+        >
+          {producto.existencia.actual}
+        </div>
+        <div class="centrado-margen">
+          {total_reservado}
+        </div>
+      </div>
+
+      <div class="disponible centrado">
+        {Number(producto.existencia.actual) - Number(total_reservado)}
+      </div>
     </div>
   </div>
 
@@ -763,9 +761,9 @@
     /* font-weight: 200; */
     padding: 36px 0px;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 0.8fr 1.1fr 1.8fr 1fr 1fr 1fr 1.1fr 1.2fr 1.2fr;
     grid-template-rows: 1fr;
-    grid-template-areas: "uno dos tres cuatro cinco seis siete ocho  once";
+    grid-template-areas: "uno dos tres cuatro cinco seis masterbox siete once";
   }
 
   .uno {
@@ -796,6 +794,11 @@
 
   .seis {
     grid-area: seis;
+    margin: auto 0;
+  }
+
+  .masterbox {
+    grid-area: masterbox;
     margin: auto 0;
   }
 

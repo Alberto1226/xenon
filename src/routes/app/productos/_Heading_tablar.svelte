@@ -8,6 +8,7 @@
   <div class="cuatro">Marca</div>
   <div class="cinco">Precio</div>
   <div class="seis">Categoría</div>
+  <div class="masterbox">Master Box</div>
   <div class="siete">Existencia <br />Reservado <br /> Disponible</div>
 
   <div class="once">Acciones</div>
@@ -20,9 +21,9 @@
     font-weight: 600;
     color: #8a8a8a;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 0.8fr 1.1fr 1.8fr 1fr 1fr 1fr 1.1fr 1.2fr 1.2fr;
     grid-template-rows: 1fr;
-    grid-template-areas: "uno dos tres cuatro cinco seis siete once";
+    grid-template-areas: "uno dos tres cuatro cinco seis masterbox siete once";
   }
 
   .uno {
@@ -47,6 +48,11 @@
 
   .seis {
     grid-area: seis;
+  }
+
+  .masterbox {
+    grid-area: masterbox;
+    text-align: center;
   }
 
   .siete {

@@ -113,6 +113,11 @@
   }
 
   function quitar_de_pedido() {
+    if ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes($editar_store.pedido.status)) {
+      $mensajes_app.push({ tipo: "error", mensaje: "🔒 No se pueden eliminar productos de un pedido en estatus '" + $editar_store.pedido.status + "'." });
+      $mensajes_app = $mensajes_app;
+      return;
+    }
     procesando_en_la_nube = true;
     producto.precio = precio_nuevo;
     let registro = { producto, cantidad: 0 };
@@ -155,6 +160,11 @@
   }
 
   function cambiar_precio() {
+    if ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes($editar_store.pedido.status)) {
+      $mensajes_app.push({ tipo: "error", mensaje: "🔒 No se puede modificar el precio de productos de un pedido en estatus '" + $editar_store.pedido.status + "'." });
+      $mensajes_app = $mensajes_app;
+      return;
+    }
     if (isNaN(precio_nuevo) || precio_nuevo < 0) {
       $mensajes_app.push({ tipo: "error", mensaje: "No es un valor válido" });
       $mensajes_app = $mensajes_app;
@@ -468,7 +478,7 @@
       <Button
         icon
         dense
-        disabled={procesando_en_la_nube || $usuario_db.rol == "almacen"}
+        disabled={procesando_en_la_nube || $usuario_db.rol == "almacen" || ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes($editar_store.pedido.status))}
         color="darkorange"
         on:click={quitar_de_pedido}
         title="Borrar"

@@ -17,6 +17,14 @@
     let lista = [];
     let listaSelect = [];
     var busqueda = "";
+    let valorSeleccionado = "";
+
+    $: if (listaSelect.length > 0 && municipio) {
+        let encontrado = listaSelect.find(item => item.nombreMunicipio === municipio || item._id === municipio);
+        if (encontrado) {
+            valorSeleccionado = encontrado._id;
+        }
+    }
 
     const dispatch = createEventDispatcher();
 
@@ -27,10 +35,11 @@
         ObtenerMunicipios(false);
     });
 
-    $: if (IdEstado) {
-        if (IdEstado != "") {
-            // console.log("if Estado");
+    $: if (typeof window !== 'undefined') {
+        if (IdEstado && IdEstado !== "") {
             ObtenerMunicipios(true);
+        } else if (Estado && Estado !== "") {
+            ObtenerMunicipios(false);
         }
     }
 
@@ -82,15 +91,18 @@
         <select
             class="form-select"
             id="floatingSelectGrid"
-            bind:value={municipio}
+            bind:value={valorSeleccionado}
             disabled={!Estado}
-            on:change={() => {
+            on:change={(event) => {
                 actualizar = true;
-                dispatch("municipio_cambio", {
-                    id: event.target.value,
-                    nombre: event.target.options[event.target.selectedIndex]
-                        .text,
-                });
+                let itemSel = listaSelect.find(item => item._id === event.target.value);
+                if (itemSel) {
+                    municipio = itemSel.nombreMunicipio;
+                    dispatch("municipio_cambio", {
+                        id: itemSel._id,
+                        nombre: itemSel.nombreMunicipio,
+                    });
+                }
             }}
             aria-label="Floating label select example"
             required={required}

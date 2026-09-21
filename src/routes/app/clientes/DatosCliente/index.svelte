@@ -32,6 +32,47 @@
         return `${firstWord} ${abbreviated}`;
     }
 
+    // El tipo de teléfono no existe en la DB, se codifica como prefijo dentro del mismo campo "telefono"
+    const TIPOS_TELEFONO = ["Celular", "Fijo"];
+
+    function solo_digitos(valor) {
+        return (valor || "").replace(/\D/g, "").slice(0, 10);
+    }
+
+    function separar_telefono(valor) {
+        const match = /^(Celular|Fijo):\s*(.*)$/i.exec(valor || "");
+        if (!match) return { tipo: "Celular", numero: solo_digitos(valor) };
+        const tipoEncontrado = TIPOS_TELEFONO.find(
+            (t) => t.toLowerCase() === match[1].toLowerCase(),
+        );
+        return { tipo: tipoEncontrado || "Celular", numero: solo_digitos(match[2]) };
+    }
+
+    function componer_telefono(tipo, numero) {
+        return numero ? `${tipo}: ${numero}` : "";
+    }
+
+    // Formato solo visual (simulado); lo que se guarda en telefono_numero siempre son puros dígitos
+    function formatear_telefono(numero, tipo) {
+        const digitos = solo_digitos(numero);
+        const p1 = digitos.slice(0, 3);
+        const p2 = digitos.slice(3, 6);
+        const p3 = digitos.slice(6, 10);
+
+        if (tipo === "Fijo") {
+            let resultado = p1 ? `(${p1}` : "";
+            if (p1.length === 3) resultado += ")";
+            if (p2) resultado += ` ${p2}`;
+            if (p3) resultado += `-${p3}`;
+            return resultado;
+        }
+
+        let resultado = p1;
+        if (p2) resultado += `-${p2}`;
+        if (p3) resultado += `-${p3}`;
+        return resultado;
+    }
+
     let IdClientSelect = "";
 
     let cliente = {
@@ -109,6 +150,9 @@
         rfOptions = [],
         rfOptions2 = [],
         listaAgente = [];
+
+    let tipo_telefono = "Celular";
+    let telefono_numero = "";
 
 
 
@@ -405,6 +449,8 @@
 
     $: cliente.alias = generarAlias(cliente.nombre);
 
+    $: cliente.telefono = componer_telefono(tipo_telefono, telefono_numero);
+
     $: if (listaAgente.length > 0) {
         // console.log("Lista de agentes no está vacía", listaAgente);
         if ($donde === "editar") {
@@ -422,6 +468,17 @@
                 cliente.agente.id = agenteSeleccionado._id;
                 cliente.agente.nombre = agenteSeleccionado.nombre;
             }
+        } else if (cliente.agente.id === "") {
+            // Registro nuevo: preseleccionar al usuario logueado como agente
+            const agenteLogueado = listaAgente.find(
+                (item) => item._id === $usuario_db._id,
+            );
+
+            if (agenteLogueado) {
+                cliente.agente.id = agenteLogueado._id;
+                cliente.agente.nombre = agenteLogueado.nombre;
+                cliente.agente.correo = agenteLogueado.correo;
+            }
         }
     }
 
@@ -435,6 +492,138 @@
     // $: if (direccion.idPais != "") {
     //     console.log("pais", direccion.pais);
     // }
+
+    let visibleModalSat = false;
+    let datosSatExtraidos = null;
+    let comparativaSat = [];
+
+    function generarComparativaSat(info) {
+        const lista = [
+            { label: "RFC", actual: cliente.datos_fiscales.rfc || "", nuevo: info.rfc || "", key: "rfc", grupo: "fiscal" },
+            { label: "Tipo de Persona", actual: cliente.datos_fiscales.tipo_persona || "", nuevo: info.tipoPersona || "", key: "tipoPersona", grupo: "fiscal" },
+            { label: "Código Postal (C.P.)", actual: direccion.cp || "", nuevo: info.cp || "", key: "cp", grupo: "direccion" },
+            { label: "Calle", actual: direccion.calle || "", nuevo: info.calle || "", key: "calle", grupo: "direccion" },
+            { label: "N° Exterior", actual: direccion.numero_exterior || "", nuevo: info.numeroExterior || "", key: "numeroExterior", grupo: "direccion" },
+            { label: "N° Interior", actual: direccion.numero_interior || "", nuevo: info.numeroInterior || "", key: "numeroInterior", grupo: "direccion" },
+            { label: "Colonia", actual: direccion.colonia || "", nuevo: info.colonia || "", key: "colonia", grupo: "direccion" },
+            { label: "Localidad", actual: direccion.localidad_nombre || "", nuevo: info.localidad || "", key: "localidad", grupo: "direccion" },
+            { label: "Estado", actual: direccion.estado || "", nuevo: info.estado || "", key: "estado", grupo: "direccion" },
+            { label: "Municipio", actual: direccion.municipio || "", nuevo: info.municipio || "", key: "municipio", grupo: "direccion" },
+            { label: "Entre Calle", actual: direccion.entre_calle || "", nuevo: info.entreCalle || "", key: "entreCalle", grupo: "direccion" },
+            { label: "Y Calle", actual: direccion.y_calle || "", nuevo: info.yCalle || "", key: "yCalle", grupo: "direccion" }
+        ];
+
+        comparativaSat = lista.map(item => {
+            const actClean = (item.actual || "").toString().trim();
+            const nueClean = (item.nuevo || "").toString().trim();
+            let estadoCambio = "igual";
+
+            if (!actClean && nueClean) {
+                estadoCambio = "nuevo";
+            } else if (actClean && nueClean && actClean.toUpperCase() !== nueClean.toUpperCase()) {
+                estadoCambio = "diferente";
+            }
+            return {
+                ...item,
+                estadoCambio
+            };
+        });
+    }
+
+    function aplicarSatReemplazarTodo() {
+        if (!datosSatExtraidos) return;
+        const info = datosSatExtraidos;
+
+        if (info.rfc) cliente.datos_fiscales.rfc = info.rfc;
+        if (info.tipoPersona) cliente.datos_fiscales.tipo_persona = info.tipoPersona;
+
+        if (info.cp) direccion.cp = info.cp;
+        if (info.calle) direccion.calle = info.calle;
+        if (info.numeroExterior) direccion.numero_exterior = info.numeroExterior;
+        if (info.numeroInterior) direccion.numero_interior = info.numeroInterior;
+        if (info.colonia) direccion.colonia = info.colonia;
+        if (info.localidad) direccion.localidad_nombre = info.localidad;
+        if (info.entreCalle) direccion.entre_calle = info.entreCalle;
+        if (info.yCalle) direccion.y_calle = info.yCalle;
+
+        if (info.idPais) {
+            direccion.idPais = info.idPais;
+            direccion.pais = info.pais;
+        }
+        if (info.idEstado) {
+            direccion.idEstado = info.idEstado;
+            direccion.estado = info.estado;
+        }
+        if (info.idMunicipio) {
+            direccion.idMunicipio = info.idMunicipio;
+            direccion.municipio = info.municipio;
+        }
+
+        updateCfdiOptions();
+        visibleModalSat = false;
+
+        $mensajes_app.push({
+            tipo: "exito",
+            mensaje: "Se reemplazaron todos los datos con la Constancia SAT",
+        });
+        $mensajes_app = $mensajes_app;
+    }
+
+    function aplicarSatSoloCompletarFaltantes() {
+        if (!datosSatExtraidos) return;
+        const info = datosSatExtraidos;
+
+        if (!cliente.datos_fiscales.rfc && info.rfc) cliente.datos_fiscales.rfc = info.rfc;
+        if (!cliente.datos_fiscales.tipo_persona && info.tipoPersona) cliente.datos_fiscales.tipo_persona = info.tipoPersona;
+
+        if (!direccion.cp && info.cp) direccion.cp = info.cp;
+        if (!direccion.calle && info.calle) direccion.calle = info.calle;
+        if (!direccion.numero_exterior && info.numeroExterior) direccion.numero_exterior = info.numeroExterior;
+        if (!direccion.numero_interior && info.numeroInterior) direccion.numero_interior = info.numeroInterior;
+        if (!direccion.colonia && info.colonia) direccion.colonia = info.colonia;
+        if (!direccion.localidad_nombre && info.localidad) direccion.localidad_nombre = info.localidad;
+        if (!direccion.entre_calle && info.entreCalle) direccion.entre_calle = info.entreCalle;
+        if (!direccion.y_calle && info.yCalle) direccion.y_calle = info.yCalle;
+
+        if (!direccion.estado && info.idEstado) {
+            direccion.idEstado = info.idEstado;
+            direccion.estado = info.estado;
+        }
+        if (!direccion.municipio && info.idMunicipio) {
+            direccion.idMunicipio = info.idMunicipio;
+            direccion.municipio = info.municipio;
+        }
+        if (!direccion.pais && info.idPais) {
+            direccion.idPais = info.idPais;
+            direccion.pais = info.pais;
+        }
+
+        updateCfdiOptions();
+        visibleModalSat = false;
+
+        $mensajes_app.push({
+            tipo: "exito",
+            mensaje: "Se conservaron los datos registrados y se agregaron únicamente los datos faltantes",
+        });
+        $mensajes_app = $mensajes_app;
+    }
+
+    function aplicarSatSoloDatosFiscales() {
+        if (!datosSatExtraidos) return;
+        const info = datosSatExtraidos;
+
+        if (info.rfc) cliente.datos_fiscales.rfc = info.rfc;
+        if (info.tipoPersona) cliente.datos_fiscales.tipo_persona = info.tipoPersona;
+
+        updateCfdiOptions();
+        visibleModalSat = false;
+
+        $mensajes_app.push({
+            tipo: "exito",
+            mensaje: "Se actualizaron únicamente los datos fiscales (RFC y Tipo de Persona)",
+        });
+        $mensajes_app = $mensajes_app;
+    }
 
     async function handleSatPdfUpload(event) {
         const file = event.target.files[0];
@@ -462,49 +651,10 @@
             postData("app/clientes/DatosCliente/parse_sat_pdf", { pdfBase64 })
                 .then(async (res) => {
                     if (res.ok && res.data) {
-                        const info = res.data;
-
-                        // Asignar datos fiscales
-                        if (info.rfc) cliente.datos_fiscales.rfc = info.rfc;
-                        if (info.tipoPersona) cliente.datos_fiscales.tipo_persona = info.tipoPersona;
-
-
-                        // Asignar datos de dirección
-                        if (info.cp) direccion.cp = info.cp;
-                        if (info.calle) direccion.calle = info.calle;
-                        if (info.numeroExterior) direccion.numero_exterior = info.numeroExterior;
-                        if (info.numeroInterior) direccion.numero_interior = info.numeroInterior;
-                        if (info.colonia) direccion.colonia = info.colonia;
-                        if (info.localidad) direccion.localidad_nombre = info.localidad;
-                        if (info.entreCalle) direccion.entre_calle = info.entreCalle;
-                        if (info.yCalle) direccion.y_calle = info.yCalle;
-
-                        // Asignar país
-                        if (info.idPais) {
-                            direccion.idPais = info.idPais;
-                            direccion.pais = info.pais;
-                        }
-
-                        // Asignar estado
-                        if (info.idEstado) {
-                            direccion.idEstado = info.idEstado;
-                            direccion.estado = info.estado;
-                        }
-
-                        // Asignar municipio
-                        if (info.idMunicipio) {
-                            direccion.idMunicipio = info.idMunicipio;
-                            direccion.municipio = info.municipio;
-                        }
-
-                        // Forzar actualización de CFDI options en base al tipo de persona
-                        updateCfdiOptions();
-
-                        $mensajes_app.push({
-                            tipo: "exito",
-                            mensaje: "Datos de Constancia SAT cargados correctamente",
-                        });
-                        $mensajes_app = $mensajes_app;
+                        datosSatExtraidos = res.data;
+                        generarComparativaSat(datosSatExtraidos);
+                        visibleModalSat = true;
+                        event.target.value = "";
                     } else {
                         $mensajes_app.push({
                             tipo: "error",
@@ -682,75 +832,111 @@
                 });
             });
             // envio();
+        } else {
+            // reportValidity resalta en rojo el campo visible inválido y hace scroll hacia él
+            event.target.reportValidity();
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "Revisa los campos marcados en rojo, faltan datos obligatorios para guardar",
+            });
+            $mensajes_app = $mensajes_app;
         }
     }
 
     function asignarDatosClienteSelecto() {
-        let clientSelect = $editar_store.cliente;
-        let direccionCliSelect = clientSelect.direcciones_asociadas[0];
-        direccion.calle = direccionCliSelect.calle;
-        direccion.colonia = direccionCliSelect.colonia;
-        direccion.cp = direccionCliSelect.cp;
-        direccion.entre_calle = direccionCliSelect.entre_calle;
-        direccion.estado = direccionCliSelect.estado;
-        direccion.idEstado = direccionCliSelect.idEstado;
-        direccion.localidad = direccionCliSelect.localidad;
-        direccion.localidad_nombre = direccionCliSelect.localidad_nombre;
-        direccion.municipio = direccionCliSelect.municipio;
-        direccion.idMunicipio = direccionCliSelect.idMunicipio;
-        direccion.nombre = direccionCliSelect.nombre;
-        direccion.notas = direccionCliSelect.notas;
-        direccion.numero_exterior = direccionCliSelect.numero_exterior;
-        direccion.numero_interior = direccionCliSelect.numero_interior;
-        direccion.pais = direccionCliSelect.pais;
-        direccion.idPais = direccionCliSelect.idPais;
-        direccion.y_calle = direccionCliSelect.y_calle;
-        direccion.tipo = direccionCliSelect.tipo;
-        direccion.rfc = direccionCliSelect.rfc;
-        direccion.cfdi = direccionCliSelect.cfdi;
-        direccion.rfiscal = direccionCliSelect.rfiscal;
-        direccion.tipo_persona = direccionCliSelect.tipo_persona;
-        direccion.telefono = direccionCliSelect.telefono;
-        direccion.correo = direccionCliSelect.correo;
-        direccion.predeterminada = direccionCliSelect.predeterminada;
+        let clientSelect = $editar_store.cliente || {};
+        let direcciones = clientSelect.direcciones_asociadas || [];
+        let direccionCliSelect = direcciones[0] || {};
 
-        cliente.nombre = clientSelect.nombre;
-        cliente.alias = clientSelect.alias;
-        cliente.correo = clientSelect.correo;
-        cliente.direcciones_asociadas = clientSelect.direcciones_asociadas;
-        cliente.fecha_nacimiento = new Date(clientSelect.fecha_nacimiento)
-            .toISOString()
-            .split("T")[0];
-        cliente.fecha_creacion = new Date(clientSelect.fecha_creacion);
-        cliente.fecha_update = new Date(clientSelect.fecha_update);
-        cliente.fecha_desactivacion = new Date(
-            clientSelect.fecha_desactivacion,
-        );
-        cliente.datos_fiscales.razon_social =
-            clientSelect.datos_fiscales.razon_social;
-        cliente.datos_fiscales.rfc = clientSelect.datos_fiscales.rfc;
-        cliente.datos_fiscales.nombre = clientSelect.datos_fiscales.nombre;
-        cliente.datos_fiscales.rfiscal = clientSelect.datos_fiscales.rfiscal;
-        cliente.datos_fiscales.tipo_persona =
-            clientSelect.datos_fiscales.tipo_persona;
-        cliente.datos_fiscales.cfdi = clientSelect.datos_fiscales.cfdi;
-        cliente.localidad = clientSelect.localidad;
-        cliente.localidad_nombre = clientSelect.localidad_nombre;
-        cliente.location.lat = clientSelect.location.lat;
-        cliente.location.lng = clientSelect.location.lng;
-        cliente.perfil.perfil = clientSelect.perfil.perfil || "Mayoreo";
-        cliente.perfil.porcentaje = clientSelect.perfil.porcentaje !== undefined ? clientSelect.perfil.porcentaje : 0;
-        cliente.perfil.mostrar = clientSelect.perfil.mostrar || `${cliente.perfil.porcentaje}%`;
-        cliente.plataforma = clientSelect.plataforma;
-        cliente.push_token = clientSelect.push_token;
-        cliente.region = clientSelect.region;
-        cliente.telefono = clientSelect.telefono;
-        cliente.uid = clientSelect.uid;
-        cliente.password = clientSelect.password;
-        cliente.observaciones = clientSelect.observaciones;
-        cliente.agente.id = clientSelect.agente.id;
-        // cliente.agente.nombre = clientSelect.agente.nombre;
-        // cliente.agente.correo = clientSelect.agente.correo;
+        direccion.calle = direccionCliSelect.calle || "";
+        direccion.colonia = direccionCliSelect.colonia || "";
+        direccion.cp = direccionCliSelect.cp || "";
+        direccion.entre_calle = direccionCliSelect.entre_calle || "";
+        direccion.estado = direccionCliSelect.estado || "";
+        direccion.idEstado = direccionCliSelect.idEstado || "";
+        direccion.localidad = direccionCliSelect.localidad || "";
+        direccion.localidad_nombre = direccionCliSelect.localidad_nombre || "";
+        direccion.municipio = direccionCliSelect.municipio || "";
+        direccion.idMunicipio = direccionCliSelect.idMunicipio || "";
+        direccion.nombre = direccionCliSelect.nombre || "";
+        direccion.notas = direccionCliSelect.notas || "";
+        direccion.numero_exterior = direccionCliSelect.numero_exterior || "";
+        direccion.numero_interior = direccionCliSelect.numero_interior || "";
+        direccion.pais = direccionCliSelect.pais || "México";
+        direccion.idPais = direccionCliSelect.idPais || "";
+        direccion.y_calle = direccionCliSelect.y_calle || "";
+        direccion.tipo = direccionCliSelect.tipo || "";
+        direccion.rfc = direccionCliSelect.rfc || "";
+        direccion.cfdi = direccionCliSelect.cfdi || "";
+        direccion.rfiscal = direccionCliSelect.rfiscal || "";
+        direccion.tipo_persona = direccionCliSelect.tipo_persona || "";
+        direccion.telefono = direccionCliSelect.telefono || "";
+        direccion.correo = direccionCliSelect.correo || "";
+        direccion.predeterminada = direccionCliSelect.predeterminada || false;
+
+        cliente.nombre = clientSelect.nombre || "";
+        cliente.alias = clientSelect.alias || "";
+        cliente.correo = clientSelect.correo || "";
+        cliente.direcciones_asociadas = direcciones;
+
+        if (clientSelect.fecha_nacimiento) {
+            try {
+                cliente.fecha_nacimiento = new Date(clientSelect.fecha_nacimiento)
+                    .toISOString()
+                    .split("T")[0];
+            } catch (e) {
+                cliente.fecha_nacimiento = "";
+            }
+        } else {
+            cliente.fecha_nacimiento = "";
+        }
+
+        cliente.fecha_creacion = clientSelect.fecha_creacion ? new Date(clientSelect.fecha_creacion) : new Date();
+        cliente.fecha_update = clientSelect.fecha_update ? new Date(clientSelect.fecha_update) : new Date();
+        
+        if (clientSelect.fecha_desactivacion) {
+            try {
+                cliente.fecha_desactivacion = new Date(clientSelect.fecha_desactivacion);
+            } catch (e) {
+                cliente.fecha_desactivacion = new Date();
+            }
+        } else {
+            cliente.fecha_desactivacion = new Date();
+        }
+
+        let df = clientSelect.datos_fiscales || {};
+        cliente.datos_fiscales.razon_social = df.razon_social || "";
+        cliente.datos_fiscales.rfc = df.rfc || "";
+        cliente.datos_fiscales.nombre = df.nombre || "";
+        cliente.datos_fiscales.rfiscal = df.rfiscal || "";
+        cliente.datos_fiscales.tipo_persona = df.tipo_persona || "";
+        cliente.datos_fiscales.cfdi = df.cfdi || "";
+
+        cliente.localidad = clientSelect.localidad || "";
+        cliente.localidad_nombre = clientSelect.localidad_nombre || "";
+
+        let loc = clientSelect.location || {};
+        cliente.location.lat = loc.lat || 0;
+        cliente.location.lng = loc.lng || 0;
+
+        let perf = clientSelect.perfil || {};
+        cliente.perfil.perfil = perf.perfil || "Mayoreo";
+        cliente.perfil.porcentaje = perf.porcentaje !== undefined ? perf.porcentaje : 0;
+        cliente.perfil.mostrar = perf.mostrar || `${cliente.perfil.porcentaje}%`;
+
+        cliente.plataforma = clientSelect.plataforma || "web";
+        cliente.push_token = clientSelect.push_token || "";
+        cliente.region = clientSelect.region || "";
+        cliente.telefono = clientSelect.telefono || direccionCliSelect.telefono || "";
+        ({ tipo: tipo_telefono, numero: telefono_numero } = separar_telefono(cliente.telefono));
+        cliente.uid = clientSelect.uid || "";
+        cliente.password = clientSelect.password || "";
+        cliente.observaciones = clientSelect.observaciones || "";
+
+        let ag = clientSelect.agente || {};
+        cliente.agente.id = ag.id || "";
+        cliente.agente.nombre = ag.nombre || "";
+        cliente.agente.correo = ag.correo || "";
     }
 
     async function EditarClienteSelecto() {
@@ -790,11 +976,11 @@
             idPais: direccion.idPais,
             y_calle: direccion.y_calle,
             tipo: direccion.tipo,
-            rfc: direccion.rfc,
-            cfdi: direccion.cfdi,
-            rfiscal: direccion.rfiscal,
-            tipo_persona: direccion.tipo_persona,
-            telefono: direccion.telefono,
+            rfc: cliente.datos_fiscales.rfc,
+            cfdi: cliente.datos_fiscales.cfdi,
+            rfiscal: cliente.datos_fiscales.rfiscal,
+            tipo_persona: cliente.datos_fiscales.tipo_persona,
+            telefono: cliente.telefono,
             correo: direccion.correo,
             predeterminada: direccion.predeterminada,
         };
@@ -856,12 +1042,30 @@
                 <div class="valid-feedback">¡Se ve bien!</div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-2">
+            <div class="form-floating">
+                <select
+                    class="form-select"
+                    id="inputTipoTelefono"
+                    aria-label="Tipo de telefono"
+                    bind:value={tipo_telefono}
+                >
+                    {#each TIPOS_TELEFONO as item}
+                        <option value={item}>{item}</option>
+                    {/each}
+                </select>
+                <label for="inputTipoTelefono" class="form-label">Tipo</label>
+            </div>
+        </div>
+        <div class="col-md-2">
             <div class="form-floating mb-3">
                 <input
-                    type="number"
+                    type="text"
                     class="form-control"
-                    bind:value={cliente.telefono}
+                    value={formatear_telefono(telefono_numero, tipo_telefono)}
+                    on:input={(event) => {
+                        telefono_numero = solo_digitos(event.target.value);
+                    }}
                     id="inputTelefono"
                 />
                 <label for="inputTelefono" class="form-label">Telefono</label>
@@ -900,20 +1104,20 @@
             {/if}
         </div>
         -->
-        <div class="col-md-3">
+        <!-- Cumpleaños y Región ocultos (formulario simplificado), se mantienen en el modelo -->
+        <div class="col-md-3 d-none">
             <div class="form-floating mb-3">
                 <input
                     type="date"
                     class="form-control"
                     bind:value={cliente.fecha_nacimiento}
                     id="inputCumple"
-                    max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
                 />
                 <label for="inputCumple" class="form-label">Cumpleaños</label>
                 <div class="valid-feedback">¡Se ve bien!</div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 d-none">
             <div class="form-floating">
                 <select
                     class="form-select"
@@ -986,7 +1190,8 @@
             </div>
         </div>
         <hr />
-        <div class="col-md-3">
+        <!-- Ya no se gestiona la dirección por tipo; los datos fiscales se piden siempre y son opcionales -->
+        <div class="col-md-3 d-none">
             <div class="form-floating">
                 <select
                     class="form-select"
@@ -1002,7 +1207,6 @@
                 <label for="floatingSelect">Tipo de direccion</label>
             </div>
         </div>
-        {#if direccion.tipo === "Envio/Facturacion" || direccion.tipo == "Facturacion"}
             <div class="col-md-3">
                 <div class="d-flex align-items-center mb-3">
                     <input
@@ -1088,16 +1292,18 @@
                     <label for="floatingSelect">Regimen Fiscal</label>
                 </div>
             </div>
-        {/if}
         <hr />
-        <SelectPaisBs5
-            bind:donde={$donde}
-            bind:pais={direccion.pais}
-            bind:idPais={direccion.idPais}
-            on:pais_cambio={(event) =>
-                AsignarIdPais(event.detail.id, event.detail.nombre)}
-            size="col-md-4"
-        />
+        <!-- País oculto y fijo en México; Estado/Municipio funcionan por nombre de país sin necesitar el id -->
+        <div class="d-none">
+            <SelectPaisBs5
+                bind:donde={$donde}
+                bind:pais={direccion.pais}
+                bind:idPais={direccion.idPais}
+                on:pais_cambio={(event) =>
+                    AsignarIdPais(event.detail.id, event.detail.nombre)}
+                size="col-md-4"
+            />
+        </div>
         <SelectEstadoBs5
             bind:donde={$donde}
             bind:Pais={direccion.pais}
@@ -1260,7 +1466,87 @@
     </form>
 </div>
 
+{#if visibleModalSat}
+    <div class="modal-backdrop-custom" transition:fade={{ duration: 150 }}>
+        <div class="modal-card-custom modal-sat-card" transition:scale={{ duration: 150, start: 0.95 }}>
+            <div class="modal-header-custom">
+                <div class="modal-icon-container sat-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-file-earmark-text-fill" viewBox="0 0 16 16">
+                        <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1M4.5 9a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1zM4.5 11a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1zM4.5 13a.5.5 0 0 1 0-1h4a.5.5 0 0 1 0 1z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.15rem;">Comparación de Datos - Constancia SAT</h3>
+                    <span style="font-size: 0.82rem; color: #64748b;">Revisa las diferencias encontradas con tus datos actualmente registrados</span>
+                </div>
+            </div>
 
+            <div class="modal-body-custom sat-body">
+                <p style="margin-bottom: 0.85rem; font-size: 0.88rem; color: #475569;">
+                    Elige si deseas <strong>Reemplazar Todo</strong> con la constancia o <strong>Conservar tus datos actuales y solo agregar los faltantes</strong>.
+                </p>
+
+                <div class="sat-table-wrapper">
+                    <table class="table table-sm table-hover align-middle sat-comparative-table">
+                        <thead>
+                            <tr>
+                                <th>Campo / Concepto</th>
+                                <th>Valor Registrado Actual</th>
+                                <th>Valor Constancia SAT</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {#each comparativaSat as item}
+                                <tr class:table-warning={item.estadoCambio === 'diferente'} class:table-info={item.estadoCambio === 'nuevo'}>
+                                    <td class="fw-semibold" style="white-space: nowrap; font-size: 0.85rem;">{item.label}</td>
+                                    <td class="text-muted" style="font-size: 0.85rem;">
+                                        {#if item.actual && item.actual.toString().trim() !== ""}
+                                            {item.actual}
+                                        {:else}
+                                            <span class="text-secondary opacity-50"><i>(Vacío)</i></span>
+                                        {/if}
+                                    </td>
+                                    <td class="fw-bold text-dark" style="font-size: 0.85rem;">
+                                        {#if item.nuevo && item.nuevo.toString().trim() !== ""}
+                                            {item.nuevo}
+                                        {:else}
+                                            <span class="text-secondary opacity-50"><i>(No especificado)</i></span>
+                                        {/if}
+                                    </td>
+                                    <td class="text-center">
+                                        {#if item.estadoCambio === 'diferente'}
+                                            <span class="badge bg-warning text-dark">Diferente</span>
+                                        {:else if item.estadoCambio === 'nuevo'}
+                                            <span class="badge bg-info text-dark">Nuevo Dato</span>
+                                        {:else}
+                                            <span class="badge bg-light text-secondary border">Coincide</span>
+                                        {/if}
+                                    </td>
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer-custom sat-footer d-flex flex-wrap justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary-custom btn-sm" on:click={() => (visibleModalSat = false)}>
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-warning-custom btn-sm" on:click={aplicarSatSoloDatosFiscales}>
+                    📋 Solo Datos Fiscales (RFC/Tipo)
+                </button>
+                <button type="button" class="btn btn-success-custom btn-sm" on:click={aplicarSatSoloCompletarFaltantes}>
+                    ➕ Conservar Actuales y Agregar Faltantes
+                </button>
+                <button type="button" class="btn btn-primary-custom btn-sm" on:click={aplicarSatReemplazarTodo}>
+                    🔄 Reemplazar Todo
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
 
 <style>
     .form-container {
@@ -1460,5 +1746,80 @@
 
     .btn-primary-custom:active {
         transform: translateY(0);
+    }
+
+    .modal-sat-card {
+        max-width: 820px !important;
+        width: 95% !important;
+    }
+
+    .sat-body {
+        padding: 1.25rem 1.5rem !important;
+    }
+
+    .sat-icon {
+        background-color: #e0f2fe !important;
+        color: #0284c7 !important;
+    }
+
+    .sat-table-wrapper {
+        max-height: 380px;
+        overflow-y: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #ffffff;
+    }
+
+    .sat-comparative-table {
+        margin-bottom: 0;
+        font-size: 0.88rem;
+    }
+
+    .sat-comparative-table th {
+        background-color: #f8fafc;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .btn-success-custom {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 550;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-success-custom:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        box-shadow: 0 4px 12px -1px rgba(16, 185, 129, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .btn-warning-custom {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.2);
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 550;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-warning-custom:hover {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        box-shadow: 0 4px 12px -1px rgba(245, 158, 11, 0.3);
+        transform: translateY(-1px);
     }
 </style>

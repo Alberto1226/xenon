@@ -102,10 +102,31 @@ export async function crear_pedido(data, usuario, req) {
     }
 }
 
+const STATUS_NIVELES = {
+    'Pedido': 1,
+    'Ficha pago': 2,
+    'Ficha Pago': 2,
+    'Pagado': 3,
+    'Empaque': 4,
+    'Envío': 5,
+    'Envio': 5,
+    'Entregado': 6
+};
+
 export async function cambiar_status_basico(carrito_id, nuevo_status, usuario, req) {
     try {
         const carrito = await Carrito.findById(carrito_id);
         if (!carrito) return { ok: false, mensaje: "El pedido no existe" };
+
+        const nivelActual = STATUS_NIVELES[carrito.status] || 1;
+        const nivelNuevo = STATUS_NIVELES[nuevo_status] || 1;
+
+        if (nivelNuevo <= nivelActual) {
+            return {
+                ok: false,
+                mensaje: `No se permite regresar a un estatus anterior (${carrito.status} ➔ ${nuevo_status}).`
+            };
+        }
 
         carrito.status = nuevo_status;
         await carrito.save();

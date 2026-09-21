@@ -27,6 +27,10 @@ export function post(req, res, next) {
                 res.send({ ok: false, mensaje: 'El pedido ya no existe' })
                 return;
             }
+            if (['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes(resultado.status)) {
+                res.send({ ok: false, mensaje: `El pedido no se puede modificar en estatus ${resultado.status}` });
+                return;
+            }
             let lista = resultado.lista;
 
             let producto_temp = lista.find(element => JSON.stringify(element.producto._id) === JSON.stringify(registro.producto._id));

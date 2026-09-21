@@ -431,23 +431,22 @@
               </Button> -->
             {/if}
 
+            <Button
+              icon
+              dense
+              color={!['Pagado', 'Empaque', 'Envío'].includes(pedido.status) ? "green" : "#0065ff"}
+              on:click={editar}
+              title={!['Pagado', 'Empaque', 'Envío'].includes(pedido.status) ? "Editar pedido" : "Folios y detalle (Bloqueado para venta)"}
+            >
+              <i class="material-icons">{!['Pagado', 'Empaque', 'Envío'].includes(pedido.status) ? "create" : "assignment"}</i>
+            </Button>
+
             {#if !['Pagado', 'Empaque', 'Envío'].includes(pedido.status)}
               <Button
                 icon
                 dense
-                color={!['Pagado', 'Empaque', 'Envío'].includes(pedido.status) ? "green" : "gray"}
-                disabled={['Pagado', 'Empaque', 'Envío'].includes(pedido.status)}
-                on:click={editar}
-                title="editar"
-              >
-                <i class="material-icons">create</i>
-              </Button>
-              <Button
-                icon
-                dense
-                color={pedido.status !== "Envío" ? "darkorange" : "gray"}
-                disabled={pedido.status === "Envío" ||
-                  $usuario_db.rol == "almacen"}
+                color="darkorange"
+                disabled={$usuario_db.rol == "almacen"}
                 hidden={$usuario_db.rol == "almacen"}
                 on:click={() => {
                   visible_cancelar = true;

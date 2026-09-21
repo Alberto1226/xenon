@@ -401,6 +401,13 @@
 {/if}
 
 <Info_promos_completo {analisis} bind:visible={visible_promos_analisis} />
+
+{#if $editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio'].includes($editar_store.pedido.status)}
+  <div style="background-color: #fff3cd; color: #856404; padding: 10px 18px; border: 1px solid #ffeeba; border-radius: 6px; margin: 10px 15px; font-weight: bold; text-align: center; font-size: 15px;">
+    🔒 Pedido en estatus "{$editar_store.pedido.status}". Los productos y precios están bloqueados para venta; únicamente se permite la captura/modificación de folios.
+  </div>
+{/if}
+
 <div class="grid-container">
   <div
     class="titulo_1 titulo_formulario subtitulo_"

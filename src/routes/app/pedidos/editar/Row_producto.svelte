@@ -137,8 +137,11 @@
   //funcion para agregar la cantidad de producto
   function agregar(promo_solicitada) {
     let cantMB = 0;
-    //console.log($lista_productos_en_pedido_en_edicion);
-    ////console.log(producto.codigo);
+    if ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes($editar_store.pedido.status)) {
+      $mensajes_app.push({ tipo: "error", mensaje: "🔒 El pedido está en estatus '" + $editar_store.pedido.status + "' y no se pueden agregar más productos." });
+      $mensajes_app = $mensajes_app;
+      return;
+    }
     if (producto.activo === false) {
       alert("Producto deshabilitado por administración");
       return;

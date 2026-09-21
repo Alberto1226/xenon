@@ -3,6 +3,7 @@ import { Carrito } from "../../../../models/carrito";
 import * as accesos from "../../accesos";
 import { evaluar_datos_completos, LIMITE_COTIZACIONES_CON_DATOS_INCOMPLETOS } from "../../clientes/_datos_completos";
 import { crear_pedido } from "../_servicios/pedido_pipeline_service";
+import { evaluar_restricciones_pedido_cliente } from "./ya_tiene_carrito";
 
 export async function post(req, res, next) {
     if (accesos.esta_logueado(req) === false) {
@@ -19,12 +20,12 @@ export async function post(req, res, next) {
 
     const cliente_id = data.pedido_nuevo.cliente._id;
 
-    // Checar si tiene carrito pendiente en borrador (solo Pedido y Ficha pago bloquean)
-    const tiene_carrito_ = await tiene_carrito(cliente_id);
-    if (tiene_carrito_) {
+    // Checar dinámicamente si el cliente cumple las reglas de limite_pedidos_abiertos y status_minimo_requerido
+    const evaluacion = await evaluar_restricciones_pedido_cliente(cliente_id);
+    if (!evaluacion.permitido) {
         res.send({
             ok: false,
-            mensaje: "El cliente ya tiene un pedido en borrador o pendiente de pago.",
+            mensaje: evaluacion.mensaje || "El cliente no cumple con las condiciones para aperturar un nuevo pedido.",
         });
         return;
     }
@@ -63,21 +64,4 @@ export async function post(req, res, next) {
             mensaje: resultado_pipeline.mensaje || "Error al crear el pedido"
         });
     }
-}
-
-async function tiene_carrito(id) {
-    return new Promise((resolve, reject) => {
-        // Solo los estados en borrador/previos a pago ('Pedido' y 'Ficha pago') bloquean crear otro pedido simultáneo.
-        Carrito.findOne().or([
-            { 'cliente.id': id, status: 'Pedido' },
-            { 'cliente.id': id, status: 'Ficha pago' }
-        ])
-            .then((resDB) => {
-                resolve(resDB != null);
-            })
-            .catch((err) => {
-                console.log(err);
-                reject(err);
-            });
-    });
 }

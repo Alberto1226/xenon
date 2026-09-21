@@ -49,8 +49,8 @@ export async function post(req, res, next) {
     if (carritoDB === null || !carritoDB || carritoDB_proceso.ok == false) {
         return res.send({ ok: false });
     }
-    if (carritoDB.status === 'Envío') {
-        return res.send({ ok: false, mensaje: 'El pedido no se puede modificar en status Envío' });
+    if (['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes(carritoDB.status)) {
+        return res.send({ ok: false, mensaje: `El pedido no se puede modificar en estatus ${carritoDB.status}` });
     }
 
     let lista = carritoDB.lista;

@@ -51,6 +51,42 @@
         //$stores_productos.paqueteria_default = res.response;
     }
 
+    const STATUS_NIVELES = {
+        'Pedido': 1,
+        'Ficha pago': 2,
+        'Ficha Pago': 2,
+        'Pagado': 3,
+        'Empaque': 4,
+        'Envío': 5,
+        'Envio': 5,
+        'Entregado': 6
+    };
+
+    function estatus_anterior_deshabilitado(status_boton, status_actual) {
+        if (!status_actual) return false;
+        const nivelBoton = STATUS_NIVELES[status_boton] || 0;
+        const nivelActual = STATUS_NIVELES[status_actual] || 0;
+        return nivelBoton <= nivelActual;
+    }
+
+    function get_button_color(status_boton, status_actual) {
+        if (estatus_anterior_deshabilitado(status_boton, status_actual)) {
+            return "#a5a5a5";
+        }
+        if (status_boton === "Envío") {
+            return "#0065ff";
+        }
+        return "#333333";
+    }
+
+    function get_button_style(status_boton, status_actual) {
+        let base = "width: 150px; height: 150px;";
+        if (estatus_anterior_deshabilitado(status_boton, status_actual)) {
+            base += " opacity: 0.5; cursor: not-allowed; background-color: #f0f0f0; border: 1px solid #d0d0d0; color: #777777 !important;";
+        }
+        return base;
+    }
+
     function resetear() {
         //console.log("cerrado");
         contador = 0;
@@ -226,75 +262,98 @@
                         <td>
                             <span class="indice_row">1)</span>
                             <Button
-                                style="width:150px;height:150px"
+                                style={get_button_style("Pedido", pedido.status)}
                                 disabled={procesando ||
-                                    pedido.status === "Envío"}
-                                raised
+                                    estatus_anterior_deshabilitado("Pedido", pedido.status)}
+                                color={get_button_color("Pedido", pedido.status)}
+                                raised={!estatus_anterior_deshabilitado("Pedido", pedido.status)}
                                 on:click={() => {
                                     cambiar_status("Pedido");
                                 }}
-                                >Pedido
+                            >
+                                {#if estatus_anterior_deshabilitado("Pedido", pedido.status)}
+                                    <i class="material-icons" style="font-size:16px; margin-right:4px;">lock</i>
+                                {/if}
+                                Pedido
                             </Button></td
                         >
                         <td>
                             <span class="indice_row">2)</span>
                             <Button
-                                style="width:150px;height:150px"
+                                style={get_button_style("Ficha Pago", pedido.status)}
                                 disabled={procesando ||
-                                    pedido.status === "Envío"}
-                                raised
+                                    estatus_anterior_deshabilitado("Ficha Pago", pedido.status)}
+                                color={get_button_color("Ficha Pago", pedido.status)}
+                                raised={!estatus_anterior_deshabilitado("Ficha Pago", pedido.status)}
                                 on:click={() => {
                                     cambiar_status("Ficha Pago");
                                 }}
-                                >Ficha Pago
+                            >
+                                {#if estatus_anterior_deshabilitado("Ficha Pago", pedido.status)}
+                                    <i class="material-icons" style="font-size:16px; margin-right:4px;">lock</i>
+                                {/if}
+                                Ficha Pago
                             </Button></td
                         >
                         <td>
                             <span class="indice_row">3)</span>
                             <Button
-                                style="width:150px;height:150px"
+                                style={get_button_style("Pagado", pedido.status)}
                                 disabled={procesando ||
-                                    pedido.status === "Envío"}
-                                raised
+                                    estatus_anterior_deshabilitado("Pagado", pedido.status)}
+                                color={get_button_color("Pagado", pedido.status)}
+                                raised={!estatus_anterior_deshabilitado("Pagado", pedido.status)}
                                 on:click={() => {
                                     cambiar_status("Pagado");
                                 }}
                             >
-                                Pagado</Button
-                            ></td
+                                {#if estatus_anterior_deshabilitado("Pagado", pedido.status)}
+                                    <i class="material-icons" style="font-size:16px; margin-right:4px;">lock</i>
+                                {/if}
+                                Pagado
+                            </Button></td
                         >
                     </tr>
                     <tr>
                         <td>
                             <span class="indice_row">4)</span>
                             <Button
-                                style="width:150px;height:150px"
+                                style={get_button_style("Empaque", pedido.status)}
                                 disabled={procesando ||
-                                    pedido.status === "Envío"}
-                                raised
+                                    estatus_anterior_deshabilitado("Empaque", pedido.status)}
+                                color={get_button_color("Empaque", pedido.status)}
+                                raised={!estatus_anterior_deshabilitado("Empaque", pedido.status)}
                                 on:click={() => {
                                     cambiar_status("Empaque");
                                 }}
-                                >Empaque
+                            >
+                                {#if estatus_anterior_deshabilitado("Empaque", pedido.status)}
+                                    <i class="material-icons" style="font-size:16px; margin-right:4px;">lock</i>
+                                {/if}
+                                Empaque
                             </Button></td
                         >
                         <td>
                             <span class="indice_row">5)</span>
                             <Button
-                                style="width:150px;height:150px"
+                                style={get_button_style("Envío", pedido.status)}
                                 disabled={procesando ||
-                                    pedido.status === "Envío"}
-                                color="#0065ff"
+                                    estatus_anterior_deshabilitado("Envío", pedido.status)}
+                                color={get_button_color("Envío", pedido.status)}
                                 title="Descontar de inventario"
-                                raised
+                                raised={!estatus_anterior_deshabilitado("Envío", pedido.status)}
                                 on:click={cambiar_status_a_envio}
-                                >{mensaje_envio}
+                            >
+                                {#if estatus_anterior_deshabilitado("Envío", pedido.status)}
+                                    <i class="material-icons" style="font-size:16px; margin-right:4px;">lock</i>
+                                {/if}
+                                {mensaje_envio}
                             </Button></td
                         >
                         <td>
                             <span class="indice_row">6)</span>
                             <Button
-                                style="width:150px;height:150px"
+                                style="width:150px;height:150px; opacity: 0.5;"
                                 disabled={true}
                                 color="#a5a5a5"
                             >

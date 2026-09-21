@@ -58,9 +58,16 @@
 
     let DatosGrals = "";
 
+    let limitePedidosAbiertos = 3;
+    let statusMinimoRequerido = "Pagado";
+    let aplicarReglaStatusMinimo = true;
+    let guardandoConfigPedidos = false;
+    let opcionesStatus = ['Ninguno', 'Pedido', 'Ficha Pago', 'Pagado', 'Empaque'];
+
     onMount(() => {
         getColeccion();
         consultaPaises();
+        obtenerConfiguracionPedidos();
     });
 
     function Clean() {
@@ -456,6 +463,62 @@
             });
         });
     }
+
+    function obtenerConfiguracionPedidos() {
+        return new Promise((resolve) => {
+            postData("app/Catalogos/configuracion_pedidos", {
+                tipo: "obtener"
+            }).then((res) => {
+                if (res.ok && res.config) {
+                    limitePedidosAbiertos = (res.config.limite_pedidos_abiertos !== undefined) ? res.config.limite_pedidos_abiertos : 3;
+                    statusMinimoRequerido = res.config.status_minimo_requerido || "Pagado";
+                    aplicarReglaStatusMinimo = (res.config.aplicar_regla_status_minimo !== undefined) ? res.config.aplicar_regla_status_minimo : true;
+                }
+                resolve(res.ok);
+            }).catch((err) => {
+                console.error("Error obteniendo configuracion de pedidos:", err);
+                resolve(false);
+            });
+        });
+    }
+
+    function guardarConfiguracionPedidos() {
+        if (limitePedidosAbiertos < 1) {
+            $mensajes_app.push({
+                tipo: "error",
+                mensaje: "El límite de pedidos abiertos debe ser al menos 1",
+            });
+            $mensajes_app = $mensajes_app;
+            return;
+        }
+        guardandoConfigPedidos = true;
+        postData("app/Catalogos/configuracion_pedidos", {
+            tipo: "guardar",
+            dato: {
+                limite_pedidos_abiertos: limitePedidosAbiertos,
+                status_minimo_requerido: statusMinimoRequerido,
+                aplicar_regla_status_minimo: aplicarReglaStatusMinimo
+            }
+        }).then((res) => {
+            guardandoConfigPedidos = false;
+            if (res.ok) {
+                $mensajes_app.push({
+                    tipo: "exito",
+                    mensaje: "Configuración de pedidos guardada correctamente",
+                });
+                $mensajes_app = $mensajes_app;
+            } else {
+                $mensajes_app.push({
+                    tipo: "error",
+                    mensaje: res.mensaje || "Error al guardar la configuración",
+                });
+                $mensajes_app = $mensajes_app;
+            }
+        }).catch((err) => {
+            guardandoConfigPedidos = false;
+            console.error("Error guardando configuracion de pedidos:", err);
+        });
+    }
 </script>
 
 <main>
@@ -504,6 +567,12 @@
                 on:click={() => (activeTab = "Datos")}
             >
                 Datos Generales
+            </div>
+            <div
+                class="nav-item {activeTab === 'ConfiguracionPedidos' ? 'active' : ''}"
+                on:click={() => (activeTab = "ConfiguracionPedidos")}
+            >
+                Configuración Pedidos
             </div>
         {/if}
     </div>
@@ -954,6 +1023,63 @@
                                     </li>
                                 </ul>
                             {/if}
+                        </div>
+                    </div>
+                </div>
+            {/if}
+            {#if activeTab === "ConfiguracionPedidos"}
+                <div>
+                    <h2>Configuración de Pedidos por Cliente</h2>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        Administra el límite de notas/pedidos abiertos permitidos simultáneamente por cliente y el estatus mínimo que deben alcanzar antes de aperturar un nuevo pedido.
+                    </p>
+
+                    <div style="display: flex; flex-direction: column; gap: 18px; max-width: 550px; background: #f8f9fa; padding: 24px; border-radius: 8px; border: 1px solid #e0e0e0; margin-top: 10px;">
+                        <div>
+                            <label for="limite_pedidos_input" style="font-weight: bold; display: block; margin-bottom: 6px; color: #333;">Límite de Pedidos Abiertos por Cliente:</label>
+                            <Textfield
+                                outlined
+                                id="limite_pedidos_input"
+                                bind:value={limitePedidosAbiertos}
+                                placeholder="Número máximo (ej. 3)"
+                                type="number"
+                                min="1"
+                            />
+                        </div>
+
+                        <div>
+                            <label for="status_minimo_select" style="font-weight: bold; display: block; margin-bottom: 6px; color: #333;">Estatus Mínimo Requerido para Abrir Nuevo Pedido:</label>
+                            <select
+                                id="status_minimo_select"
+                                bind:value={statusMinimoRequerido}
+                                style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 15px; background: white;"
+                            >
+                                {#each opcionesStatus as st}
+                                    <option value={st}>{st}</option>
+                                {/each}
+                            </select>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                            <input
+                                type="checkbox"
+                                id="aplicar_regla_check"
+                                bind:checked={aplicarReglaStatusMinimo}
+                                style="width: 18px; height: 18px; cursor: pointer;"
+                            />
+                            <label for="aplicar_regla_check" style="cursor: pointer; font-weight: 500; color: #333;">
+                                Activar regla de estatus mínimo obligatorio
+                            </label>
+                        </div>
+
+                        <div style="margin-top: 12px;">
+                            <button
+                                disabled={guardandoConfigPedidos}
+                                on:click={guardarConfiguracionPedidos}
+                                style="background-color: #007bff; color: white; padding: 10px 24px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 15px;"
+                            >
+                                {guardandoConfigPedidos ? "Guardando..." : "Guardar Configuración"}
+                            </button>
                         </div>
                     </div>
                 </div>

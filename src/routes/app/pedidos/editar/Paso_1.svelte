@@ -128,6 +128,15 @@
   }
 
   function actualizar_moneda_y_direccion_y_continuar(id_pedido) {
+    if ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes($editar_store.pedido.status)) {
+      $mensajes_app.push({
+        tipo: "info",
+        mensaje: "🔒 Pedido en estatus '" + $editar_store.pedido.status + "'. Los datos de venta se mantienen bloqueados; avanzando a captura de folios.",
+      });
+      $mensajes_app = $mensajes_app;
+      dispatch("continuar");
+      return;
+    }
     cargando = true;
     postData("app/pedidos/editar/cambiar_direccion_moneda_carrito", {
       id: id_pedido,

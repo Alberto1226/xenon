@@ -25,6 +25,9 @@ var schema = new Schema({
     error: { type: Boolean, default: false },
 });
 
+schema.index({ fecha: -1, accion: 1 });
+schema.index({ body: "text" });
+
 
 schema.statics.registrarLog = async function (ruta, usuario, body, req,error) {
     return new Promise(async (resolve, reject) => {

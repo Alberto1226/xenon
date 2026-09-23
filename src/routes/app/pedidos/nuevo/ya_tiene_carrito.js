@@ -29,13 +29,21 @@ export async function evaluar_restricciones_pedido_cliente(cliente_id) {
     const carritosAbiertos = await Carrito.find({
         'cliente.id': cliente_id,
         status: { $nin: ['Envío', 'Envio', 'Entregado', 'Cancelado'] }
-    }).exec();
+    }).select('folio status').exec();
+
+    const pedidos_abiertos = carritosAbiertos.map(c => ({
+        folio: c.folio,
+        status: c.status
+    }));
+    const total_pedidos_abiertos = carritosAbiertos.length;
 
     // 1. Validar límite máximo de pedidos abiertos
     if (carritosAbiertos.length >= config.limite_pedidos_abiertos) {
         return {
             permitido: false,
             carrito: carritosAbiertos[0],
+            pedidos_abiertos,
+            total_pedidos_abiertos,
             mensaje: `El cliente ha alcanzado el límite máximo permitido de ${config.limite_pedidos_abiertos} pedido(s) abierto(s).`
         };
     }
@@ -52,6 +60,8 @@ export async function evaluar_restricciones_pedido_cliente(cliente_id) {
             return {
                 permitido: false,
                 carrito: pedidoConStatusBajo,
+                pedidos_abiertos,
+                total_pedidos_abiertos,
                 mensaje: `El cliente tiene un pedido activo en estatus '${pedidoConStatusBajo.status}'. Para abrir un nuevo pedido, sus notas abiertas deben estar al menos en estatus '${config.status_minimo_requerido}'.`
             };
         }
@@ -60,6 +70,8 @@ export async function evaluar_restricciones_pedido_cliente(cliente_id) {
     return {
         permitido: true,
         carrito: null,
+        pedidos_abiertos,
+        total_pedidos_abiertos,
         mensaje: ""
     };
 }
@@ -92,6 +104,8 @@ export async function post(req, res, next) {
         res.send({
             ok: true,
             carrito: evaluacion.carrito,
+            pedidos_abiertos: evaluacion.pedidos_abiertos,
+            total_pedidos_abiertos: evaluacion.total_pedidos_abiertos,
             cliente_tiene_carrito: !evaluacion.permitido,
             mensaje_bloqueo: evaluacion.mensaje,
             datos_completos,

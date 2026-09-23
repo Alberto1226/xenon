@@ -275,11 +275,11 @@
                 disabled={ejecutando_backfill}
                 raised
                 color="secondary"
-                title="Corregir datos de productos apartados (Script de transición)"
+                title="Completar datos de apartados en carritos activos e inicializar Folios y FolioConfig"
                 style="margin-right: 10px;"
               >
                 <i class="material-icons">build</i>
-                {ejecutando_backfill ? "Corrigiendo..." : "Corregir Apartados"}
+                {ejecutando_backfill ? "Procesando..." : "Corregir Apartados"}
               </Button>
             {/if}
             Nuevo Pedido
@@ -435,13 +435,13 @@
   <div class="centrado" style="font-weight: bold; font-size: 1.15em; padding: 12px; border-bottom: 1px solid #eee;">
     {#if ejecutando_backfill}
       <i class="material-icons spinning" style="vertical-align: middle; color: #2196f3; margin-right: 8px;">sync</i>
-      Actualizando Productos y Pedidos en Vivo
+      Actualizando Datos de Apartados y Folios en Vivo
     {:else if completado_backfill}
       <i class="material-icons" style="vertical-align: middle; color: #4caf50; margin-right: 8px;">check_circle</i>
       Proceso de Actualización Completado
     {:else}
       <i class="material-icons" style="vertical-align: middle; color: #ff9800; margin-right: 8px;">build</i>
-      Proceso de Corrección de Apartados
+      Actualización de Datos de Apartados y Folios
     {/if}
   </div>
 
@@ -449,7 +449,7 @@
     <!-- Resumen de Totales -->
     <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px 16px; margin-bottom: 15px;">
       <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-        <span style="color: #495057; font-weight: 600;">Total de Pedidos a Procesar:</span>
+        <span style="color: #495057; font-weight: 600;">Total Pedidos Activos a Procesar:</span>
         <span style="font-weight: 700; color: #1976d2; font-size: 1.1em;">{total_pedidos_backfill}</span>
       </div>
       <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
@@ -457,7 +457,7 @@
         <span style="font-weight: 700; color: #2e7d32; font-size: 1.1em;">{pedidos_procesados_backfill} de {total_pedidos_backfill}</span>
       </div>
       <div style="display: flex; justify-content: space-between;">
-        <span style="color: #495057; font-weight: 600;">Apartados Corregidos:</span>
+        <span style="color: #495057; font-weight: 600;">Apartados Enriquecidos:</span>
         <span style="font-weight: 700; color: #ed6c02; font-size: 1.1em;">{apartados_actualizados_backfill}</span>
       </div>
     </div>
@@ -473,9 +473,9 @@
       </div>
     </div>
 
-    <!-- Bitácora de actualización -->
+    <!-- Bitácora -->
     <div style="font-weight: 600; font-size: 0.85em; color: #555; margin-bottom: 6px;">
-      Bitácora de actualización de productos:
+      Bitácora de proceso:
     </div>
     <div bind:this={log_container_elem} style="background-color: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.82em; height: 140px; overflow-y: auto; padding: 10px; border-radius: 6px; line-height: 1.4;">
       {#if logs_progreso.length === 0}
@@ -493,9 +493,9 @@
       <div style="margin-top: 15px; padding: 10px; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 6px; font-size: 0.88em; color: #1b5e20;">
         <strong>Resultados Finales:</strong>
         <ul style="margin: 5px 0 0 0; padding-left: 20px;">
-          <li>Apartados huérfanos limpiados: {apartados_huerfanos_backfill}</li>
-          <li>Folios poblados en colección: {folios_poblados_backfill}</li>
-          <li>Siguiente folio automático: #{folio_siguiente_backfill}</li>
+          <li>Apartados enriquecidos con ID de Carrito/Cliente: {apartados_actualizados_backfill}</li>
+          <li>Folios poblados en colección Folios: {folios_poblados_backfill}</li>
+          <li>Siguiente folio automático en FolioConfig: #{folio_siguiente_backfill}</li>
         </ul>
       </div>
     {/if}

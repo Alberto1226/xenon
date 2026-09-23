@@ -348,7 +348,7 @@ async function ejecutar_prueba_sobrecarga_en_servidor(req, total_pedidos = 1000,
                         }
                     };
 
-                    const usuario_dummy = req.user || { _id: 'dev_stress_user', nombre: 'DevStressTester', usuario: 'devstress' };
+                    const usuario_dummy = (req && req.user && req.user._id) ? req.user : { _id: new mongoose.Types.ObjectId(), nombre: 'DevStressTester', usuario: 'devstress' };
 
                     // 1. Crear carrito base con Folio atómico
                     const res_crear = await crear_pedido(data_pedido, usuario_dummy, req);
@@ -443,7 +443,7 @@ async function ejecutar_prueba_sobrecarga_en_servidor(req, total_pedidos = 1000,
                 const promesas_cancel = [];
                 for (let j = i; j < limite_lote; j++) {
                     const item_c = carritos_cancelados_list[j];
-                    const usuario_dummy = req.user || { _id: 'dev_stress_user', nombre: 'DevStressTester', usuario: 'devstress' };
+                    const usuario_dummy = (req && req.user && req.user._id) ? req.user : { _id: new mongoose.Types.ObjectId(), nombre: 'DevStressTester', usuario: 'devstress' };
                     promesas_cancel.push(cancelar_pedido(item_c.carrito_id, usuario_dummy, req));
                 }
                 const res_cancel = await Promise.all(promesas_cancel);
@@ -478,7 +478,7 @@ async function ejecutar_prueba_sobrecarga_en_servidor(req, total_pedidos = 1000,
                         { $set: { lista: item_c.lista, total_pedido: total_dinero } }
                     );
 
-                    const usuario_dummy = req.user || { _id: 'dev_stress_user', nombre: 'DevStressTester', usuario: 'devstress' };
+                    const usuario_dummy = (req && req.user && req.user._id) ? req.user : { _id: new mongoose.Types.ObjectId(), nombre: 'DevStressTester', usuario: 'devstress' };
                     await sincronizar_apartados_de_carrito(item_c.carrito_id, item_c.cliente_id, item_c.lista, usuario_dummy, req);
 
                     // Generar Producto_snaplog '4a' para la edición en caliente
@@ -506,7 +506,7 @@ async function ejecutar_prueba_sobrecarga_en_servidor(req, total_pedidos = 1000,
                 const promesas_estados = [];
                 for (let j = i; j < limite_lote; j++) {
                     const item_c = carritos_para_entregar[j];
-                    const usuario_dummy = req.user || { _id: 'dev_stress_user', nombre: 'DevStressTester', usuario: 'devstress' };
+                    const usuario_dummy = (req && req.user && req.user._id) ? req.user : { _id: new mongoose.Types.ObjectId(), nombre: 'DevStressTester', usuario: 'devstress' };
                     promesas_estados.push((async () => {
                         await cambiar_status_basico(item_c.carrito_id, 'Ficha pago', usuario_dummy, req);
                         await cambiar_status_basico(item_c.carrito_id, 'Pagado', usuario_dummy, req);
@@ -532,7 +532,7 @@ async function ejecutar_prueba_sobrecarga_en_servidor(req, total_pedidos = 1000,
 
             for (let j = i; j < limite_lote; j++) {
                 const item_c = carritos_para_entregar[j];
-                const usuario_dummy = req.user || { _id: 'dev_stress_user', nombre: 'DevStressTester', usuario: 'devstress' };
+                const usuario_dummy = (req && req.user && req.user._id) ? req.user : { _id: new mongoose.Types.ObjectId(), nombre: 'DevStressTester', usuario: 'devstress' };
                 promesas_envio.push(cambiar_status_a_envio(item_c.carrito_id, {}, usuario_dummy, req));
             }
 
@@ -554,7 +554,7 @@ async function ejecutar_prueba_sobrecarga_en_servidor(req, total_pedidos = 1000,
 
             for (let j = i; j < limite_lote; j++) {
                 const item_c = carritos_para_entregar[j];
-                const usuario_dummy = req.user || { _id: 'dev_stress_user', nombre: 'DevStressTester', usuario: 'devstress' };
+                const usuario_dummy = (req && req.user && req.user._id) ? req.user : { _id: new mongoose.Types.ObjectId(), nombre: 'DevStressTester', usuario: 'devstress' };
                 promesas_entregado.push(cambiar_status_a_entregado(item_c.carrito_id, usuario_dummy, req));
             }
 

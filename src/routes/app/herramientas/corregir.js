@@ -106,12 +106,12 @@ export async function post(req, res, next) {
     }
 
     const Model = MODELOS[coleccion];
+    const rawCollection = Model.collection;
     const relaciones = RELACIONES_MAPPING[coleccion];
     const getIdentificador = IDENTIFICADORES[coleccion] || ((doc) => `ID: ${doc._id}`);
 
     try {
         if (corregirTodo) {
-            // Lógica para corregir la colección completa por bloques de 100 y escribir logs
             const logFilePath = path.join(process.cwd(), 'logs_correccion', `${coleccion}_correcciones.json`);
             const logDir = path.dirname(logFilePath);
             if (!fs.existsSync(logDir)) {
@@ -127,7 +127,7 @@ export async function post(req, res, next) {
                 }
             }
 
-            const cursor = Model.find({}).cursor();
+            const cursor = rawCollection.find({});
             let bulkOps = [];
             let loteCambiosLog = [];
             let totalModificados = 0;
@@ -168,9 +168,8 @@ export async function post(req, res, next) {
                     });
                 }
 
-                // Ejecutar por bloques de 100
                 if (bulkOps.length >= 100) {
-                    const resultado = await Model.bulkWrite(bulkOps);
+                    const resultado = await rawCollection.bulkWrite(bulkOps);
                     totalModificados += resultado.modifiedCount;
                     bulkOps = [];
 
@@ -180,9 +179,8 @@ export async function post(req, res, next) {
                 }
             }
 
-            // Ejecutar remanentes
             if (bulkOps.length > 0) {
-                const resultado = await Model.bulkWrite(bulkOps);
+                const resultado = await rawCollection.bulkWrite(bulkOps);
                 totalModificados += resultado.modifiedCount;
                 historialCambios.push(...loteCambiosLog);
                 fs.writeFileSync(logFilePath, JSON.stringify(historialCambios, null, 2), 'utf-8');
@@ -197,7 +195,6 @@ export async function post(req, res, next) {
             return;
         }
 
-        // Lógica normal de IDs seleccionados
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
             res.send({ ok: false, mensaje: "No se proporcionaron IDs para corregir" });
             return;
@@ -209,7 +206,7 @@ export async function post(req, res, next) {
         for (const docId of ids) {
             if (!mongoose.Types.ObjectId.isValid(docId)) continue;
             
-            const doc = await Model.findById(docId).lean().exec();
+            const doc = await rawCollection.findOne({ _id: new mongoose.Types.ObjectId(docId) });
             if (!doc) continue;
 
             const updateFields = {};
@@ -248,9 +245,8 @@ export async function post(req, res, next) {
         }
 
         if (bulkOps.length > 0) {
-            const resultado = await Model.bulkWrite(bulkOps);
+            const resultado = await rawCollection.bulkWrite(bulkOps);
 
-            // Escribir cambios del lote al archivo local
             const logFilePath = path.join(process.cwd(), 'logs_correccion', `${coleccion}_correcciones.json`);
             const logDir = path.dirname(logFilePath);
             if (!fs.existsSync(logDir)) {

@@ -109,7 +109,7 @@ function obtenerDetallesTipo(val) {
         const esValido = mongoose.Types.ObjectId.isValid(val);
         return { tipo: 'String', esObjectId: false, esStringValido: esValido };
     }
-    if (mongoose.Types.ObjectId.isValid(val)) {
+    if (val instanceof mongoose.Types.ObjectId || (typeof val === 'object' && val._bsontype === 'ObjectID') || mongoose.Types.ObjectId.isValid(val)) {
         return { tipo: 'ObjectId', esObjectId: true, esStringValido: false };
     }
     return { tipo: typeof val, esObjectId: false, esStringValido: false };
@@ -125,7 +125,7 @@ export async function post(req, res, next) {
         return;
     }
 
-    const { coleccion, pagina_actual = 1, limite = 10 } = req.body;
+    const { coleccion, pagina_actual = 1, limite = 10, filtro = 'todos' } = req.body;
     
     if (!coleccion || !CONFIG_COLECCIONES[coleccion]) {
         res.send({ ok: false, mensaje: "Colección no soportada o inválida" });
@@ -134,18 +134,35 @@ export async function post(req, res, next) {
 
     const config = CONFIG_COLECCIONES[coleccion];
     const Model = config.modelo;
+    const rawCollection = Model.collection;
 
     try {
         const skip = (parseInt(pagina_actual) - 1) * parseInt(limite);
         const limit = parseInt(limite);
 
-        const totalDocumentos = await Model.countDocuments({});
-        const documentos = await Model.find({})
+        const queryPendientesOr = config.relaciones.map(rel => ({
+            [rel.path]: { $type: "string", $ne: "" }
+        }));
+
+        const totalDocumentos = await rawCollection.countDocuments({});
+        const totalPendientes = queryPendientesOr.length > 0 
+            ? await rawCollection.countDocuments({ $or: queryPendientesOr })
+            : 0;
+
+        let queryFilter = {};
+        if (filtro === 'pendientes' && queryPendientesOr.length > 0) {
+            queryFilter = { $or: queryPendientesOr };
+        }
+
+        const totalFiltrados = Object.keys(queryFilter).length > 0 
+            ? await rawCollection.countDocuments(queryFilter) 
+            : totalDocumentos;
+
+        const documentos = await rawCollection.find(queryFilter)
             .sort({ _id: -1 })
             .skip(skip)
             .limit(limit)
-            .lean()
-            .exec();
+            .toArray();
 
         const listaResultados = [];
 
@@ -160,9 +177,14 @@ export async function post(req, res, next) {
                 let estado = 'nulo';
 
                 if (infoTipo.tipo !== 'Nulo') {
-                    const refModel = mongoose.model(rel.ref);
                     if (mongoose.Types.ObjectId.isValid(val)) {
-                        existe = await refModel.exists({ _id: val });
+                        try {
+                            const refModel = mongoose.model(rel.ref);
+                            const countRef = await refModel.collection.countDocuments({ _id: new mongoose.Types.ObjectId(val) });
+                            existe = countRef > 0;
+                        } catch (eRef) {
+                            existe = false;
+                        }
                     }
                     
                     if (infoTipo.tipo === 'String') {
@@ -193,6 +215,8 @@ export async function post(req, res, next) {
         res.send({
             ok: true,
             totalDocumentos,
+            totalPendientes,
+            totalFiltrados,
             lista: listaResultados
         });
 

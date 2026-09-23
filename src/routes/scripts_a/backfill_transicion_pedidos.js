@@ -1,26 +1,18 @@
 // Script de transición y backfill para producción:
-// 1. Asigna carrito_id a apartados existentes en producto.carritos
-// 2. Limpia reservas huérfanas
-// 3. Pobla la colección de folios e inicializa FolioConfig
-// Invocación vía GET por un administrador: GET /scripts_a/backfill_transicion_pedidos
+// 1. Asigna carrito_id, cliente_id y datos requeridos a apartados existentes en producto.carritos
+// 2. Pobla la colección de folios e inicializa FolioConfig (folio_siguiente = max_folio + 1)
+// Nota: La eliminación de apartados huérfanos se gestiona mediante la interfaz de Dev Tools / Huérfanos.
 
-import fs from 'fs';
-import path from 'path';
 import { Carrito } from '../../models/carrito';
 import { Pedido } from '../../models/pedido';
 import { Carrito_cancelado } from '../../models/carrito_cancelado';
 import { Producto } from '../../models/producto';
 import { Folio } from '../../models/folio';
 import { FolioConfig } from '../../models/folio_config';
-import { Log } from '../../models/log';
 import * as accesos from '../app/accesos';
 
-var FgBlack = "\x1b[30m";
-var FgRed = "\x1b[31m";
-var FgGreen = "\x1b[32m";
-var FgYellow = "\x1b[33m";
 var FgBlue = "\x1b[34m";
-var BgGreen = "\x1b[42m";
+var FgGreen = "\x1b[32m";
 var FgWhite = "\x1b[37m";
 var Reset = "\x1b[0m";
 
@@ -33,7 +25,6 @@ if (!global.estado_backfill) {
         folio_actual: '',
         cliente_actual: '',
         apartados_actualizados: 0,
-        apartados_huerfanos_limpiados: 0,
         folios_poblados: 0,
         folio_siguiente_configurado: 0,
         completado: false,
@@ -73,7 +64,6 @@ export async function get(req, res, next) {
             folio_actual: '',
             cliente_actual: '',
             apartados_actualizados: 0,
-            apartados_huerfanos_limpiados: 0,
             folios_poblados: 0,
             folio_siguiente_configurado: 0,
             completado: false,
@@ -81,7 +71,7 @@ export async function get(req, res, next) {
             logs: ["Iniciando análisis de base de datos..."]
         };
 
-        res.send({ ok: true, mensaje: "Proceso de actualización iniciado", estado: global.estado_backfill });
+        res.send({ ok: true, mensaje: "Proceso de actualización e inicialización iniciado", estado: global.estado_backfill });
 
         // Ejecutar en segundo plano
         ejecutar_backfill_en_servidor().catch(err => {
@@ -98,7 +88,6 @@ export async function get(req, res, next) {
 async function ejecutar_backfill_en_servidor() {
     try {
         let apartados_actualizados = 0;
-        let apartados_huerfanos_limpiados = 0;
         let folios_poblados = 0;
 
         // 1. Buscar todos los carritos activos en fase previa a envío
@@ -110,7 +99,7 @@ async function ejecutar_backfill_en_servidor() {
         global.estado_backfill.total_pedidos = total_pedidos;
         global.estado_backfill.logs.push(`Analizando ${total_pedidos} pedido(s) activo(s)...`);
 
-        // 2. Asignar carrito_id y cliente_id en los apartados de producto.carritos
+        // 2. Asignar carrito_id, cliente_id y datos requeridos en los apartados de producto.carritos
         for (let i = 0; i < carritos_activos.length; i++) {
             const carrito = carritos_activos[i];
             let productos_en_pedido = 0;
@@ -131,7 +120,6 @@ async function ejecutar_backfill_en_servidor() {
                 console.log(FgBlue + `[${i + 1}/${total_pedidos}] Carrito: ` + Reset + FgWhite + (carrito ? carrito._id : 'N/A') + FgGreen + " Cliente: " + FgBlue + cliente_id_carrito + FgGreen);
 
                 for (let item of lista_items) {
-                    console.log(FgBlue + "Item: " + Reset + FgWhite + item.producto._id);
                     if (!item || !item.producto || !item.producto._id) continue;
                     productos_en_pedido++;
 
@@ -188,7 +176,7 @@ async function ejecutar_backfill_en_servidor() {
 
                 global.estado_backfill.apartados_actualizados = apartados_actualizados;
                 global.estado_backfill.logs.push(
-                    `[${i + 1}/${total_pedidos}] Folio #${carrito ? carrito.folio : 'S/N'} (${cliente_nombre_carrito}): ${productos_en_pedido} prod., ${apartados_en_este_pedido} apartado(s) asignado(s)`
+                    `[${i + 1}/${total_pedidos}] Folio #${carrito ? carrito.folio : 'S/N'} (${cliente_nombre_carrito}): ${productos_en_pedido} prod., ${apartados_en_este_pedido} apartado(s) enriquecido(s)`
                 );
             } catch (errOrder) {
                 console.error(`Error procesando carrito [${i + 1}/${total_pedidos}]:`, errOrder);
@@ -196,100 +184,7 @@ async function ejecutar_backfill_en_servidor() {
             }
         }
 
-        // 3. Limpiar reservas huérfanas que no pertenezcan a ningún carrito en la colección Carrito
-        global.estado_backfill.logs.push("Verificando y limpiando reservas huérfanas...");
-        try {
-            const todos_carritos = await Carrito.find({}, { _id: 1, folio: 1, status: 1, cliente: 1 }).lean();
-            const ids_carritos_existentes = new Set(todos_carritos.map(c => String(c._id)));
-            const folios_carritos_existentes = new Set(todos_carritos.filter(c => c && c.folio != null).map(c => String(c.folio)));
-            const clientes_carritos_existentes = new Set(todos_carritos.map(c => (c && c.cliente) ? String(c.cliente.id || c.cliente._id || '') : '').filter(id => id !== ''));
-
-            const productos_con_carritos = await Producto.find({ "carritos.0": { $exists: true } });
-            for (let producto of productos_con_carritos) {
-                if (!producto || !Array.isArray(producto.carritos)) continue;
-                let carritos_validos = [];
-                let hubo_cambio = false;
-
-                for (let reserva of producto.carritos) {
-                    if (!reserva || typeof reserva !== 'object') continue;
-                    let es_valido = false;
-
-                    if (reserva.carrito_id && ids_carritos_existentes.has(String(reserva.carrito_id))) {
-                        es_valido = true;
-                    }
-                    if (!es_valido && reserva.folio != null && folios_carritos_existentes.has(String(reserva.folio))) {
-                        es_valido = true;
-                    }
-                    if (!es_valido) {
-                        const cliente_id_res = String(
-                            reserva.cliente_id ||
-                            (reserva.cliente ? (reserva.cliente.id || reserva.cliente._id || '') : '')
-                        );
-                        if (cliente_id_res && clientes_carritos_existentes.has(cliente_id_res)) {
-                            es_valido = true;
-                        }
-                    }
-
-                    if (es_valido) {
-                        carritos_validos.push(reserva);
-                    } else {
-                        apartados_huerfanos_limpiados++;
-                        hubo_cambio = true;
-                        const cliente_nom = (reserva.cliente && reserva.cliente.nombre) ? reserva.cliente.nombre : (reserva.cliente_id || 'Desconocido');
-                        const prod_info = producto.sku || producto.modelo || producto.nombre || producto._id;
-                        const msg_huerfano = `Apartado huérfano eliminado en '${prod_info}' (Folio #${reserva.folio || 'S/N'}, Cliente: ${cliente_nom}, Cant: ${reserva.cantidad || 1})`;
-                        console.log(FgYellow + msg_huerfano + Reset);
-                        global.estado_backfill.logs.push(`⚠️ ${msg_huerfano}`);
-
-                        // 1. Escribir registro persistente en archivo de log en servidor
-                        try {
-                            const dir_logs = path.join(process.cwd(), 'logs_correccion');
-                            if (!fs.existsSync(dir_logs)) {
-                                fs.mkdirSync(dir_logs, { recursive: true });
-                            }
-                            const archivo_log = path.join(dir_logs, 'apartados_huerfanos.log');
-                            const fecha_iso = new Date().toISOString();
-                            const linea_archivo = `[${fecha_iso}] SKU: "${producto.sku || ''}" | Modelo: "${producto.modelo || ''}" | Producto: "${producto.nombre || ''}" | ID_Prod: ${producto._id} | Folio: #${reserva.folio || 'S/N'} | Cliente: "${cliente_nom}" | Cantidad: ${reserva.cantidad || 1} | CarritoID_Reserva: ${reserva.carrito_id || 'N/A'}\n`;
-                            fs.appendFileSync(archivo_log, linea_archivo);
-                        } catch (errFile) {
-                            console.error("Error escribiendo log físico de huérfanos:", errFile);
-                        }
-
-                        // 2. Registrar en la colección 'Log' de MongoDB para auditoría
-                        try {
-                            await Log.create({
-                                activo: true,
-                                fecha: new Date(),
-                                usuario: { nombre: 'sistema_backfill_apartados', id: 'system' },
-                                accion: 'LIMPIEZA_APARTADO_HUERFANO',
-                                body: JSON.stringify({
-                                    producto: {
-                                        id: producto._id,
-                                        sku: producto.sku,
-                                        modelo: producto.modelo,
-                                        nombre: producto.nombre
-                                    },
-                                    reserva_eliminada: reserva
-                                })
-                            });
-                        } catch (errDbLog) {
-                            console.error("Error registrando Log en DB:", errDbLog);
-                        }
-                    }
-                }
-
-                if (hubo_cambio) {
-                    producto.carritos = carritos_validos;
-                    producto.markModified('carritos');
-                    await producto.save();
-                }
-            }
-        } catch (errLimpieza) {
-            console.error("Error en limpieza de huérfanos:", errLimpieza);
-        }
-        global.estado_backfill.apartados_huerfanos_limpiados = apartados_huerfanos_limpiados;
-
-        // 4. Poblado de colección de Folios e inicialización de FolioConfig
+        // 3. Poblado de colección de Folios e inicialización de FolioConfig
         global.estado_backfill.logs.push("Poblando colección de folios e inicializando FolioConfig...");
         let max_folio = 0;
         try {
@@ -351,7 +246,7 @@ async function ejecutar_backfill_en_servidor() {
 
         global.estado_backfill.ejecutando = false;
         global.estado_backfill.completado = true;
-        global.estado_backfill.logs.push("Actualización de apartados y pedidos completada con éxito.");
+        global.estado_backfill.logs.push("Actualización de datos de apartados y folios completada con éxito.");
     } catch (err) {
         console.error("Error general en ejecutar_backfill_en_servidor:", err);
         global.estado_backfill.ejecutando = false;

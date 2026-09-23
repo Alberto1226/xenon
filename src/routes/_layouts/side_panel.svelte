@@ -29,20 +29,42 @@
       url: "/app/inicio",
       titulo: "Inicio",
       icono: "home",
-      roles: ["administrador", "vendedor", "almacen", "gerente", "marketing", "ComercioExterior"],
+      roles: [
+        "administrador",
+        "vendedor",
+        "almacen",
+        "gerente",
+        "marketing",
+        "ComercioExterior",
+      ],
     },
 
     {
       url: "/app/pedidos",
       titulo: "Pedidos",
       icono: "shopping_cart",
-      roles: ["administrador", "almacen", "vendedor", "gerente", "marketing", "ComercioExterior"],
+      roles: [
+        "administrador",
+        "almacen",
+        "vendedor",
+        "gerente",
+        "marketing",
+        "ComercioExterior",
+      ],
     },
     {
       url: "/app/productos",
       titulo: "Productos",
       icono: "view_list",
-      roles: ["administrador", "vendedor", "almacen", "gerente", "diseñador", "ComercioExterior", "marketing"],
+      roles: [
+        "administrador",
+        "vendedor",
+        "almacen",
+        "gerente",
+        "diseñador",
+        "ComercioExterior",
+        "marketing",
+      ],
     },
     {
       url: "/app/Catalogos",
@@ -54,21 +76,33 @@
       url: "/app/clientes",
       titulo: "Clientes",
       icono: "people",
-      roles: ["administrador", "vendedor", "gerente", "marketing", "ComercioExterior"],
+      roles: [
+        "administrador",
+        "vendedor",
+        "gerente",
+        "marketing",
+        "ComercioExterior",
+      ],
     },
     {
       url: "/app/clientes/analisis_comercial",
       titulo: "Análisis Comercial",
       icono: "analytics",
-      roles: ["administrador", "vendedor", "gerente", "marketing", "ComercioExterior"],
+      roles: [
+        "administrador",
+        "vendedor",
+        "gerente",
+        "marketing",
+        "ComercioExterior",
+      ],
     },
 
-    {
-      url: "/app/clientes_nuevos",
-      titulo: "Clientes Nuevos",
-      icono: "supervised_user_circle",
-      roles: ["administrador"],
-    },
+    //{
+    //url: "/app/clientes_nuevos",
+    //titulo: "Clientes Nuevos",
+    //icono: "supervised_user_circle",
+    //roles: ["administrador"],
+    //},
 
     {
       url: "/app/graficos",
@@ -94,12 +128,6 @@
       url: "/app/tecnico-isotech/logs",
       titulo: "Logs",
       icono: "admin_panel_settings",
-      roles: ["administrador"],
-    },
-    {
-      url: "/app/herramientas/correccion",
-      titulo: "Corrección de Datos",
-      icono: "build",
       roles: ["administrador"],
     },
     {
@@ -164,14 +192,24 @@
           icono: "flash_on",
           roles: ["administrador"],
           solo_local: true,
-        }
+        },
+        {
+          titulo: "Corrección Relaciones",
+          url: "/app/dev_tools/correccion_relaciones",
+          icono: "extension",
+          roles: ["administrador"],
+        },
       ],
     },
   ];
 
   function me_permite_item(item, user) {
     if (!item || !user) return false;
-    if (item.solo_usuario && (!item.solo_usuario.includes(user.usuario) && !item.solo_usuario.includes(user.nombre))) {
+    if (
+      item.solo_usuario &&
+      !item.solo_usuario.includes(user.usuario) &&
+      !item.solo_usuario.includes(user.nombre)
+    ) {
       return false;
     }
     if (item.roles && !item.roles.includes(user.rol)) {
@@ -182,9 +220,15 @@
 
   function filtrar_subitems(subitems, is_dev, user) {
     if (!subitems || !Array.isArray(subitems)) return [];
-    return subitems.filter(sub => {
+    return subitems.filter((sub) => {
       if (sub.solo_local && !is_dev) return false;
-      if (sub.solo_usuario && (!user || (!sub.solo_usuario.includes(user.usuario) && !sub.solo_usuario.includes(user.nombre)))) return false;
+      if (
+        sub.solo_usuario &&
+        (!user ||
+          (!sub.solo_usuario.includes(user.usuario) &&
+            !sub.solo_usuario.includes(user.nombre)))
+      )
+        return false;
       if (sub.roles && (!user || !sub.roles.includes(user.rol))) return false;
       return true;
     });

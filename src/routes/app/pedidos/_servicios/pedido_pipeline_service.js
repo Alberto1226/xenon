@@ -42,7 +42,7 @@ export async function crear_pedido(data, usuario, req) {
         const descuento_final = tenia_ficha ? data.pedido_nuevo.descuento : descuento_sin_ficha;
 
         // 4. Determinar Agente
-        let agente = { nombre: '', comision: 0, correo: '', id: '' };
+        let agente = { nombre: '', comision: 0, correo: '', id: null };
         if (cliente_db.agente && cliente_db.agente.id) {
             const agente_db = await Usuario.findById(cliente_db.agente.id);
             if (agente_db) {

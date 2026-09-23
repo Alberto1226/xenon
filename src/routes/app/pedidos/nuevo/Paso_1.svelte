@@ -22,7 +22,9 @@
   let http_ocupado = false;
   const dispatch = createEventDispatcher();
   onMount(() => {
-    //if($clientes.lista.length ===0) obtener_clientes_por_pagina();
+    if (cliente && (cliente._id || cliente.id)) {
+      checar_si_tiene_carrito_pendiente(cliente._id || cliente.id);
+    }
   });
 
   var fecha_nacimiento;
@@ -51,6 +53,8 @@
   let cotizaciones_con_datos_incompletos = 0;
   let cotizaciones_disponibles = 3;
   let bloqueado_por_datos_incompletos = false;
+  let pedidos_abiertos = [];
+  let total_pedidos_abiertos = 0;
   $: cliente.direccion = direccion;
 
   $: if (moneda || cliente || direccion) {
@@ -76,7 +80,7 @@
     /**/
 
     //direccion += ", Nombre: " + cliente.direccion_envio.nombre;
-    checar_si_tiene_carrito_pendiente(cliente._id);
+    checar_si_tiene_carrito_pendiente(cliente._id || cliente.id);
     buscar_ficha_existente(cliente);
     if (cliente.direcciones_asociadas.length > 0) {
       arreglar_direccion(cliente.direcciones_asociadas[0]);
@@ -125,6 +129,8 @@
           //console.log(res);
           // cliente_tiene_carrito = res.carrito != null;
           cliente_tiene_carrito = false;
+          pedidos_abiertos = res.pedidos_abiertos || [];
+          total_pedidos_abiertos = res.total_pedidos_abiertos || 0;
           datos_completos = res.datos_completos;
           campos_faltantes = res.campos_faltantes || [];
           cotizaciones_con_datos_incompletos = res.cotizaciones_con_datos_incompletos || 0;
@@ -448,6 +454,35 @@
       />
     </div>
     <div class="padding">
+      {#if cliente.nombre != ""}
+        <div class="pedidos-abiertos-container">
+          <span class="pedidos-abiertos-badge">
+            <i class="material-icons badge-icon">shopping_cart</i>
+            Pedidos abiertos: <b>{total_pedidos_abiertos}</b>
+            
+            <div class="pedidos-tooltip">
+              <div class="tooltip-header">
+                Pedidos Abiertos ({total_pedidos_abiertos})
+              </div>
+              {#if pedidos_abiertos && pedidos_abiertos.length > 0}
+                <div class="tooltip-body">
+                  {#each pedidos_abiertos as ped}
+                    <div class="tooltip-row">
+                      <span class="tooltip-folio">Folio: #{ped.folio || 'S/F'}</span>
+                      <span class="tooltip-status">{ped.status || 'Pendiente'}</span>
+                    </div>
+                  {/each}
+                </div>
+              {:else}
+                <div class="tooltip-empty">
+                  Sin pedidos abiertos
+                </div>
+              {/if}
+            </div>
+          </span>
+        </div>
+        <br />
+      {/if}
       {#if cliente_tiene_carrito && cliente.nombre != ""}
         <!-- content here -->
         <span style="color:red">
@@ -469,7 +504,9 @@
       {#if !datos_completos && cliente.nombre != "" && !bloqueado_por_datos_incompletos}
         <span style="color:darkorange">
           El cliente <b>{cliente.nombre}</b> tiene información pendiente ({campos_faltantes.join(", ")}).
-          Te quedan {cotizaciones_disponibles} cotización(es) antes de requerir completarla.
+          <span style="color: red; font-weight: bold;">
+            Te quedan {cotizaciones_disponibles} cotización(es) antes de requerir completarla.
+          </span>
         </span>
         <br />
       {/if}
@@ -526,21 +563,22 @@
     </div>
   </div>
   <div class="direccion_de_envio">
-    <i class="material-icons" style="vertical-align: top;">location_on</i>
-    Dirección
+    <div style="text-align: center; font-weight: 500; margin-top: 10px;">
+      <i class="material-icons" style="vertical-align: middle;">location_on</i>
+      Dirección
+    </div>
     <textarea
       class="direccion-box"
       class:borde_rojo={direccion == ""}
       cols="30"
-      rows="20"
+      rows="4"
       bind:value={direccion}
     />
   </div>
   <div class="perfil_del_cliente">
     <i
       class="material-icons"
-      style="vertical-align: middle;font-size: 5em;color:#222d32;padding-top:
-      50px;"
+      style="vertical-align: middle;font-size: 4em;color:#222d32;padding-top: 15px;"
     >
       local_shipping
     </i>
@@ -676,7 +714,7 @@
     height: calc(100vh - 158px);
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: auto 1fr;
     grid-template-areas: "cliente direccion_de_envio perfil_del_cliente" "buscar_producto buscar_producto buscar_producto";
   }
 
@@ -686,10 +724,12 @@
 
   .direccion_de_envio {
     grid-area: direccion_de_envio;
+    text-align: center;
   }
 
   .perfil_del_cliente {
     grid-area: perfil_del_cliente;
+    text-align: center;
   }
 
   .buscar_producto {
@@ -697,16 +737,22 @@
   }
 
   .padding {
-    padding: 19px 0;
-    text-align: right;
+    padding: 6px 0;
+    text-align: center;
   }
 
   .direccion-box {
-    padding: 21px;
-    margin: 20px;
-    border-radius: 10px;
-    box-shadow: 3px 3px 10px #222d324f;
+    padding: 12px;
+    margin: 10px auto;
+    border-radius: 8px;
+    box-shadow: 2px 2px 8px #222d324f;
     border: 1px solid darkcyan;
+    width: 90%;
+    height: 120px;
+    resize: none;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 0.95rem;
   }
 
   .existe_ficha {
@@ -743,12 +789,13 @@
     font-size: 0.8em;
   }
   .con_borde {
-    border: 1px solid;
-    margin: 18px;
-    overflow-x: auto;
+    border: 1px solid #ccc;
+    margin: 10px;
+    overflow: visible;
     text-align: center;
-    padding: 4% 7% 10% 10%;
-    border-radius: 2px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    background: #fff;
   }
 
   .tiene_notas {
@@ -760,5 +807,126 @@
   }
   .borde_rojo {
     border: 1px solid red;
+  }
+
+  .pedidos-abiertos-container {
+    display: inline-block;
+    margin: 8px 0;
+    position: relative;
+  }
+
+  .pedidos-abiertos-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #eef2ff;
+    color: #1e40af;
+    border: 1px solid #c7d2fe;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  }
+
+  .pedidos-abiertos-badge:hover {
+    background: #e0e7ff;
+    border-color: #a5b4fc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  .badge-icon {
+    font-size: 1.15rem;
+    color: #3b82f6;
+    vertical-align: middle;
+  }
+
+  .pedidos-tooltip {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 250px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    padding: 12px;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .pedidos-tooltip::before {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 7px;
+    border-style: solid;
+    border-color: transparent transparent #ffffff transparent;
+  }
+
+  .pedidos-abiertos-badge:hover .pedidos-tooltip {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .tooltip-header {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .tooltip-body {
+    max-height: 180px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #f1f5f9;
+    font-size: 0.82rem;
+  }
+
+  .tooltip-folio {
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .tooltip-status {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #0065ff;
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  .tooltip-empty {
+    font-size: 0.82rem;
+    color: #64748b;
+    font-style: italic;
+    text-align: center;
+    padding: 6px 0;
   }
 </style>

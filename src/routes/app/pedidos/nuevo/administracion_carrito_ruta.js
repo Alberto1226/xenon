@@ -40,6 +40,24 @@ export async function post(req, res, next) {
         return res.send({ ok: true, rutas });
     }
 
+    if (donde === "asignarRuta") {
+        const { id_carrito, ruta, fecha_estimada } = req.body;
+        let updateObj = { ruta, rutas: true };
+        if (fecha_estimada) updateObj.fecha_estimada = fecha_estimada;
+        await Carrito.findByIdAndUpdate(id_carrito, updateObj);
+        if (fecha_estimada) {
+            await SalidasVentas.findOneAndUpdate({ id_carritos: id_carrito }, { fecha_salina: fecha_estimada });
+        }
+        return res.send({ ok: true, mensaje: "Ruta asignada al pedido" });
+    }
+
+    if (donde === "actualizarFechaEstimada") {
+        const { id_carrito, fecha_estimada } = req.body;
+        await Carrito.findByIdAndUpdate(id_carrito, { fecha_estimada });
+        await SalidasVentas.findOneAndUpdate({ id_carritos: id_carrito }, { fecha_salina: fecha_estimada });
+        return res.send({ ok: true, mensaje: "Fecha estimada actualizada" });
+    }
+
     // Verificar y crear SalidaVenta si no existe para este carrito
     if (masData) {
         console.log("masData:----------->", masData);
@@ -72,8 +90,8 @@ export async function post(req, res, next) {
     if (carritoDB === null || !carritoDB || carritoDB_proceso.ok == false) {
         return res.send({ ok: false });
     }
-    if (carritoDB.status === 'Envío') {
-        return res.send({ ok: false, mensaje: 'El pedido no se puede modificar en status Envío' });
+    if (['Envío', 'Envio', 'En Ruta', 'Empaque', 'Pagado', 'Finalizada'].includes(carritoDB.status)) {
+        return res.send({ ok: false, mensaje: 'El pedido de ruta está en estatus "' + carritoDB.status + '" y no se puede modificar desde la web.' });
     }
 
     let lista = carritoDB.lista;
@@ -332,14 +350,16 @@ async function crearSalidaRuta(id, masData, req) {
 async function generarFolioSalida(folioCarrito) {
     // Buscar cuántas salidas existen ya con este folio de carrito
     const regex = new RegExp(`^${folioCarrito}-\\d+$`);
-    const salidas = await SalidasVentas.find({ folio: regex });
+    const salidas = await SalidasVentas.find({ folio_salida: regex });
     // Obtener el siguiente consecutivo
     let maxConsecutivo = 0;
     salidas.forEach(salida => {
-        const partes = salida.folio.split("-");
-        const consecutivo = parseInt(partes[partes.length - 1], 10);
-        if (!isNaN(consecutivo) && consecutivo > maxConsecutivo) {
-            maxConsecutivo = consecutivo;
+        if (salida.folio_salida) {
+            const partes = salida.folio_salida.split("-");
+            const consecutivo = parseInt(partes[partes.length - 1], 10);
+            if (!isNaN(consecutivo) && consecutivo > maxConsecutivo) {
+                maxConsecutivo = consecutivo;
+            }
         }
     });
     const siguiente = maxConsecutivo + 1;

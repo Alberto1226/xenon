@@ -65,26 +65,26 @@
     pedido = $editar_store.pedido;
     pedido_selecto = $editar_store.pedido;
     id_carrito = pedido._id;
-    pedido_selecto.cliente_nombre = pedido.cliente.nombre;
-    pedido_selecto.cliente_correo = pedido.cliente.correo;
-    pedido_selecto.cliente_direccion = pedido.cliente.direccion;
-    pedido_selecto.tipo_de_cambio = pedido.tipo_de_cambio;
-    cliente.direccion = pedido.cliente.direccion;
-    cliente.nombre = pedido.cliente.nombre;
-    cliente.correo = pedido.cliente.correo;
-    cliente.direccion = pedido.cliente.direccion;
-   //console.log(pedido.agente.nombre);
-    cliente.agente = pedido.agente.nombre;
-    cliente.perfil = pedido.cliente.perfil;
-    cliente.id = pedido.cliente.id;
-   //console.log(cliente);
-    
-   //console.log(pedido_selecto);
-    pedido_selecto.moneda = pedido.moneda;
-    pedido_selecto.correo = pedido.cliente.correo;
-    // pedido_selecto.agente.nombre =pedido.agente.nombre;
-    //  pedido_selecto.agente.correo =pedido.agente.correo;
-    //  pedido_selecto.agente.comision =pedido.agente.comision;
+    if (pedido.cliente) {
+      pedido_selecto.cliente_nombre = pedido.cliente.nombre || "";
+      pedido_selecto.cliente_correo = pedido.cliente.correo || "";
+      pedido_selecto.cliente_direccion = pedido.cliente.direccion || "";
+      cliente.direccion = pedido.cliente.direccion || "";
+      cliente.nombre = pedido.cliente.nombre || "";
+      cliente.correo = pedido.cliente.correo || "";
+      cliente.perfil = pedido.cliente.perfil || "";
+      cliente.id = pedido.cliente.id || null;
+    }
+    pedido_selecto.tipo_de_cambio = pedido.tipo_de_cambio || 1;
+    if (pedido.agente) {
+      cliente.agente = pedido.agente.nombre || "";
+    }
+    pedido_selecto.moneda = pedido.moneda || "Pesos Mexicanos";
+    pedido_selecto.correo = pedido.cliente ? pedido.cliente.correo : "";
+
+    if (pedido.rutas === true || !pedido.cliente || !pedido.cliente.id) {
+      paso = 2;
+    }
     visible = true;
 
     lista_productos_original = JSON.parse(JSON.stringify(pedido.lista));

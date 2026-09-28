@@ -478,7 +478,7 @@
       <Button
         icon
         dense
-        disabled={procesando_en_la_nube || $usuario_db.rol == "almacen" || ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes($editar_store.pedido.status))}
+        disabled={procesando_en_la_nube || $usuario_db.rol == "almacen" || ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes($editar_store.pedido.status))}
         color="darkorange"
         on:click={quitar_de_pedido}
         title="Borrar"

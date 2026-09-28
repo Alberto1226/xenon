@@ -52,6 +52,11 @@ var schema = new Schema({
     notas: { type: String, default: "" },
     notas_usuarios: [],
     status: { type: String, default: 'Pedido' },
+    rutas: { type: Boolean, default: false },
+    ruta: {
+        id: { type: Schema.Types.ObjectId, ref: 'Rutas', default: null },
+        nombre: { type: String, default: '' },
+    },
     mensajeria: {
         empresa: { type: String, default: '' },
         codigo_de_rastreo: { type: String, default: '' },

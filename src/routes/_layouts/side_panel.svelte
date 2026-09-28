@@ -137,6 +137,18 @@
       roles: ["administrador", "gerente"],
     },
     {
+      url: "/app/rutas",
+      titulo: "Rutas",
+      icono: "alt_route",
+      roles: ["administrador", "gerente"],
+    },
+    {
+      url: "/app/QR",
+      titulo: "Código QR",
+      icono: "qr_code",
+      roles: ["administrador", "gerente"],
+    },
+    {
       url: "/app/reportes/utilidades",
       titulo: "Utilidades",
       icono: "trending_up",

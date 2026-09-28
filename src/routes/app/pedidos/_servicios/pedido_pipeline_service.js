@@ -5,6 +5,7 @@ import { Cliente } from "../../../../models/cliente";
 import { Producto } from "../../../../models/producto";
 import { Ficha_de_descuento } from "../../../../models/ficha_de_descuento";
 import { Usuario } from "../../../../models/usuario";
+import { SalidasVentas } from "../../../../models/salidasventas";
 import * as accesos from "../../accesos";
 import * as FolioService from "./folio_service";
 import * as InventarioReservaService from "./inventario_reserva_service";
@@ -197,7 +198,7 @@ export async function cambiar_status_a_entregado(carrito_id, usuario, req) {
     }
 }
 
-export async function cancelar_pedido(carrito_id, usuario, req) {
+export async function cancelar_pedido(carrito_id, usuario, req, opciones = {}) {
     try {
         const carrito = await Carrito.findById(carrito_id);
         if (!carrito) return { ok: false, mensaje: "El pedido no existe" };
@@ -249,6 +250,18 @@ export async function cancelar_pedido(carrito_id, usuario, req) {
         await Carrito.findByIdAndDelete(id_original);
 
         await accesos.logActividad('carrito/cancelar/', usuario, { folio: carrito.folio, Carrito: carrito.lista, Cliente: carrito.cliente }, req);
+
+        // 5. Cancelar SalidasVentas asociadas si es un pedido de ruta
+        if (opciones.ruta) {
+            try {
+                await SalidasVentas.updateMany(
+                    { "id_carritos": carrito._id.toString() },
+                    { $set: { status: "Cancelado" } }
+                );
+            } catch (eSalidas) {
+                console.error("Error al cancelar SalidasVentas asociadas:", eSalidas);
+            }
+        }
 
         return { ok: true, mensaje: "Pedido cancelado exitosamente" };
     } catch (err) {

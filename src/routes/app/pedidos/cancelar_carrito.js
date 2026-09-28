@@ -7,7 +7,7 @@ export async function post(req, res, next) {
         return;
     }
 
-    const { id } = req.body;
-    const resultado = await cancelar_pedido(id, req.user, req);
+    const { id, ruta } = req.body;
+    const resultado = await cancelar_pedido(id, req.user, req, { ruta: !!ruta });
     res.send(resultado);
 }

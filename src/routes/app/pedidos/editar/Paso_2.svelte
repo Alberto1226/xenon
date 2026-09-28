@@ -73,28 +73,116 @@
   var mandar_solicitud_checado_de_folios = false;
   var cambio_descuento_gral = false;
   var sugerencia_visible = false;
+  let rutasDisponibles = [];
+  let rutaSeleccionada = null;
+
+  async function getRutas() {
+    const res = await postData("app/pedidos/nuevo/administracion_carrito_ruta", {
+      donde: "consultaRutas",
+    });
+    if (res && res.ok && res.rutas) {
+      rutasDisponibles = res.rutas;
+      if ($editar_store.pedido) {
+        let actualId =
+          $editar_store.pedido.rutaSelect ||
+          ($editar_store.pedido.ruta ? $editar_store.pedido.ruta.id : null);
+        let encontrada = rutasDisponibles.find(
+          (r) =>
+            r._id === actualId ||
+            r.nombre_ruta === ($editar_store.pedido.ruta ? $editar_store.pedido.ruta.nombre : null)
+        );
+        if (encontrada) {
+          rutaSeleccionada = encontrada;
+          $editar_store.pedido.rutaSelect = encontrada._id;
+        } else if (rutasDisponibles.length > 0) {
+          rutaSeleccionada = rutasDisponibles[0];
+          $editar_store.pedido.rutaSelect = rutasDisponibles[0]._id;
+          cambiarRuta();
+        }
+      }
+    }
+  }
+
+  async function cambiarRuta() {
+    if (!rutaSeleccionada || !$editar_store.pedido) return;
+    const nuevaRutaObj = {
+      id: rutaSeleccionada._id,
+      nombre: rutaSeleccionada.nombre_ruta,
+    };
+    $editar_store.pedido.ruta = nuevaRutaObj;
+    $editar_store.pedido.rutaSelect = rutaSeleccionada._id;
+    await postData("app/pedidos/nuevo/administracion_carrito_ruta", {
+      donde: "asignarRuta",
+      id_carrito: $editar_store.pedido._id,
+      ruta: nuevaRutaObj,
+      fecha_estimada: $editar_store.pedido.fecha_estimada || "",
+    });
+  }
+
+  function seleccionarRutaDesdeTop(e) {
+    const selectedId = e.target.value;
+    $editar_store.pedido.rutaSelect = selectedId;
+    const encontrada = rutasDisponibles.find((r) => r._id === selectedId);
+    if (encontrada) {
+      rutaSeleccionada = encontrada;
+      cambiarRuta();
+    }
+  }
+
+  $: pedido_bloqueado =
+    $editar_store.pedido &&
+    ["Pagado", "Empaque", "Envío", "Envio", "En Ruta", "Finalizada"].includes(
+      $editar_store.pedido.status
+    );
+
+  function formatearFechaISO(fechaStr) {
+    if (!fechaStr) return "";
+    try {
+      if (typeof fechaStr === "string" && fechaStr.includes("T")) {
+        return fechaStr.split("T")[0];
+      }
+      const d = new Date(fechaStr);
+      if (isNaN(d.getTime())) return "";
+      return d.toISOString().split("T")[0];
+    } catch (e) {
+      return "";
+    }
+  }
+
+  $: if ($editar_store.pedido && $editar_store.pedido.fecha_estimada) {
+    let fFormatted = formatearFechaISO($editar_store.pedido.fecha_estimada);
+    if (fFormatted && fFormatted !== $editar_store.pedido.fecha_estimada) {
+      $editar_store.pedido.fecha_estimada = fFormatted;
+    }
+  }
+
+  async function cambiarFechaEstimada(e) {
+    const val = e.target.value;
+    $editar_store.pedido.fecha_estimada = val;
+    await postData("app/pedidos/nuevo/administracion_carrito_ruta", {
+      donde: "actualizarFechaEstimada",
+      id_carrito: $editar_store.pedido._id,
+      fecha_estimada: val,
+    });
+  }
 
   onMount(() => {
     buscar = $buscadores.productos;
     console.log($editar_store.pedido.descuento);
     $lista_productos_en_pedido_en_edicion = lista_productos;
-    // pedido_selecto.descuento = cliente.perfil.porcentaje;
     descuento_a_usar = $editar_store.pedido.descuento;
 
     descuento_nuevo = descuento_a_usar;
 
     tenia_ficha = $editar_store.pedido.tenia_ficha;
-    total_pedido = formato_precio(total); /// info para el footer title
+    total_pedido = formato_precio(total);
+
+    if ($editar_store.pedido && ($editar_store.pedido.rutas || !$editar_store.pedido.cliente || !$editar_store.pedido.cliente.id)) {
+      getRutas();
+    }
 
     selecionar_input_buscar();
     obtener_productos_por_pagina();
-    /*
-    
-    if ($productos.lista.length > 0) {
-      lista = $productos.lista;
-      return;
-    }
-    */
   });
   $: if (actualizar_lista_de_productos == true) {
     actualizar_lista_de_productos = false;
@@ -402,7 +490,7 @@
 
 <Info_promos_completo {analisis} bind:visible={visible_promos_analisis} />
 
-{#if $editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio'].includes($editar_store.pedido.status)}
+{#if $editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Finalizada'].includes($editar_store.pedido.status)}
   <div style="background-color: #fff3cd; color: #856404; padding: 10px 18px; border: 1px solid #ffeeba; border-radius: 6px; margin: 10px 15px; font-weight: bold; text-align: center; font-size: 15px;">
     🔒 Pedido en estatus "{$editar_store.pedido.status}". Los productos y precios están bloqueados para venta; únicamente se permite la captura/modificación de folios.
   </div>
@@ -515,20 +603,59 @@
           title="Info sobre disponibilidad de los folios selectos"
         /></Button
       > -->
-      <Button
-        color="white"
-        disabled={$usuario_db.rol == "almacen"}
-        icon
-        dense
-        on:click={obtener_analisis_promos}
-      >
-        <i
-          class="material-icons"
-          title="Obtener analisis de promos y sus condiciones en el pedido"
+      {#if !$editar_store.pedido.rutas}
+        <Button
+          color="white"
+          disabled={$usuario_db.rol == "almacen"}
+          icon
+          dense
+          on:click={obtener_analisis_promos}
         >
-          new_releases</i
-        >
-      </Button>
+          <i
+            class="material-icons"
+            title="Obtener analisis de promos y sus condiciones en el pedido"
+          >
+            new_releases</i
+          >
+        </Button>
+      {/if}
+
+      {#if $editar_store.pedido && ($editar_store.pedido.rutas || !$editar_store.pedido.cliente || !$editar_store.pedido.cliente.id)}
+        <div class="ruta-toolbar-container">
+          <div class="header-pill">
+            <i class="material-icons pill-icon">alt_route</i>
+            <span class="pill-label">Ruta:</span>
+            <select
+              id="selectRuta"
+              class="pill-select"
+              disabled={pedido_bloqueado}
+              bind:value={$editar_store.pedido.rutaSelect}
+              on:change={seleccionarRutaDesdeTop}
+            >
+              <option value="" disabled>Selecciona una ruta</option>
+              {#each rutasDisponibles as ruta}
+                <option value={ruta._id}>
+                  {ruta.nombre_ruta} {ruta.descripcion ? `- ${ruta.descripcion}` : ''}
+                </option>
+              {/each}
+            </select>
+          </div>
+
+          <div class="header-pill">
+            <i class="material-icons pill-icon">event</i>
+            <span class="pill-label">Fecha estimada:</span>
+            <input
+              id="fechaEstimada"
+              type="date"
+              class="pill-input-date"
+              disabled={pedido_bloqueado}
+              bind:value={$editar_store.pedido.fecha_estimada}
+              on:change={cambiarFechaEstimada}
+            />
+          </div>
+        </div>
+      {/if}
+
       <Button color="white" icon dense on:click={actualizar_pedido}>
         <i class="material-icons" title={recargar_txt}> autorenew</i>
       </Button>
@@ -540,7 +667,7 @@
         <td>
           <Textfield
             id="input_buscar"
-            disabled={$usuario_db.rol == "almacen"}
+            disabled={$usuario_db.rol == "almacen" || pedido_bloqueado}
             on:keyup={handle_buscar}
             outlined
             bind:value={buscar}
@@ -770,12 +897,17 @@
     {/if}
   </div>
   <div class="barra_1">
-    <div style="padding-top: 10px;">
-      <b>{$editar_store.pedido.cliente.nombre}</b>
-    </div>
-    <div style="padding-top: 10px;">{$editar_store.pedido.cliente.correo}</div>
-
-    <div class="indice_row">{$editar_store.pedido.cliente.direccion}</div>
+    {#if $editar_store.pedido && $editar_store.pedido.cliente && $editar_store.pedido.cliente.id}
+      <div style="padding-top: 10px;">
+        <b>{$editar_store.pedido.cliente.nombre}</b>
+      </div>
+      {#if $editar_store.pedido.cliente.correo}
+        <div style="padding-top: 10px;">{$editar_store.pedido.cliente.correo}</div>
+      {/if}
+      {#if $editar_store.pedido.cliente.direccion}
+        <div class="indice_row">{$editar_store.pedido.cliente.direccion}</div>
+      {/if}
+    {/if}
   </div>
 </div>
 
@@ -898,6 +1030,67 @@
 
   .vertical-align {
     vertical-align: middle;
+  }
+
+  .ruta-toolbar-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+
+  .header-pill {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 6px;
+    padding: 2px 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+
+  .pill-icon {
+    font-size: 17px;
+    color: #ffffff;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+
+  .pill-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-right: 6px;
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  .pill-select,
+  .pill-input-date {
+    background: #ffffff;
+    color: #19825c;
+    font-weight: 700;
+    font-size: 12px;
+    border: 1px solid #19825c;
+    border-radius: 4px;
+    padding: 3px 7px;
+    outline: none;
+    cursor: pointer;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .pill-select:focus,
+  .pill-input-date:focus {
+    border-color: #0b4f37;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+  }
+
+  .pill-select option {
+    background: #ffffff;
+    color: #222222;
+    font-weight: 600;
   }
 
   .lista_vacia {

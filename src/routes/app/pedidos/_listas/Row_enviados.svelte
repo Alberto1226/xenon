@@ -293,11 +293,38 @@
 
   <div class="seis">
     <div class="sobresaltar">
-      {pedido.cliente == undefined ? "" : pedido.cliente.nombre}
-      <br />
-      <div class="indice_row">
-        {pedido.cliente == undefined ? "" : pedido.cliente.correo}
-      </div>
+      {#if pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || !pedido.cliente.nombre))}
+        {#if pedido.folio_salida}
+          <span style="font-weight: bold; color: #19825c;">
+            <i class="material-icons vertical-alineado" style="font-size: 14px;">alt_route</i>
+            {pedido.folio_salida}
+          </span>
+        {:else if pedido.ruta && (pedido.ruta.nombre || pedido.ruta.nombre_ruta)}
+          <span style="font-weight: bold; color: #19825c;">
+            <i class="material-icons vertical-alineado" style="font-size: 14px;">alt_route</i>
+            Ruta: {pedido.ruta.nombre || pedido.ruta.nombre_ruta}
+          </span>
+        {:else}
+          <span style="font-weight: bold; color: #19825c;">
+            <i class="material-icons vertical-alineado" style="font-size: 14px;">alt_route</i>
+            Pedido de Ruta
+          </span>
+        {/if}
+        <br />
+        <div class="indice_row">
+          {#if pedido.fecha_estimada}
+            Fecha est: {pedido.fecha_estimada}
+          {:else}
+            (Ruta móvil)
+          {/if}
+        </div>
+      {:else}
+        {pedido.cliente == undefined ? "" : pedido.cliente.nombre}
+        <br />
+        <div class="indice_row">
+          {pedido.cliente == undefined ? "" : pedido.cliente.correo}
+        </div>
+      {/if}
     </div>
   </div>
   <div class="siete">

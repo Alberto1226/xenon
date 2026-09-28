@@ -165,9 +165,13 @@
 
   function cancelar_pedido() {
     // mensaje_envio = 'CAncelado...';
+    let ruta = false;
+    if (pedido.folio_salida && pedido.cliente && pedido.cliente.id == "") {
+      ruta = true;
+    }
     dispatch("procesando_cambio_status_a_envio");
     procesando = true;
-    postData("/app/pedidos/cancelar_carrito", { id: pedido._id })
+    postData("/app/pedidos/cancelar_carrito", { id: pedido._id, ruta: ruta })
       .then((respuesta) => {
         //console.log(respuesta);
 
@@ -345,11 +349,39 @@
 
   <div class="seis">
     <div class="sobresaltar no_select">
-      {pedido.cliente == undefined ? "" : pedido.cliente.nombre}
-      <br />
-      <div class="indice_row">
-        {pedido.cliente == undefined ? "" : pedido.cliente.correo}
-      </div>
+      <!-- Mostrar el folio de salida, la ruta o el cliente según corresponda -->
+      {#if pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || !pedido.cliente.nombre))}
+        {#if pedido.folio_salida}
+          <span style="font-weight: bold; color: #19825c;">
+            <i class="material-icons vertical-alineado" style="font-size: 14px;">alt_route</i>
+            {pedido.folio_salida}
+          </span>
+        {:else if pedido.ruta && (pedido.ruta.nombre || pedido.ruta.nombre_ruta)}
+          <span style="font-weight: bold; color: #19825c;">
+            <i class="material-icons vertical-alineado" style="font-size: 14px;">alt_route</i>
+            Ruta: {pedido.ruta.nombre || pedido.ruta.nombre_ruta}
+          </span>
+        {:else}
+          <span style="font-weight: bold; color: #19825c;">
+            <i class="material-icons vertical-alineado" style="font-size: 14px;">alt_route</i>
+            Pedido de Ruta
+          </span>
+        {/if}
+        <br />
+        <div class="indice_row">
+          {#if pedido.fecha_estimada}
+            Fecha est: {pedido.fecha_estimada}
+          {:else}
+            (Ruta móvil)
+          {/if}
+        </div>
+      {:else}
+        {pedido.cliente == undefined ? "" : pedido.cliente.nombre}
+        <br />
+        <div class="indice_row">
+          {pedido.cliente == undefined ? "" : pedido.cliente.correo}
+        </div>
+      {/if}
     </div>
   </div>
   <div class="siete no_select centrado">

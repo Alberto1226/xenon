@@ -29,6 +29,7 @@
   let virgen = true;
   let timeout;
   let visible_info_promo = false;
+  let masData = {};
   const dispatch = createEventDispatcher();
 
   onMount(() => {
@@ -198,17 +199,41 @@
     procesando_en_la_nube = true;
     var promo = { con_promo: promo_solicitada };
     var registro = { producto: producto_temp, cantidad, promo };
-    //console.log(registro);
+    console.log(registro);
+
     let donde = "agregar";
-    postData("/app/pedidos/editar/cambiar_cantidad", {
+    let url = "";
+
+    if ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes($editar_store.pedido.status)) {
+      $mensajes_app.push({
+        tipo: "error",
+        mensaje: `El pedido está en estatus '${$editar_store.pedido.status}' y no se puede modificar.`,
+      });
+      $mensajes_app = $mensajes_app;
+      procesando_en_la_nube = false;
+      return;
+    }
+
+    if ($editar_store.pedido && ($editar_store.pedido.rutas || !$editar_store.pedido.cliente || !$editar_store.pedido.cliente.id)) {
+      url = "/app/pedidos/nuevo/administracion_carrito_ruta";
+      let rutaId = $editar_store.pedido.rutaSelect || ($editar_store.pedido.ruta ? $editar_store.pedido.ruta.id : "");
+      masData = {
+        ruta: rutaId,
+        fecha_estimada: $editar_store.pedido.fecha_estimada || "",
+      };
+    } else {
+      url = "/app/pedidos/editar/cambiar_cantidad";
+    }
+    postData(url, {
       registro,
       id_carrito,
       donde,
       cantMB,
+      masData,
     })
       .then((respuesta) => {
         if (respuesta.ok) {
-          // console.log(respuesta);
+          console.log(respuesta);
           $mensajes_app.push({ tipo: "exito", mensaje: "Producto agregado" });
           $mensajes_app = $mensajes_app;
           var existente = $lista_productos_en_pedido_en_edicion.find(

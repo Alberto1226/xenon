@@ -14,6 +14,8 @@
 
     let agentes = [];
     let agenteSeleccionado = null;
+    let rutasDisponibles = [];
+    let rutaSeleccionada = null;
     let buscando = "";
     let pagina_actual = 1;
     let total_paginas = 1;
@@ -22,7 +24,20 @@
 
     onMount(() => {
         getAgentes();
+        getRutas();
     });
+
+    async function getRutas() {
+        const res = await postData("app/pedidos/nuevo/administracion_carrito_ruta", {
+            donde: "consultaRutas",
+        });
+        if (res && res.ok && res.rutas) {
+            rutasDisponibles = res.rutas;
+            if (rutasDisponibles.length > 0 && !rutaSeleccionada) {
+                rutaSeleccionada = rutasDisponibles[0];
+            }
+        }
+    }
 
     async function getAgentes() {
         const res = await postData("app/usuarios/lista_de_usuarios", {
@@ -72,9 +87,9 @@
             $mensajes_app = $mensajes_app;
             return;
         }
-        // console.log(agenteSeleccionado);
         postData("app/pedidos/nuevo/crear_pedido_ruta", {
             agente: agenteSeleccionado,
+            ruta: rutaSeleccionada,
         }).then((res) => {
             if (res.ok) {
                 console.log(res);
@@ -90,8 +105,6 @@
                 $lista_productos_en_pedido_en_edicion =
                     $lista_productos_en_pedido_en_edicion;
 
-                //dispatch("ver_lista");
-                console.log(res.carrito_creado.doc_nuevo._id);
                 $editar_store.pedido._id = res.carrito_creado.doc_nuevo._id;
                 goto("/app/pedidos/editor_wrap", {
                     replaceState: true,
@@ -116,7 +129,22 @@
 
 <div class="container mt-4">
     <h1>Crear Pedido de Ruta</h1>
-    <p>Seleccione un agente para crear un pedido de ruta.</p>
+    <p>Seleccione la ruta y el agente encargado para crear un pedido de ruta.</p>
+
+    {#if rutasDisponibles.length > 0}
+        <div class="mb-3 row">
+            <div class="col-md-6">
+                <label for="select-ruta" class="form-label font-weight-bold">Ruta asignada:</label>
+                <select id="select-ruta" class="form-select" bind:value={rutaSeleccionada}>
+                    {#each rutasDisponibles as ruta}
+                        <option value={ruta}>
+                            {ruta.nombre_ruta} {ruta.descripcion ? `- ${ruta.descripcion}` : ""}
+                        </option>
+                    {/each}
+                </select>
+            </div>
+        </div>
+    {/if}
 
     <div class="mb-3 row">
         <div class="col-md-6">

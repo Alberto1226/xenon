@@ -6,6 +6,7 @@ import { Pedido } from "../../../../models/pedido";
 import * as accesos from "../../accesos";
 import { Producto } from "../../../../models/producto";
 import { Ficha_de_descuento } from "../../../../models/ficha_de_descuento";
+import { generar_siguiente_folio } from "../_servicios/folio_service";
 
 
 export function post(req, res, next) {
@@ -370,49 +371,9 @@ function crear_su_carrito(data, email, tenia_ficha, usuario) {
     });
 }
 
-// funcion que tra el auincrementable apara folio
-function obtener_folio_actual() {
-    return new Promise((resolve, reject) => {
-        Carrito.find({}).sort({ folio: -1 }).limit(1)
-            .then(doc_carrito => {
-                //console.log(docFirebase.data());  
-                let folio_carritos = 0;
-                if (doc_carrito === null || doc_carrito === undefined) {
-                    folio_carritos = 0;
-                }
-                else {
-                    folio_carritos = parseInt(doc_carrito[0].folio) + 1
-                }
-                Pedido.find({}).sort({ folio: -1 }).limit(1)
-                    .then((docPedido) => {
-                        const folio_Pedido = parseInt(docPedido[0].folio) + 1;
-                        if (folio_carritos === 0 && docPedido === null) {
-                            resolve({ ok: true, folio: 7765 });
-                            console.log("********----folio carritos=" + folio_carritos + " folio pedido = " + folio_Pedido)
-                            return;
-                        }
-                        if (docPedido === null && folio_carritos > 0) {
-                            resolve({ ok: true, folio: parseInt(folio_carritos) + 1 });
-                            console.log("********----folio carritos=" + folio_carritos + " folio pedido = " + folio_Pedido)
-                            return;
-                        }
-
-                        // Update folio_siguiente contador
-                        //storyRef.update({ folio_siguiente: increment });
-                        console.log("********----folio carritos=" + folio_carritos + " folio pedido = " + folio_Pedido)
-                        resolve({ ok: true, folio: Math.max(folio_carritos, folio_Pedido) });
-
-                    })
-                    .catch((err) => {
-                        console.log(err);
-                        reject({ ok: false, err });
-                    })
-            })
-            .catch((err) => {
-                console.log(err);
-                reject({ ok: false, err });
-            });
-    });
+// funcion que trae el autoincrementable para folio usando FolioConfig
+async function obtener_folio_actual() {
+    return await generar_siguiente_folio({ tipo: "carrito" });
 }
 
 ////   Sumar el total neto del pedido

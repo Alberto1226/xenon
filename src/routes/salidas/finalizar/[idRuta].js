@@ -8,28 +8,14 @@ import { generar_siguiente_folio } from "../../app/pedidos/_servicios/folio_serv
 import mongoose from "mongoose";
 
 export async function put(req, res) {
-    let session = null;
-    try {
-        const { idRuta } = req.params;
-        const body = req.body || {};
-        const pedidos = body.pedidos || [];
-        const notasCierre = body.notas_cierre || "";
+    const { idRuta } = req.params;
+    const body = req.body || {};
+    const pedidos = body.pedidos || [];
+    const notasCierre = body.notas_cierre || "";
 
-        console.log(`🏁 Finalizando ruta ${idRuta} con ${pedidos.length} ventas...`);
+    console.log(`🏁 Finalizando ruta ${idRuta} con ${pedidos.length} ventas...`);
 
-        // Intentar iniciar sesión de transacción Mongoose
-        let useTransaction = false;
-        try {
-            session = await mongoose.startSession();
-            session.startTransaction();
-            useTransaction = true;
-        } catch (eSession) {
-            console.warn("⚠️ No se pudo iniciar transacción MongoDB (modo standalone):", eSession.message);
-            session = null;
-        }
-
-        const sessionOptions = session ? { session } : {};
-
+    async function procesarFinalizacion(sessionOptions = {}) {
         // 1. Obtener registro de SalidasVentas
         let salidaDB = null;
         if (mongoose.Types.ObjectId.isValid(idRuta)) {
@@ -92,7 +78,6 @@ export async function put(req, res) {
                 const subtotal = (precio * cant);
                 total_pedido += subtotal;
 
-                // Acumular cantidad vendida por producto para conciliación
                 const prodIdStr = String(prod._id || prod.id);
                 mapaVentasProd.set(prodIdStr, (mapaVentasProd.get(prodIdStr) || 0) + cant);
 
@@ -106,7 +91,6 @@ export async function put(req, res) {
                     preventa: false
                 });
 
-                // Descuento de existencia física en MongoDB
                 if (prod._id && mongoose.Types.ObjectId.isValid(prod._id)) {
                     await Producto.findByIdAndUpdate(
                         prod._id,
@@ -114,7 +98,6 @@ export async function put(req, res) {
                         sessionOptions
                     );
 
-                    // Insertar Snaplogs de Auditoría para cada producto vendido
                     const logsArr = item.logs || [];
                     if (logsArr.length > 0) {
                         for (let logItem of logsArr) {
@@ -133,7 +116,7 @@ export async function put(req, res) {
                                 cantidad_anterior: logItem.cantidad_anterior || 0,
                                 pedido: {
                                     folio: folio,
-                                    id: null, // Se asignará tras guardar el Pedido
+                                    id: null,
                                     cliente: {
                                         nombre: clienteObj.nombre || "",
                                         id: clienteObj._id || clienteObj.id || null
@@ -146,7 +129,6 @@ export async function put(req, res) {
                             await snapDoc.save(sessionOptions);
                         }
                     } else {
-                        // Snaplog fallback automático de descuento de inventario por venta de ruta
                         const snapDoc = new Producto_snaplog({
                             producto: {
                                 nombre: prod.nombre || prod.descripcion || "",
@@ -157,7 +139,7 @@ export async function put(req, res) {
                                 id: agenteObj.id || null
                             },
                             fecha: new Date(),
-                            accion: "2", // 2: Descuento de inventario
+                            accion: "2",
                             cantidad: cant,
                             pedido: {
                                 folio: folio,
@@ -174,7 +156,6 @@ export async function put(req, res) {
 
             totalVendidoGeneral += total_pedido;
 
-            // Registrar método de pago (desglose)
             const condicionPago = (venta.condicion_pago || 'contado').toLowerCase();
             const metodoPago = (venta.metodo_pago || 'efectivo').toLowerCase();
 
@@ -225,7 +206,11 @@ export async function put(req, res) {
             carritosCreadosCount++;
         }
 
-        // 4. Conciliación de inventario inicial vs vendido vs devuelto
+        const idSalidaValido = salidaDB ? salidaDB._id : (mongoose.Types.ObjectId.isValid(idRuta) ? new mongoose.Types.ObjectId(idRuta) : new mongoose.Types.ObjectId());
+        const idCarritoOrigenValido = idCarritoMaestro || (salidaDB ? salidaDB.id_carritos : idSalidaValido);
+        const idRutaValido = (salidaDB && salidaDB.id_ruta) ? salidaDB.id_ruta : idSalidaValido;
+        const agenteRef = (salidaDB && salidaDB.agente) ? salidaDB.agente : (carritoRuta ? carritoRuta.agente : { id: req.user ? req.user._id : null, nombre: "Agente", correo: "" });
+
         let inventarioConciliacion = [];
         let totalCargadoEstimado = 0;
 
@@ -252,14 +237,41 @@ export async function put(req, res) {
                     cantidad_devuelta: cantDevuelta,
                     diferencia: (cantCargada - cantVendida - cantDevuelta)
                 });
+
+                // Si se devolvieron productos no vendidos, registrar snaplog 4c (liberación de apartados de ruta)
+                if (cantDevuelta > 0 && prod._id && mongoose.Types.ObjectId.isValid(prod._id)) {
+                    const prodDB = await Producto.findById(prod._id, null, sessionOptions);
+                    const existenciasActuales = prodDB ? (prodDB.existencia ? prodDB.existencia.actual : 0) : 0;
+                    const apartadosAntes = prodDB && prodDB.carritos ? prodDB.carritos.reduce((a, b) => a + (parseInt(b.cantidad) || 0), 0) : cantDevuelta;
+                    const apartadosDespues = Math.max(0, apartadosAntes - cantDevuelta);
+
+                    const snapDevolucion = new Producto_snaplog({
+                        producto: {
+                            nombre: prod.nombre || prod.descripcion || "Producto",
+                            id: prod._id
+                        },
+                        usuario: {
+                            nombre: agenteRef.nombre || "Vendedor Ruta",
+                            id: agenteRef.id || null
+                        },
+                        fecha: new Date(),
+                        accion: "4c", // Liberación de apartados por devolución de ruta
+                        cantidad: 0,
+                        cantidad_anterior: cantDevuelta,
+                        pedido: {
+                            folio: (carritoRuta && carritoRuta.folio) ? (parseInt(carritoRuta.folio) || 0) : 0,
+                            cliente: {
+                                nombre: (carritoRuta && carritoRuta.cliente && carritoRuta.cliente.nombre) ? carritoRuta.cliente.nombre : "Ruta",
+                                id: (carritoRuta && carritoRuta.cliente && mongoose.Types.ObjectId.isValid(carritoRuta.cliente.id)) ? carritoRuta.cliente.id : null
+                            }
+                        },
+                        inventario_antes: { existencias: existenciasActuales, apartados: apartadosAntes },
+                        inventario_despues: { existencias: existenciasActuales, apartados: apartadosDespues }
+                    });
+                    await snapDevolucion.save(sessionOptions);
+                }
             }
         }
-
-        // 5. Crear e insertar documento consolidado en RutasFinalizadas
-        const idSalidaValido = salidaDB ? salidaDB._id : (mongoose.Types.ObjectId.isValid(idRuta) ? new mongoose.Types.ObjectId(idRuta) : new mongoose.Types.ObjectId());
-        const idCarritoOrigenValido = idCarritoMaestro || (salidaDB ? salidaDB.id_carritos : idSalidaValido);
-        const idRutaValido = (salidaDB && salidaDB.id_ruta) ? salidaDB.id_ruta : idSalidaValido;
-        const agenteRef = (salidaDB && salidaDB.agente) ? salidaDB.agente : (carritoRuta ? carritoRuta.agente : { id: req.user ? req.user._id : null, nombre: "Agente", correo: "" });
 
         const docRutaFinalizada = new RutasFinalizadas({
             id_salida: idSalidaValido,
@@ -287,7 +299,6 @@ export async function put(req, res) {
 
         await docRutaFinalizada.save(sessionOptions);
 
-        // 6. Marcar salidaDB como Finalizada
         if (salidaDB) {
             salidaDB.status = 'Finalizada';
             await salidaDB.save(sessionOptions);
@@ -295,29 +306,59 @@ export async function put(req, res) {
             await SalidasVentas.findByIdAndUpdate(idRuta, { status: 'Finalizada' }, sessionOptions);
         }
 
-        // Commit de la transacción si estuvo activa
-        if (useTransaction && session) {
-            await session.commitTransaction();
-            session.endSession();
+        return {
+            carritosCreadosCount,
+            pedidosGeneradosIds,
+            id_ruta_finalizada: docRutaFinalizada._id
+        };
+    }
+
+    let session = null;
+    let sessionOptions = {};
+
+    try {
+        try {
+            session = await mongoose.startSession();
+            session.startTransaction();
+            sessionOptions = { session };
+        } catch (eSession) {
+            console.warn("⚠️ Transacciones no disponibles:", eSession.message);
+            session = null;
+            sessionOptions = {};
+        }
+
+        let resultado = null;
+        try {
+            resultado = await procesarFinalizacion(sessionOptions);
+            if (session) {
+                await session.commitTransaction();
+                session.endSession();
+            }
+        } catch (eExec) {
+            if (session) {
+                try {
+                    await session.abortTransaction();
+                    session.endSession();
+                } catch (eAbort) {}
+            }
+
+            if (eExec.message && eExec.message.includes("Transaction numbers are only allowed")) {
+                console.warn("⚠️ MongoDB Standalone detectado (sin ReplicaSet). Ejecutando finalización sin transacción...");
+                resultado = await procesarFinalizacion({});
+            } else {
+                throw eExec;
+            }
         }
 
         res.setHeader("Content-Type", "application/json");
         res.end(JSON.stringify({
             ok: true,
-            mensaje: `Ruta finalizada correctamente. Se registraron ${carritosCreadosCount} pedidos en la colección pedidos y el historial en RutasFinalizadas.`,
-            ventasProcesadas: carritosCreadosCount,
-            pedidos_generados: pedidosGeneradosIds,
-            id_ruta_finalizada: docRutaFinalizada._id
+            mensaje: `Ruta finalizada correctamente. Se registraron ${resultado.carritosCreadosCount} pedidos en la colección pedidos y el historial en RutasFinalizadas.`,
+            ventasProcesadas: resultado.carritosCreadosCount,
+            pedidos_generados: resultado.pedidosGeneradosIds,
+            id_ruta_finalizada: resultado.id_ruta_finalizada
         }));
     } catch (err) {
-        if (session) {
-            try {
-                await session.abortTransaction();
-                session.endSession();
-            } catch (eAbort) {
-                console.error("Error al abortar transacción:", eAbort.message);
-            }
-        }
         console.error("Error en PUT /salidas/finalizar/:idRuta:", err);
         res.statusCode = 500;
         res.end(JSON.stringify({ ok: false, mensaje: err.message }));

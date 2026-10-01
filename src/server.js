@@ -63,8 +63,11 @@ if (process.env.DB != "xenon-y-mas-app") {
 // mongoose.connect(`mongodb+srv://root:11111@xenon.02uz8yx.mongodb.net/xenon-y-mas-app`, {
 // mongoose.connect(`mongodb+srv://root:11111@xenon.02uz8yx.mongodb.net/pruebas-xenon-monterrey`, {//base para pruebas locales
 // mongoose.connect(`mongodb+srv://agustinquintanar:JTIYVdKKsGu1A4LN@cluster0.x1bkcvk.mongodb.net/xenon-y-mas-app`, {
-mongoose.connect(`mongodb://xenonformongo:DWuis9maB8nq04Ya@191.215.39.202:39482/xenon-y-mas-appPrueba?authSource=admin`, {
-	useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false
+mongoose.connect(`mongodb://xenonformongo:DWuis9maB8nq04Ya@191.215.39.202:39482/xenon-y-mas-appPrueba?authSource=admin&directConnection=true`, {
+	useNewUrlParser: true,
+	useUnifiedTopology: true,
+	useFindAndModify: false,
+	serverSelectionTimeoutMS: 5000
 })
 	.then(() => {
 		console.log(FgGreen + "  Mongoose, acceso a DB: " + FgBlue + 'Ok' + FgGreen);
@@ -72,7 +75,7 @@ mongoose.connect(`mongodb://xenonformongo:DWuis9maB8nq04Ya@191.215.39.202:39482/
 		console.log('  Express en: ' + FgBlue + process.env.PORT + '\n' + FgWhite + Reset);
 	})
 	.catch((err) => {
-		console.log(err);
+		console.log(FgRed + ">>> [ERROR] Falló la conexión a MongoDB: " + err.message + Reset);
 	})
 
 

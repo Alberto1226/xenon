@@ -35,11 +35,11 @@
 
   let message =
     '<i  class="material-icons vertical-alineado">delete</i> Cancelar el pedido <b>' +
-    pedido.folio +
+    (pedido ? pedido.folio || "" : "") +
     "</b> ?";
   let message_email =
-    `<i  class="material-icons vertical-alineado">email</i> Enviar PDF a "${pedido.cliente.correo}" de pedido <b>` +
-    pedido.folio +
+    `<i  class="material-icons vertical-alineado">email</i> Enviar PDF a "${pedido && pedido.cliente ? pedido.cliente.correo || "" : ""}" de pedido <b>` +
+    (pedido ? pedido.folio || "" : "") +
     "</b> ?";
   const dispatch = createEventDispatcher();
   let mandando_correo = false;

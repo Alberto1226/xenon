@@ -1,11 +1,11 @@
-import { Carrito } from "../../../models/carrito";
+import { RutasFinalizadas } from "../../../models/rutas_finalizadas";
 import * as accesos from "../accesos";
 
 function escaparRegex(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function construirQueryPedido(buscando, usuario) {
+function construirQueryRutasFinalizadas(buscando, usuario) {
     let condiciones = [];
 
     if (buscando && typeof buscando === 'string' && buscando.trim() !== '') {
@@ -15,16 +15,11 @@ function construirQueryPedido(buscando, usuario) {
         const condicionesTexto = palabras.map(palabra => {
             const regex = new RegExp(escaparRegex(palabra), "i");
             const orCondiciones = [
-                { 'cliente.alias': regex },
-                { 'cliente.nombre': regex },
-                { 'cliente.direccion': regex },
-                { 'usuario_que_registro.usuario': regex },
-                { 'agente.nombre': regex }
+                { 'nombre_ruta': regex },
+                { 'folio_salida': regex },
+                { 'agente.nombre': regex },
+                { 'agente.correo': regex }
             ];
-
-            if (!isNaN(palabra)) {
-                orCondiciones.push({ folio: parseInt(palabra) });
-            }
 
             return { $or: orCondiciones };
         });
@@ -36,14 +31,9 @@ function construirQueryPedido(buscando, usuario) {
 
     if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
         condiciones.push({
-            $or: [
-                { "usuario_que_registro.id": String(usuario._id) },
-                { "agente.id": String(usuario._id) }
-            ]
+            "agente.id": String(usuario._id)
         });
     }
-
-    condiciones.push({ status: { $ne: 'Cancelado' } });
 
     return condiciones.length > 0 ? { $and: condiciones } : {};
 }
@@ -62,12 +52,13 @@ export async function post(req, res, next) {
 
         const pagina_actual = Math.max(0, (req.body.pagina_actual || 1) - 1);
         const limite = 10;
-        const query = construirQueryPedido(buscando, usuario);
+        const query = construirQueryRutasFinalizadas(buscando, usuario);
 
         const [cuentaTotal, lista] = await Promise.all([
-            Carrito.countDocuments(query),
-            Carrito.find(query)
-                .sort({ folio: -1 })
+            RutasFinalizadas.countDocuments(query),
+            RutasFinalizadas.find(query)
+                .populate("pedidos_generados")
+                .sort({ fecha_finalizacion: -1 })
                 .skip(pagina_actual * limite)
                 .limit(limite)
                 .lean()
@@ -83,7 +74,7 @@ export async function post(req, res, next) {
             coincidencias: cuentaTotal
         });
     } catch (err) {
-        console.log("Error en lista_de_pedidos:", err);
-        return res.send({ ok: false, mensaje: "error al buscar resultados." });
+        console.log("Error en lista_de_rutas_finalizadas:", err);
+        return res.send({ ok: false, mensaje: "Error al buscar rutas finalizadas." });
     }
 }

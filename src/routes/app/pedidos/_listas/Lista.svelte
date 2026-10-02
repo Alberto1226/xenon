@@ -16,9 +16,11 @@
 
   import Row_cancelados from "./Row_cancelados.svelte";
   import Row_enviados from "./Row_enviados.svelte";
+  import Row_rutas_finalizadas from "./Row_rutas_finalizadas.svelte";
   import Heading from "./Heading_tablar.svelte";
   import Heading_enviados from "./Heading_tabla_enviados.svelte";
   import Heading_pendientes from "./Heading_tablapendientes.svelte";
+  import Heading_rutas_finalizadas from "./Heading_tabla_rutas_finalizadas.svelte";
   import Agente_de_ventas from "./Agente_ventas.svelte";
   export var cargando = true;
   export var buscando = "";
@@ -49,13 +51,15 @@
     cargar_pagina();
   }
 
+  $: if (viendo) {
+    lista = [];
+    $pedidos.lista = [];
+  }
+
   $: indice_final = indice_inicio + limite_lista;
   $: if (ejecutar_consulta) {
-    //console.log("sasdasd");
-    setTimeout(() => {
-      ejecutar_consulta = false;
-      obtener_pedidos();
-    }, 100);
+    ejecutar_consulta = false;
+    obtener_pedidos();
   }
   var total_paginas = 0; //Math.floor(lista.length / limite_lista);
 
@@ -134,7 +138,7 @@
     <!-- HTTP LIBRE -->
     {#if $pedidos.lista.length === 0}
       <!-- SIN RESULTADOS -->
-      No existen pedidos.
+      No existen registros.
     {:else}
       <!-- SI HAY RESULTADOS -->
 
@@ -143,6 +147,8 @@
         <Heading_enviados />
       {:else if viendo == "Enviados"}
         <Heading_pendientes />
+      {:else if viendo === "Rutas Finalizadas"}
+        <Heading_rutas_finalizadas />
       {:else}
         <!-- else content here -->
         <Heading />
@@ -185,6 +191,13 @@
             on:editar_pedido
             on:ver_un_pdf
             on:recargar_lista={obtener_pedidos}
+          />
+        {/each}
+      {:else if viendo === "Rutas Finalizadas"}
+        {#each lista as ruta_finalizada, i (ruta_finalizada._id)}
+          <Row_rutas_finalizadas
+            indice={i}
+            {ruta_finalizada}
           />
         {/each}
       {/if}

@@ -176,6 +176,11 @@
     ejecutar_consulta = true;
   }
 
+  function obtener_rutas_finalizadas(params) {
+    url_consulta = "app/pedidos/lista_de_rutas_finalizadas";
+    ejecutar_consulta = true;
+  }
+
   function editar_pedido() {
     estado_actual = "editando pedido";
   }
@@ -285,6 +290,8 @@
                 >
               {:else if viendo === "Cancelados"}
                 <i style="" class="material-icons icono_titulo">backspace</i>
+              {:else if viendo === "Rutas Finalizadas"}
+                <i style="" class="material-icons icono_titulo">alt_route</i>
               {/if}
             </h3>
           </td>
@@ -395,57 +402,97 @@
   <div slot="footer" class="footer" />
 </Dialog>
 
-<Dialog width="480" bind:visible={visible_tipo_pedidos_visible}>
-  <div class="centrado">Opciones de vista</div>
+<Dialog width="680" bind:visible={visible_tipo_pedidos_visible}>
+  <div class="centrado" style="margin-bottom: 15px; font-weight: bold; font-size: 1.2em; color: #333;">
+    <i class="material-icons" style="vertical-align: middle; color: #1976d2; margin-right: 6px;">tune</i>
+    Opciones de vista de Pedidos
+  </div>
 
-  <table>
-    <tr>
-      <td>
-        <Button
-          on:click={() => {
-            pagina_actual = 1;
-            viendo = "Pendientes";
-            obtener_pendientes();
-          }}
-        >
-          <i class="material-icons">timer</i>
-          Pendientes
-        </Button>
-      </td>
-      <td>
-        <Button
-          on:click={() => {
-            pagina_actual = 1;
-            viendo = "Enviados";
-            obtener_historicos();
-          }}
-        >
-          <i class="material-icons">flight_land</i>
-          Enviados
-        </Button>
-      </td>
-      <td>
-        <Button
-          on:click={() => {
-            pagina_actual = 1;
-            viendo = "Cancelados";
-            if ($pedidos_cancelados.lista.length > 0) {
-              cargando = false;
-              return;
-            }
-            obtener_cancelados();
-          }}
-        >
-          <i class="material-icons">flight_land</i>
-          Cancelados
-        </Button>
-      </td>
-    </tr>
-  </table>
+  <div class="grid-opciones-vista">
+    <button
+      class="btn-opcion-vista"
+      class:activa={viendo === 'Pendientes'}
+      on:click={() => {
+        visible_tipo_pedidos_visible = false;
+        pagina_actual = 1;
+        viendo = "Pendientes";
+        obtener_pendientes();
+      }}
+    >
+      <div class="icono-box" style="background: #fff3e0; color: #ed6c02;">
+        <i class="material-icons">timer</i>
+      </div>
+      <div class="opcion-info">
+        <span class="opcion-titulo">Pendientes</span>
+        <span class="opcion-desc">Carritos activos en progreso</span>
+      </div>
+    </button>
 
-  <div slot="actions" class="actions center" />
+    <button
+      class="btn-opcion-vista"
+      class:activa={viendo === 'Enviados'}
+      on:click={() => {
+        visible_tipo_pedidos_visible = false;
+        pagina_actual = 1;
+        viendo = "Enviados";
+        obtener_historicos();
+      }}
+    >
+      <div class="icono-box" style="background: #e3f2fd; color: #0288d1;">
+        <i class="material-icons">flight_land</i>
+      </div>
+      <div class="opcion-info">
+        <span class="opcion-titulo">Enviados</span>
+        <span class="opcion-desc">Histórico de pedidos despachados</span>
+      </div>
+    </button>
 
-  <div slot="footer" class="footer" />
+    <button
+      class="btn-opcion-vista"
+      class:activa={viendo === 'Cancelados'}
+      on:click={() => {
+        visible_tipo_pedidos_visible = false;
+        pagina_actual = 1;
+        viendo = "Cancelados";
+        if ($pedidos_cancelados.lista.length > 0) {
+          cargando = false;
+          return;
+        }
+        obtener_cancelados();
+      }}
+    >
+      <div class="icono-box" style="background: #ffebee; color: #d32f2f;">
+        <i class="material-icons">cancel</i>
+      </div>
+      <div class="opcion-info">
+        <span class="opcion-titulo">Cancelados</span>
+        <span class="opcion-desc">Pedidos y carritos cancelados</span>
+      </div>
+    </button>
+
+    <button
+      class="btn-opcion-vista"
+      class:activa={viendo === 'Rutas Finalizadas'}
+      on:click={() => {
+        visible_tipo_pedidos_visible = false;
+        pagina_actual = 1;
+        viendo = "Rutas Finalizadas";
+        obtener_rutas_finalizadas();
+      }}
+    >
+      <div class="icono-box" style="background: #e8f5e9; color: #2e7d32;">
+        <i class="material-icons">alt_route</i>
+      </div>
+      <div class="opcion-info">
+        <span class="opcion-titulo">Rutas Finalizadas</span>
+        <span class="opcion-desc">Ventas y folios de rutas concluidas</span>
+      </div>
+    </button>
+  </div>
+
+  <div slot="actions" class="actions center" style="margin-top: 15px;">
+    <Button on:click={() => (visible_tipo_pedidos_visible = false)}>Cerrar</Button>
+  </div>
 </Dialog>
 
 <!-- Modal para seleccionar tipo de pedido (clientes vs rutas) -->
@@ -588,5 +635,69 @@
   .spinning {
     display: inline-block;
     animation: spin 1.2s linear infinite;
+  }
+
+  .grid-opciones-vista {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 10px 5px;
+  }
+
+  .btn-opcion-vista {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .btn-opcion-vista:hover {
+    background: #ffffff;
+    border-color: #1976d2;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.12);
+  }
+
+  .btn-opcion-vista.activa {
+    background: #e3f2fd;
+    border-color: #1976d2;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.2);
+  }
+
+  .icono-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .icono-box i {
+    font-size: 24px;
+  }
+
+  .opcion-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .opcion-titulo {
+    font-weight: 700;
+    font-size: 0.95em;
+    color: #2c3e50;
+  }
+
+  .opcion-desc {
+    font-size: 0.78em;
+    color: #6c757d;
+    margin-top: 2px;
   }
 </style>

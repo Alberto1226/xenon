@@ -23,7 +23,7 @@ export async function post(req, res, next) {
         return res.send({ok:false,mensaje:'No se encontro el carrito'});
     }
 
-    if (carrito_db.carrito.procesando == true || ['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes(carrito_db.carrito.status)) {
+    if (carrito_db.carrito.procesando == true || ['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(carrito_db.carrito.status)) {
         return res.send({ ok: false, mensaje: 'No es posible alterar los datos de venta del pedido en estatus ' + carrito_db.carrito.status });
     }
 

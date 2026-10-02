@@ -393,7 +393,7 @@
     {#if pedido.total_pedido > 0}
       <div class="pill no_select" class:pill_envio={pedido.status == "Envío"}>
         {pedido.status}
-        {#if $usuario_db.rol == "administrador"}
+        {#if $usuario_db.rol == "administrador" && !['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(pedido.status)}
           <Button
             icon
             dense
@@ -466,14 +466,14 @@
             <Button
               icon
               dense
-              color={!['Pagado', 'Empaque', 'Envío'].includes(pedido.status) ? "green" : "#0065ff"}
+              color={!['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(pedido.status) ? "green" : "#0065ff"}
               on:click={editar}
-              title={!['Pagado', 'Empaque', 'Envío'].includes(pedido.status) ? "Editar pedido" : "Folios y detalle (Bloqueado para venta)"}
+              title={!['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(pedido.status) ? "Editar pedido" : "Folios y detalle (Bloqueado para venta)"}
             >
-              <i class="material-icons">{!['Pagado', 'Empaque', 'Envío'].includes(pedido.status) ? "create" : "assignment"}</i>
+              <i class="material-icons">{!['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(pedido.status) ? "create" : "assignment"}</i>
             </Button>
 
-            {#if !['Pagado', 'Empaque', 'Envío'].includes(pedido.status)}
+            {#if !['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(pedido.status)}
               <Button
                 icon
                 dense
@@ -550,7 +550,7 @@
               <Paqueteria bind:pedido bind:mensajeria={pedido.mensajeria} />
             {/if}
 
-            {#if ($usuario_db.rol === "administrador" || $usuario_db.rol === "gerente") && !['Pagado', 'Empaque', 'Envío'].includes(pedido.status)}
+            {#if ($usuario_db.rol === "administrador" || $usuario_db.rol === "gerente") && !['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(pedido.status)}
               <Cambiar_descuento
                 bind:pedido
                 on:descuento_cambiado={handle_descuento_cambiado}

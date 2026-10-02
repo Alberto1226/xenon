@@ -203,8 +203,8 @@ export async function cancelar_pedido(carrito_id, usuario, req, opciones = {}) {
         const carrito = await Carrito.findById(carrito_id);
         if (!carrito) return { ok: false, mensaje: "El pedido no existe" };
 
-        if (carrito.status === "Envío") {
-            return { ok: false, mensaje: "El pedido no se puede cancelar en fase de Envío" };
+        if (['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(carrito.status)) {
+            return { ok: false, mensaje: `El pedido no se puede cancelar en estatus ${carrito.status}` };
         }
 
         // 1. Liberar reservas específicas en productos y generar snaplog '4d'

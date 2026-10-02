@@ -86,6 +86,11 @@
   }
 
   function ver_editar_precio() {
+    if ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes($editar_store.pedido.status)) {
+      $mensajes_app.push({ tipo: "error", mensaje: "🔒 No se puede modificar el precio de productos de un pedido en estatus '" + $editar_store.pedido.status + "'." });
+      $mensajes_app = $mensajes_app;
+      return;
+    }
     mostrando_producto = false;
   }
 
@@ -113,7 +118,7 @@
   }
 
   function quitar_de_pedido() {
-    if ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes($editar_store.pedido.status)) {
+    if ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes($editar_store.pedido.status)) {
       $mensajes_app.push({ tipo: "error", mensaje: "🔒 No se pueden eliminar productos de un pedido en estatus '" + $editar_store.pedido.status + "'." });
       $mensajes_app = $mensajes_app;
       return;
@@ -160,7 +165,7 @@
   }
 
   function cambiar_precio() {
-    if ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes($editar_store.pedido.status)) {
+    if ($editar_store.pedido && ['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes($editar_store.pedido.status)) {
       $mensajes_app.push({ tipo: "error", mensaje: "🔒 No se puede modificar el precio de productos de un pedido en estatus '" + $editar_store.pedido.status + "'." });
       $mensajes_app = $mensajes_app;
       return;
@@ -359,7 +364,7 @@
                   $ {formato_precio(producto.precio)}
                   <!-- <i class="material-icons icono_pequeno " >new_releases</i>  -->
 
-                  {#if $usuario_db.rol === "administrador"}
+                  {#if $usuario_db.rol === "administrador" && $editar_store.pedido && !['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes($editar_store.pedido.status)}
                     <Button
                       icon
                       style="width: 26px;height: 26px;"
@@ -382,7 +387,7 @@
             {:else}
               <td title="Precio con descuento aplicado ">
                 $ {formato_precio(producto.precio)}
-                {#if $usuario_db.rol === "administrador"}
+                {#if $usuario_db.rol === "administrador" && $editar_store.pedido && !['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes($editar_store.pedido.status)}
                   <Button
                     icon
                     style="width: 26px;height: 26px;"

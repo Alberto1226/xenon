@@ -57,6 +57,7 @@
         'Ficha Pago': 2,
         'Pagado': 3,
         'Empaque': 4,
+        'En Ruta': 5,
         'Envío': 5,
         'Envio': 5,
         'Entregado': 6

@@ -130,12 +130,12 @@
       icono: "admin_panel_settings",
       roles: ["administrador"],
     },
-    {
+    /* {
       url: "/app/pedimentos",
       titulo: "Pedimentos",
       icono: "sailing",
       roles: ["administrador", "gerente"],
-    },
+    }, */
     {
       url: "/app/rutas",
       titulo: "Rutas",
@@ -148,12 +148,12 @@
       icono: "qr_code",
       roles: ["administrador", "gerente"],
     },
-    {
+    /* {
       url: "/app/reportes/utilidades",
       titulo: "Utilidades",
       icono: "trending_up",
       roles: ["administrador"],
-    },
+    }, */
 
     {
       url: "/app/categorias",

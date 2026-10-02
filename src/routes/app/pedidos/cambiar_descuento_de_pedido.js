@@ -46,6 +46,10 @@ export async function post(req, res, next) {
         return;
     }
     let carrito = carrito_proceso.carrito;
+    if (['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(carrito.status)) {
+        res.send({ ok: false, mensaje: `No es posible modificar el descuento de un pedido en estatus ${carrito.status}` });
+        return;
+    }
     const descuentoOriginal = carrito.descuento;
     const resumenPrevio = await resumen_de_costos(carrito.lista, req);
 

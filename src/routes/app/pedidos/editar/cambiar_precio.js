@@ -27,7 +27,7 @@ export function post(req, res, next) {
                 res.send({ ok: false, mensaje: 'El pedido ya no existe' })
                 return;
             }
-            if (['Pagado', 'Empaque', 'Envío', 'Envio', 'Entregado'].includes(resultado.status)) {
+            if (['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(resultado.status)) {
                 res.send({ ok: false, mensaje: `El pedido no se puede modificar en estatus ${resultado.status}` });
                 return;
             }

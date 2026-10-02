@@ -8,46 +8,61 @@ export async function post(req, res) {
         return res.send({ ok: false, mensaje: "Sesión expirada" });
     }
 
-    const { cliente_id, periodicidad } = req.body;
+    let { cliente_id, clientes_ids, cliente_ids, periodicidad } = req.body;
 
-    if (!cliente_id) {
-        return res.send({ ok: false, mensaje: "ID de cliente no proporcionado" });
+    // Normalizar lista de IDs de cliente
+    let ids = clientes_ids || cliente_ids;
+    if (!ids && cliente_id) {
+        ids = [cliente_id];
+    } else if (typeof ids === 'string') {
+        ids = [ids];
+    }
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.send({ ok: false, mensaje: "Debe proporcionar al menos un ID de cliente" });
     }
 
     try {
         const usuario = req.user;
 
-        // 1. Obtener los datos del cliente
-        const cliente = await Cliente.findById(cliente_id);
-        if (!cliente) {
-            return res.send({ ok: false, mensaje: "Cliente no encontrado" });
+        // 1. Obtener los datos de los clientes seleccionados
+        const clientes = await Cliente.find({ _id: { $in: ids } });
+        if (!clientes || clientes.length === 0) {
+            return res.send({ ok: false, mensaje: "No se encontraron los clientes solicitados" });
         }
 
-        // 2. Control de accesos de vendedor: verificar que el cliente pertenezca a este agente
+        // 2. Control de accesos de vendedor: verificar que los clientes pertenezcan a este agente si aplica
         if (accesos.tiene_permisos_vendedor(req)) {
-            if (cliente.agente && cliente.agente.id && cliente.agente.id.toString() !== usuario._id.toString()) {
-                return res.send({ ok: false, mensaje: "Permisos insuficientes para consultar este cliente." });
+            const noAutorizado = clientes.some(c => c.agente && c.agente.id && c.agente.id.toString() !== usuario._id.toString());
+            if (noAutorizado) {
+                return res.send({ ok: false, mensaje: "Permisos insuficientes para consultar alguno de los clientes seleccionados." });
             }
         }
 
-        // 3. Obtener todos los pedidos del cliente ordenados por fecha ascendente
+        // 3. Obtener todos los pedidos de todos los clientes seleccionados ordenados por fecha ascendente
+        const idsString = ids.map(id => id.toString());
         const queryPedidos = {
-            "cliente.id": cliente_id
+            "cliente.id": { $in: idsString }
         };
         const todosLosPedidos = await Pedido.find(queryPedidos).sort({ fecha: 1 });
+
+        const primerCliente = clientes[0];
+        const clientesInfo = clientes.map(c => ({
+            _id: c._id,
+            nombre: c.nombre,
+            alias: c.alias,
+            correo: c.correo,
+            telefono: c.telefono,
+            perfil: c.perfil ? c.perfil.perfil : "Público en general",
+            porcentaje_descuento: c.perfil ? c.perfil.porcentaje : 0,
+            fecha_creacion: c.createdAt || c.fecha_creacion
+        }));
 
         if (todosLosPedidos.length === 0) {
             return res.send({
                 ok: true,
-                cliente: {
-                    nombre: cliente.nombre,
-                    alias: cliente.alias,
-                    correo: cliente.correo,
-                    telefono: cliente.telefono,
-                    perfil: cliente.perfil ? cliente.perfil.perfil : "Público en general",
-                    porcentaje_descuento: cliente.perfil ? cliente.perfil.porcentaje : 0,
-                    fecha_creacion: cliente.createdAt || cliente.fecha_creacion
-                },
+                cliente: clientesInfo[0], // Compatibilidad individual
+                clientes: clientesInfo,   // Lista multi-cliente
                 metricas: {
                     total_historico: 0,
                     total_compras: 0,
@@ -63,7 +78,7 @@ export async function post(req, res) {
             });
         }
 
-        // 4. Calcular métricas básicas e históricos
+        // 4. Calcular métricas básicas acumuladas de todos los clientes
         const total_historico = todosLosPedidos.reduce((sum, p) => sum + (p.total_pedido || 0), 0);
         const total_compras = todosLosPedidos.length;
         const ticket_promedio = total_historico / total_compras;
@@ -90,7 +105,7 @@ export async function post(req, res) {
             "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
         ];
 
-        // A. Acumulado anual comparativo (sobre todos los pedidos históricos del cliente)
+        // A. Acumulado anual comparativo
         todosLosPedidos.forEach(pedido => {
             const fechaPedido = new Date(pedido.fecha);
             const anio = fechaPedido.getFullYear();
@@ -102,7 +117,7 @@ export async function post(req, res) {
             anioAgregado[anio].compras += 1;
         });
 
-        // B. Acumulado mensual de tendencia (sobre los pedidos del periodo filtrado)
+        // B. Acumulado mensual de tendencia
         pedidosFiltrados.forEach(pedido => {
             const fechaPedido = new Date(pedido.fecha);
             const anio = fechaPedido.getFullYear();
@@ -123,27 +138,22 @@ export async function post(req, res) {
             return a.mesIdx - b.mesIdx;
         });
 
-        // 6. Determinar el Estado Comercial
+        // 7. Determinar el Estado Comercial Consolidado
         let estado_comercial = "Cliente frecuente";
         const ahora = new Date();
-        const diasDesdeCreacion = (ahora - new Date(cliente.createdAt || cliente.fecha_creacion)) / (1000 * 60 * 60 * 24);
+        const minFechaCreacion = Math.min(...clientes.map(c => new Date(c.createdAt || c.fecha_creacion).getTime()));
+        const diasDesdeCreacion = (ahora - new Date(minFechaCreacion)) / (1000 * 60 * 60 * 24);
         const diasDesdeUltimaCompra = (ahora - new Date(ultima_compra.fecha)) / (1000 * 60 * 60 * 24);
 
-        // A. Cliente Inactivo (sin compras en los últimos 6 meses / 180 días)
         if (diasDesdeUltimaCompra > 180) {
             estado_comercial = "Inactivo";
-        }
-        // B. Cliente Nuevo (< 90 días de registro y pocas compras)
-        else if (diasDesdeCreacion <= 90) {
+        } else if (diasDesdeCreacion <= 90) {
             estado_comercial = "Cliente nuevo";
-        }
-        else {
-            // C. Cliente Frecuente (> 3 compras en los últimos 30 días)
+        } else {
             const comprasUltimos30Dias = todosLosPedidos.filter(p => (ahora - new Date(p.fecha)) / (1000 * 60 * 60 * 24) <= 30).length;
             if (comprasUltimos30Dias >= 3) {
                 estado_comercial = "Frecuente";
             } else {
-                // D. Cliente Recurrente (al menos 1 compra mensual en los últimos 3 meses consecutivos)
                 const mesesActivos = new Set();
                 const ultimos3Meses = [0, 1, 2].map(i => {
                     const d = new Date();
@@ -164,26 +174,7 @@ export async function post(req, res) {
             }
         }
 
-        // E. Cliente de Alto Valor (Facturación acumulada en el top 10% del mismo perfil)
-        const perfil_cliente = cliente.perfil && cliente.perfil.perfil ? cliente.perfil.perfil : "Público en general";
-        const resumen_clientes_perfil = await Pedido.aggregate([
-            { $match: { "cliente.perfil.perfil": perfil_cliente } },
-            { $group: { _id: "$cliente.id", total: { $sum: "$total_pedido" } } },
-            { $sort: { total: -1 } }
-        ]);
-
-        const numClientes = resumen_clientes_perfil.length;
-        if (numClientes > 0) {
-            const indexCliente = resumen_clientes_perfil.findIndex(item => item._id === cliente_id);
-            if (indexCliente !== -1) {
-                const percentil = indexCliente / numClientes;
-                if (percentil <= 0.10) { // Top 10% superior
-                    estado_comercial = "Alto valor";
-                }
-            }
-        }
-
-        // F. Crecimiento / Riesgo (Año en curso vs Año anterior)
+        // Crecimiento / Riesgo
         const anioEnCurso = ahora.getFullYear();
         const totalCurso = anioAgregado[anioEnCurso] ? anioAgregado[anioEnCurso].total : 0;
         const totalAnterior = anioAgregado[anioEnCurso - 1] ? anioAgregado[anioEnCurso - 1].total : 0;
@@ -191,7 +182,6 @@ export async function post(req, res) {
         let crecimiento_porcentaje = 0;
         if (totalAnterior > 0) {
             crecimiento_porcentaje = ((totalCurso - totalAnterior) / totalAnterior) * 100;
-
             if (diasDesdeCreacion > 180 && estado_comercial !== "Inactivo") {
                 if (crecimiento_porcentaje <= -30) {
                     estado_comercial = "En riesgo";
@@ -201,35 +191,29 @@ export async function post(req, res) {
             }
         }
 
-        // 7. Mapear los pedidos retornados para el frontend
-
-        // Mapear los pedidos filtrados al formato simplificado que requiere la tabla del UI
+        // 8. Mapear los pedidos retornados para el frontend con identificación clara del cliente
         const pedidosSimplificados = pedidosFiltrados.map(p => ({
             _id: p._id,
             folio: p.folio,
             fecha: p.fecha,
             total_pedido: p.total_pedido,
-            metodo_pago: p.moneda || 'MXN', // Moneda o método
+            metodo_pago: p.moneda || 'MXN',
             sucursal: p.usuario_que_registro ? p.usuario_que_registro.nombre : 'Sin registrar',
+            cliente_nombre: p.cliente ? p.cliente.nombre : 'Cliente Desconocido',
+            cliente_id: p.cliente ? p.cliente.id : '',
+            cliente_correo: p.cliente ? p.cliente.correo : '',
             lista: (p.lista || []).map(item => ({
                 cantidad: item.cantidad,
                 codigo: item.producto ? item.producto.codigo : 'S/C',
                 nombre: item.producto ? item.producto.nombre : 'Producto sin nombre',
                 precio: item.producto ? item.producto.precio : 0
             }))
-        })).reverse(); // Los más recientes primero para la visualización de la tabla
+        })).reverse();
 
         return res.send({
             ok: true,
-            cliente: {
-                nombre: cliente.nombre,
-                alias: cliente.alias,
-                correo: cliente.correo,
-                telefono: cliente.telefono,
-                perfil: perfil_cliente,
-                porcentaje_descuento: cliente.perfil ? cliente.perfil.porcentaje : 0,
-                fecha_creacion: cliente.createdAt || cliente.fecha_creacion
-            },
+            cliente: clientesInfo[0],
+            clientes: clientesInfo,
             metricas: {
                 total_historico,
                 total_compras,
@@ -237,12 +221,14 @@ export async function post(req, res) {
                 ultima_compra: {
                     fecha: ultima_compra.fecha,
                     total: ultima_compra.total_pedido,
-                    folio: ultima_compra.folio
+                    folio: ultima_compra.folio,
+                    cliente_nombre: ultima_compra.cliente ? ultima_compra.cliente.nombre : ''
                 },
                 primera_compra: {
                     fecha: primera_compra.fecha,
                     total: primera_compra.total_pedido,
-                    folio: primera_compra.folio
+                    folio: primera_compra.folio,
+                    cliente_nombre: primera_compra.cliente ? primera_compra.cliente.nombre : ''
                 },
                 estado_comercial,
                 crecimiento_porcentaje

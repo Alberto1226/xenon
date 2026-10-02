@@ -11,6 +11,9 @@
   let mostrar_desplegable = false;
   let timeout_busqueda;
 
+  // Selección multi-cliente
+  let clientes_seleccionados = [];
+
   // Filtros
   let anio_filtro = new Date().getFullYear();
   let periodicidad = { desde: "", hasta: "" };
@@ -18,6 +21,7 @@
 
   // Datos del Análisis
   let datos_cliente = null;
+  let datos_clientes = [];
   let metricas = null;
   let compras_por_anio = [];
   let compras_por_mes = [];
@@ -32,7 +36,25 @@
     pagina_tabla * items_por_pagina,
   );
 
-  // Variables reactivas para compatibilidad con compilador Svelte antiguo (evita usar @const)
+  // Paleta de colores distintivos para clientes
+  const paleta_colores_clientes = [
+    { bg: "#2563eb", text: "#ffffff", border: "#1d4ed8", tag: "Azul" },
+    { bg: "#059669", text: "#ffffff", border: "#047857", tag: "Esmeralda" },
+    { bg: "#d97706", text: "#ffffff", border: "#b45309", tag: "Ámbar" },
+    { bg: "#7c3aed", text: "#ffffff", border: "#6d28d9", tag: "Violeta" },
+    { bg: "#db2777", text: "#ffffff", border: "#be185d", tag: "Rosa" },
+    { bg: "#0891b2", text: "#ffffff", border: "#0e7490", tag: "Cian" },
+    { bg: "#65a30d", text: "#ffffff", border: "#4d7c0f", tag: "Lima" }
+  ];
+
+  function obtener_color_cliente(id) {
+    if (!id || clientes_seleccionados.length === 0) return paleta_colores_clientes[0];
+    const idx = clientes_seleccionados.findIndex(c => String(c._id) === String(id));
+    if (idx === -1) return paleta_colores_clientes[0];
+    return paleta_colores_clientes[idx % paleta_colores_clientes.length];
+  }
+
+  // Variables reactivas
   $: estilo_insignia = metricas
     ? obtener_estilos_insignia(metricas.estado_comercial)
     : null;
@@ -57,8 +79,7 @@
 
   onMount(() => {
     if ($cliente_selecto && $cliente_selecto._id) {
-      buscando_cliente = $cliente_selecto.nombre;
-      seleccionar_cliente($cliente_selecto);
+      agregar_cliente($cliente_selecto);
     }
   });
 
@@ -78,7 +99,10 @@
       })
         .then((res) => {
           if (res.ok) {
-            lista_clientes_encontrados = res.lista;
+            // Filtrar clientes ya seleccionados
+            lista_clientes_encontrados = (res.lista || []).filter(
+              c => !clientes_seleccionados.some(sel => String(sel._id) === String(c._id))
+            );
             mostrar_desplegable = lista_clientes_encontrados.length > 0;
           }
         })
@@ -86,18 +110,37 @@
     }, 300);
   }
 
-  function seleccionar_cliente(cliente) {
+  function agregar_cliente(cliente) {
+    if (!clientes_seleccionados.some(c => String(c._id) === String(cliente._id))) {
+      clientes_seleccionados = [...clientes_seleccionados, cliente];
+    }
     $cliente_selecto = cliente;
-    buscando_cliente = cliente.nombre;
+    buscando_cliente = "";
     mostrar_desplegable = false;
     cargar_analisis_comercial();
   }
 
+  function remover_cliente(id) {
+    clientes_seleccionados = clientes_seleccionados.filter(c => String(c._id) !== String(id));
+    if (clientes_seleccionados.length === 0) {
+      datos_cliente = null;
+      datos_clientes = [];
+      metricas = null;
+      pedidos = [];
+      compras_por_anio = [];
+      compras_por_mes = [];
+    } else {
+      cargar_analisis_comercial();
+    }
+  }
+
   function cargar_analisis_comercial() {
-    if (!$cliente_selecto || !$cliente_selecto._id) return;
+    if (clientes_seleccionados.length === 0) return;
 
     cargando = true;
-    let payload = { cliente_id: $cliente_selecto._id };
+    let payload = {
+      clientes_ids: clientes_seleccionados.map(c => c._id)
+    };
 
     if (aplicar_rango_fechas && periodicidad.desde && periodicidad.hasta) {
       payload.periodicidad = {
@@ -111,6 +154,7 @@
         cargando = false;
         if (res.ok) {
           datos_cliente = res.cliente;
+          datos_clientes = res.clientes || [res.cliente];
           metricas = res.metricas;
           compras_por_anio = res.compras_por_anio;
           compras_por_mes = res.compras_por_mes;
@@ -134,9 +178,9 @@
     }).format(valor);
   }
 
-  function formato_fecha(fechaStr) {
-    if (!fechaStr) return "-";
-    const fecha = new Date(fechaStr);
+  function formato_fecha(f) {
+    if (!f) return "N/A";
+    const fecha = new Date(f);
     return fecha.toLocaleDateString("es-MX", {
       year: "numeric",
       month: "short",
@@ -144,7 +188,6 @@
     });
   }
 
-  // Estilos de Insignias según el Estado Comercial
   function obtener_estilos_insignia(estado) {
     switch (estado) {
       case "Alto valor":
@@ -206,31 +249,18 @@
     }
   }
 
-  // Control del modal de detalle de compra
-  let modal_detalle_abierto = false;
-  let pedido_seleccionado = null;
-
-  function ver_detalle_pedido(pedido) {
-    pedido_seleccionado = pedido;
-    modal_detalle_abierto = true;
-  }
-
-  function filtrar_por_anio_grafico(anio) {
-    aplicar_rango_fechas = true;
-    periodicidad.desde = `${anio}-01-01`;
-    periodicidad.hasta = `${anio}-12-31`;
-    cargar_analisis_comercial();
-  }
-
-  // Tooltip interactivo para gráfica de barras
+  // Interacción Gráficos
   let tooltip_activo = false;
   let tooltip_contenido = { anio: "", total: 0, compras: 0 };
   let tooltip_posicion = { x: 0, y: 0 };
 
   function mostrar_tooltip(e, anioData) {
     tooltip_contenido = anioData;
+    tooltip_posicion = {
+      x: e.clientX + 15,
+      y: e.clientY - 75,
+    };
     tooltip_activo = true;
-    mover_tooltip(e);
   }
 
   function mover_tooltip(e) {
@@ -244,16 +274,17 @@
     tooltip_activo = false;
   }
 
-  // Tooltip interactivo para gráfica mensual (activo solo si se filtra por año/fechas)
   let tooltip_mes_activo = false;
   let tooltip_mes_contenido = { mesAnio: "", total: 0, compras: 0 };
   let tooltip_mes_posicion = { x: 0, y: 0 };
 
   function mostrar_tooltip_mes(e, mesData) {
-    if (!aplicar_rango_fechas) return;
     tooltip_mes_contenido = mesData;
+    tooltip_mes_posicion = {
+      x: e.clientX + 15,
+      y: e.clientY - 75,
+    };
     tooltip_mes_activo = true;
-    mover_tooltip_mes(e);
   }
 
   function mover_tooltip_mes(e) {
@@ -267,27 +298,41 @@
     tooltip_mes_activo = false;
   }
 
+  function filtrar_por_anio_grafico(anio) {
+    periodicidad = {
+      desde: `${anio}-01-01`,
+      hasta: `${anio}-12-31`,
+    };
+    aplicar_rango_fechas = true;
+    cargar_analisis_comercial();
+  }
+
+  // Modal de Detalle de Pedido
+  let modal_detalle_abierto = false;
+  let pedido_seleccionado = null;
+
+  function ver_detalle_pedido(p) {
+    pedido_seleccionado = p;
+    modal_detalle_abierto = true;
+  }
+
+  // Exportar a PDF con pdfMake dinámico
   let exportando_pdf = false;
 
   function exportar_pdf() {
-    if (!datos_cliente || !metricas) {
-      alert("Espera a que el análisis termine de cargarse.");
-      return;
-    }
+    if (!datos_cliente) return;
+    exportando_pdf = true;
 
     if (window.pdfMake) {
       ejecutar_pdfmake();
+      exportando_pdf = false;
       return;
     }
 
-    exportando_pdf = true;
-
-    // Inyectar pdfmake.min.js dinámicamente para no cargarlo en el bundler de Rollup
     const scriptPdfMake = document.createElement("script");
     scriptPdfMake.src =
       "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/pdfmake.min.js";
     scriptPdfMake.onload = () => {
-      // Inyectar las fuentes
       const scriptFonts = document.createElement("script");
       scriptFonts.src =
         "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/vfs_fonts.js";
@@ -310,12 +355,16 @@
   }
 
   function ejecutar_pdfmake() {
+    const esMulticliente = clientes_seleccionados.length > 1;
+
     const docDefinition = {
       content: [
         // Encabezado principal corporativo
         { text: "XENON Y MAS", style: "headerCompany" },
         {
-          text: "ESTADO DE CUENTA ANUAL Y REPORTE COMERCIAL",
+          text: esMulticliente
+            ? `ESTADO DE CUENTA Y REPORTE COMERCIAL CONSOLIDADO (${clientes_seleccionados.length} CLIENTES)`
+            : "ESTADO DE CUENTA ANUAL Y REPORTE COMERCIAL",
           style: "headerReport",
         },
         {
@@ -323,40 +372,63 @@
           style: "dateEmission",
         },
 
-        // Ficha del Cliente
-        { text: "DATOS DE IDENTIFICACIÓN DEL CLIENTE", style: "sectionTitle" },
+        // Ficha del / de los Clientes
         {
-          table: {
-            widths: ["35%", "65%"],
-            body: [
-              [
-                "Razón Social / Nombre:",
-                { text: datos_cliente.nombre, bold: true },
-              ],
-              // [
-              //   "Alias comercial:",
-              //   datos_cliente.alias || "Sin alias registrado",
-              // ],
-              [
-                "Correo electrónico:",
-                datos_cliente.correo || "Sin correo registrado",
-              ],
-              [
-                "Teléfono de contacto:",
-                datos_cliente.telefono || "Sin teléfono",
-              ],
-              [
-                "Descuento asignado:",
-                `${datos_cliente.porcentaje_descuento}% de descuento`,
-              ],
-            ],
-          },
-          layout: "lightHorizontalLines",
-          margin: [0, 5, 0, 15],
+          text: esMulticliente
+            ? `CLIENTES INCLUIDOS EN EL ANÁLISIS (${clientes_seleccionados.length})`
+            : "DATOS DE IDENTIFICACIÓN DEL CLIENTE",
+          style: "sectionTitle",
         },
+        esMulticliente
+          ? {
+              table: {
+                widths: ["35%", "35%", "15%", "15%"],
+                body: [
+                  [
+                    { text: "Razón Social / Nombre", style: "tableHeader" },
+                    { text: "Correo electrónico", style: "tableHeader" },
+                    { text: "Teléfono", style: "tableHeader" },
+                    { text: "Descuento", style: "tableHeader" },
+                  ],
+                  ...datos_clientes.map((c) => [
+                    { text: c.nombre, bold: true },
+                    c.correo || "Sin correo",
+                    c.telefono || "Sin teléfono",
+                    `${c.porcentaje_descuento}%`,
+                  ]),
+                ],
+              },
+              layout: "lightHorizontalLines",
+              margin: [0, 5, 0, 15],
+            }
+          : {
+              table: {
+                widths: ["35%", "65%"],
+                body: [
+                  [
+                    "Razón Social / Nombre:",
+                    { text: datos_cliente.nombre, bold: true },
+                  ],
+                  [
+                    "Correo electrónico:",
+                    datos_cliente.correo || "Sin correo registrado",
+                  ],
+                  [
+                    "Teléfono de contacto:",
+                    datos_cliente.telefono || "Sin teléfono",
+                  ],
+                  [
+                    "Descuento asignado:",
+                    `${datos_cliente.porcentaje_descuento}% de descuento`,
+                  ],
+                ],
+              },
+              layout: "lightHorizontalLines",
+              margin: [0, 5, 0, 15],
+            },
 
         // Resumen Comercial y Desempeño
-        { text: "RESUMEN ANALÍTICO DE CONSUMO", style: "sectionTitle" },
+        { text: "RESUMEN ANALÍTICO DE CONSUMO CONSOLIDADO", style: "sectionTitle" },
         {
           table: {
             widths: ["50%", "50%"],
@@ -407,17 +479,19 @@
         {
           table: {
             headerRows: 1,
-            widths: ["15%", "25%", "25%", "15%", "20%"],
+            widths: ["12%", "28%", "20%", "18%", "10%", "12%"],
             body: [
               [
                 { text: "Folio", style: "tableHeader" },
-                { text: "Fecha de Pago", style: "tableHeader" },
+                { text: "Cliente", style: "tableHeader" },
+                { text: "Fecha", style: "tableHeader" },
                 { text: "Total Surtido", style: "tableHeader" },
                 { text: "Divisa", style: "tableHeader" },
                 { text: "Registró", style: "tableHeader" },
               ],
               ...pedidos.map((p) => [
                 { text: `#${p.folio}`, bold: true },
+                { text: p.cliente_nombre || "Cliente", color: "#1e40af", bold: true },
                 formato_fecha(p.fecha),
                 {
                   text: formato_moneda(p.total_pedido),
@@ -435,14 +509,14 @@
       ],
       styles: {
         headerCompany: {
-          fontSize: 22,
+          fontSize: 18,
           bold: true,
           color: "#1e3a8a",
           alignment: "center",
           margin: [0, 0, 0, 2],
         },
         headerReport: {
-          fontSize: 13,
+          fontSize: 12,
           bold: true,
           color: "#475569",
           alignment: "center",
@@ -472,11 +546,13 @@
       },
     };
 
+    const nombreArchivo = esMulticliente
+      ? `Estado_Cuenta_Consolidado_${clientes_seleccionados.length}_Clientes.pdf`
+      : `Estado_Cuenta_${datos_cliente.nombre.replace(/\s+/g, "_")}.pdf`;
+
     window.pdfMake
       .createPdf(docDefinition)
-      .download(
-        `Estado_Cuenta_${datos_cliente.nombre.replace(/\s+/g, "_")}.pdf`,
-      );
+      .download(nombreArchivo);
   }
 </script>
 
@@ -497,7 +573,7 @@
       <i class="material-icons icono-buscar">search</i>
       <input
         type="text"
-        placeholder="Buscar cliente..."
+        placeholder="Buscar y agregar clientes al análisis..."
         autocomplete="off"
         bind:value={buscando_cliente}
         on:input={buscar_clientes_debounce}
@@ -510,8 +586,6 @@
           class="btn-clear"
           on:click={() => {
             buscando_cliente = "";
-            $cliente_selecto = null;
-            datos_cliente = null;
           }}
         >
           <i class="material-icons">close</i>
@@ -520,7 +594,7 @@
       {#if mostrar_desplegable}
         <div class="desplegable-clientes" transition:slide>
           {#each lista_clientes_encontrados as c}
-            <div class="opcion-cliente" on:click={() => seleccionar_cliente(c)}>
+            <div class="opcion-cliente" on:click={() => agregar_cliente(c)}>
               <span class="nombre-c">{c.nombre}</span>
               <span class="correo-c">{c.correo || "Sin correo"}</span>
             </div>
@@ -530,30 +604,80 @@
     </div>
   </div>
 
+  <!-- Barra de Clientes Seleccionados -->
+  {#if clientes_seleccionados.length > 0}
+    <div class="bar-clientes-seleccionados" transition:slide>
+      <div class="chips-container">
+        <span class="lbl-seleccionados">
+          <i class="material-icons" style="vertical-align: middle; font-size: 1.1em; color: #3b82f6;">group</i>
+          Clientes en análisis ({clientes_seleccionados.length}):
+        </span>
+        {#each clientes_seleccionados as c}
+          <div
+            class="chip-cliente"
+            style="background-color: {obtener_color_cliente(c._id).bg}; color: {obtener_color_cliente(c._id).text}; border: 1px solid {obtener_color_cliente(c._id).border};"
+          >
+            <i class="material-icons avatar-chip">person</i>
+            <span class="nombre-chip">{c.nombre}</span>
+            <button
+              class="btn-quitar-chip"
+              title="Remover cliente del análisis"
+              on:click={() => remover_cliente(c._id)}
+            >
+              <i class="material-icons">close</i>
+            </button>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
   {#if cargando}
     <div class="pantalla-carga">
       <div class="spinner"></div>
-      <p>Procesando estadísticas comerciales del cliente...</p>
+      <p>Procesando estadísticas comerciales de los clientes seleccionados...</p>
     </div>
-  {:else if datos_cliente}
-    <!-- Ficha del Cliente e Indicador de Estado -->
+  {:else if datos_cliente && clientes_seleccionados.length > 0}
+    <!-- Ficha del o los Clientes e Indicador de Estado -->
     <div class="panel-cliente" transition:fade>
-      <div class="ficha-datos">
-        <div class="avatar-cliente">
-          <i class="material-icons">account_circle</i>
-        </div>
-        <div class="info-texto">
-          <h3>{datos_cliente.nombre}</h3>
-          <p class="alias">
-            {datos_cliente.alias ? `"${datos_cliente.alias}"` : "Sin alias"}
-          </p>
-          <div class="tags-perfil">
-            <span class="tag-descuento"
-              >Descuento: {datos_cliente.porcentaje_descuento}%</span
-            >
+      {#if clientes_seleccionados.length === 1}
+        <!-- Vista de 1 Cliente -->
+        <div class="ficha-datos">
+          <div class="avatar-cliente" style="background-color: {obtener_color_cliente(clientes_seleccionados[0]._id).bg};">
+            <i class="material-icons" style="color: #fff;">account_circle</i>
+          </div>
+          <div class="info-texto">
+            <h3>{datos_cliente.nombre}</h3>
+            <p class="alias">
+              {datos_cliente.alias ? `"${datos_cliente.alias}"` : "Sin alias"}
+            </p>
+            <div class="tags-perfil">
+              <span class="tag-descuento">Descuento: {datos_cliente.porcentaje_descuento}%</span>
+              {#if datos_cliente.correo}
+                <span class="tag-correo">{datos_cliente.correo}</span>
+              {/if}
+            </div>
           </div>
         </div>
-      </div>
+      {:else}
+        <!-- Vista Multi-Cliente -->
+        <div class="ficha-datos multi-clientes">
+          <div class="avatar-cliente multi" style="background-color: #1e3a8a;">
+            <i class="material-icons" style="color: #fff;">domain</i>
+          </div>
+          <div class="info-texto">
+            <h3>Análisis Consolidado ({clientes_seleccionados.length} Clientes)</h3>
+            <div class="lista-nombres-multi">
+              {#each datos_clientes as cli}
+                <span class="badge-mini-cliente" style="background-color: {obtener_color_cliente(cli._id).bg}; color: {obtener_color_cliente(cli._id).text};">
+                  <i class="material-icons" style="font-size: 12px;">person</i>
+                  {cli.nombre} ({cli.porcentaje_descuento}%)
+                </span>
+              {/each}
+            </div>
+          </div>
+        </div>
+      {/if}
 
       <!-- Insignia del Estado Comercial -->
       {#if metricas && estilo_insignia}
@@ -579,6 +703,7 @@
           Filtrar por Rango de Fechas
         </label>
       </div>
+
       {#if aplicar_rango_fechas}
         <div class="fechas-inputs" transition:slide>
           <div class="fecha-group">
@@ -614,7 +739,7 @@
       </div>
     </div>
 
-    <!-- KPIs de Consumo -->
+    <!-- Métricas Clave (KPIs) -->
     {#if metricas}
       <div class="grid-kpis" transition:fade>
         <div class="kpi-card">
@@ -665,12 +790,14 @@
       </div>
     {/if}
 
-    <!-- Gráficos de Ventas Comparativos (SVG Reactivos) -->
+    <!-- Gráficos de Tendencias -->
     <div class="grid-graficos" transition:fade>
-      <!-- Gráfico Anual (Barras) -->
-      <div class="grafico-card">
-        <h4>Ventas Comparativas por Año</h4>
-        <div class="svg-container">
+      <!-- Gráfico 1: Ventas por Año -->
+      <div class="card-grafico">
+        <div class="header-grafico">
+          <h4>Ventas Comparativas por Año</h4>
+        </div>
+        <div class="contenedor-svg">
           {#if compras_por_anio.length > 0}
             <svg viewBox="0 0 400 200" width="100%" height="100%">
               <!-- Grid lines -->
@@ -712,10 +839,10 @@
                 <rect
                   x={60 + i * (300 / compras_por_anio.length)}
                   y={170 - (anioData.total / maxTotalAnual) * 130}
-                  width="30"
+                  width={Math.min(30, 200 / compras_por_anio.length)}
                   height={(anioData.total / maxTotalAnual) * 130}
-                  fill="url(#gradient-barras)"
                   rx="4"
+                  fill="url(#gradient-barras)"
                   class="barra-animada"
                   on:click={() => filtrar_por_anio_grafico(anioData.anio)}
                   on:mouseenter={(e) => mostrar_tooltip(e, anioData)}
@@ -770,15 +897,17 @@
               </defs>
             </svg>
           {:else}
-            <p class="sin-datos">No hay datos anuales disponibles</p>
+            <p class="sin-datos-grafico">Sin datos históricos anuales</p>
           {/if}
         </div>
       </div>
 
-      <!-- Gráfico Mensual (Línea) -->
-      <div class="grafico-card">
-        <h4>Tendencia Mensual Histórica</h4>
-        <div class="svg-container">
+      <!-- Gráfico 2: Tendencia Mensual -->
+      <div class="card-grafico">
+        <div class="header-grafico">
+          <h4>Tendencia Mensual Histórica</h4>
+        </div>
+        <div class="contenedor-svg">
           {#if compras_por_mes.length > 0}
             <svg viewBox="0 0 400 200" width="100%" height="100%">
               <!-- Grid lines -->
@@ -819,18 +948,19 @@
               <polyline
                 fill="none"
                 stroke="#10b981"
-                stroke-width="3"
+                stroke-width="2.5"
                 points={puntosMensuales}
               />
 
-              <!-- Puntos y etiquetas -->
               {#each compras_por_mes as mesData, i}
+                <!-- Puntos de la curva -->
                 <circle
                   cx={40 + i * (340 / (compras_por_mes.length - 1 || 1))}
                   cy={170 - (mesData.total / maxMesTotal) * 130}
-                  r="5"
-                  fill="#34d399"
-                  class="punto-grafico"
+                  r="4"
+                  fill="#10b981"
+                  stroke="#022c22"
+                  stroke-width="1.5"
                   on:mouseenter={(e) => mostrar_tooltip_mes(e, mesData)}
                   on:mousemove={(e) => mover_tooltip_mes(e)}
                   on:mouseleave={ocultar_tooltip_mes}
@@ -852,7 +982,7 @@
               {/each}
             </svg>
           {:else}
-            <p class="sin-datos">No hay datos mensuales suficientes</p>
+            <p class="sin-datos-grafico">Sin datos de compras mensuales</p>
           {/if}
         </div>
       </div>
@@ -866,6 +996,7 @@
           <thead>
             <tr>
               <th>Folio</th>
+              <th>Cliente / Empresa</th>
               <th>Fecha de Compra</th>
               <th>Importe Total</th>
               <th>Moneda</th>
@@ -881,6 +1012,15 @@
                   title="Doble clic para ver productos"
                 >
                   <td class="folio">#{p.folio}</td>
+                  <td>
+                    <span
+                      class="badge-cliente-tabla"
+                      style="background-color: {obtener_color_cliente(p.cliente_id).bg}; color: {obtener_color_cliente(p.cliente_id).text}; border: 1px solid {obtener_color_cliente(p.cliente_id).border};"
+                    >
+                      <i class="material-icons" style="font-size: 11px; vertical-align: middle; margin-right: 3px;">person</i>
+                      {p.cliente_nombre || 'Cliente'}
+                    </span>
+                  </td>
                   <td>{formato_fecha(p.fecha)}</td>
                   <td class="total">{formato_moneda(p.total_pedido)}</td>
                   <td>{p.metodo_pago}</td>
@@ -889,7 +1029,7 @@
               {/each}
             {:else}
               <tr>
-                <td colspan="5" class="centrado"
+                <td colspan="6" class="centrado"
                   >No se encontraron compras en el periodo seleccionado</td
                 >
               </tr>
@@ -915,18 +1055,17 @@
       {/if}
     </div>
   {:else}
-    <!-- Estado Inicial sin Cliente Seleccionado -->
+    <!-- Panel Inicial Sin Cliente Seleccionado -->
     <div class="panel-inicial" transition:fade>
       <i class="material-icons icono-inicial">analytics</i>
-      <h3>Por favor, selecciona un cliente</h3>
+      <h3>Selecciona uno o varios clientes</h3>
       <p>
-        Usa la barra de búsqueda superior para ingresar el nombre de un cliente
-        y analizar su comportamiento comercial.
+        Usa la barra de búsqueda superior para encontrar y agregar clientes al análisis consolidado. Puedes agregar múltiples cuentas para analizarlas juntas.
       </p>
     </div>
   {/if}
 
-  <!-- Modal de Detalle de Productos del Pedido -->
+  <!-- Modal Detalle del Pedido -->
   {#if modal_detalle_abierto && pedido_seleccionado}
     <div
       class="modal-overlay"
@@ -943,8 +1082,18 @@
             <i class="material-icons">close</i>
           </button>
         </div>
+
         <div class="modal-body">
           <div class="pedido-info-resumen">
+            <p>
+              <strong>Cliente / Cuenta:</strong>
+              <span
+                class="badge-cliente-tabla"
+                style="background-color: {obtener_color_cliente(pedido_seleccionado.cliente_id).bg}; color: {obtener_color_cliente(pedido_seleccionado.cliente_id).text};"
+              >
+                {pedido_seleccionado.cliente_nombre || 'Cliente'}
+              </span>
+            </p>
             <p>
               <strong>Fecha de Compra:</strong>
               {formato_fecha(pedido_seleccionado.fecha)}
@@ -966,14 +1115,14 @@
           </div>
 
           <h4>Productos Adquiridos</h4>
-          <div class="table-responsive modal-tabla-productos">
-            <table>
+          <div class="table-responsive">
+            <table class="tabla-modal-productos">
               <thead>
                 <tr>
                   <th>Código</th>
-                  <th>Descripción del Producto</th>
-                  <th class="derecha">Cant.</th>
-                  <th class="derecha">P. Unitario</th>
+                  <th>Producto</th>
+                  <th class="derecha">Cantidad</th>
+                  <th class="derecha">Precio Unit.</th>
                   <th class="derecha">Subtotal</th>
                 </tr>
               </thead>
@@ -1028,12 +1177,12 @@
       </div>
       <div class="tooltip-item">
         <span class="tooltip-lbl">Pedidos hechos:</span>
-        <span class="tooltip-val">{tooltip_contenido.compras} pedidos</span>
+        <span class="tooltip-val">{tooltip_contenido.compras}</span>
       </div>
     </div>
   {/if}
 
-  <!-- Tooltip flotante para meses (activo solo al filtrar por año/fechas) -->
+  <!-- Tooltip flotante para meses -->
   {#if tooltip_mes_activo && aplicar_rango_fechas}
     <div
       class="tooltip-grafico"
@@ -1049,7 +1198,7 @@
       </div>
       <div class="tooltip-item">
         <span class="tooltip-lbl">Pedidos hechos:</span>
-        <span class="tooltip-val">{tooltip_mes_contenido.compras} pedidos</span>
+        <span class="tooltip-val">{tooltip_mes_contenido.compras}</span>
       </div>
     </div>
   {/if}
@@ -1057,8 +1206,8 @@
 
 <style>
   .modulo-analisis {
-    background-color: #0b1320;
-    color: #e2e8f0;
+    background-color: #0f172a;
+    color: #f8fafc;
     padding: 24px;
     border-radius: 12px;
     min-height: 80vh;
@@ -1069,176 +1218,196 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #1e293b;
-    padding-bottom: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     flex-wrap: wrap;
     gap: 16px;
   }
 
   .titulo-modulo h2 {
-    font-size: 1.8em;
+    font-size: 1.6rem;
     font-weight: 700;
-    color: #f8fafc;
     margin: 0;
+    color: #f8fafc;
   }
 
   .titulo-modulo p {
-    color: #64748b;
+    font-size: 0.85rem;
+    color: #94a3b8;
     margin: 4px 0 0 0;
-    font-size: 0.95em;
   }
 
   .buscador-container {
     position: relative;
-    width: 320px;
-    display: flex;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    padding: 8px 14px;
-    gap: 10px;
-    transition: all 0.3s ease;
+    width: 380px;
   }
 
-  .buscador-container:focus-within {
-    background: rgba(255, 255, 255, 0.1);
+  .icono-buscar {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+  }
+
+  .buscador-container input {
+    width: 100%;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px 36px 10px 40px;
+    color: #f8fafc;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .buscador-container input:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
   }
 
-  .icono-buscar {
-    color: #64748b;
-    font-size: 1.2em;
-    display: flex;
-    align-items: center;
-  }
-
-  .buscador-container input {
-    background: transparent !important;
-    border: none !important;
-    outline: none !important;
-    color: #f8fafc !important;
-    font-size: 0.9em;
-    width: 100%;
-    padding: 0 !important;
-    margin: 0 !important;
-    font-family: inherit;
-  }
-
-  .buscador-container input::placeholder {
-    color: #64748b;
-    opacity: 1;
-  }
-
   .btn-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
     background: none;
     border: none;
     color: #64748b;
     cursor: pointer;
-    padding: 2px;
+    padding: 4px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: color 0.2s;
   }
 
   .btn-clear:hover {
-    color: #cbd5e1;
+    color: #f8fafc;
   }
 
   .desplegable-clientes {
     position: absolute;
-    top: 60px;
+    top: 105%;
     left: 0;
     right: 0;
-    background: #0f172a;
+    background-color: #1e293b;
     border: 1px solid #334155;
     border-radius: 8px;
-    z-index: 100;
-    max-height: 240px;
+    max-height: 220px;
     overflow-y: auto;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   }
 
   .opcion-cliente {
     padding: 10px 14px;
     cursor: pointer;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid #334155;
     display: flex;
     flex-direction: column;
+  }
+
+  .opcion-cliente:last-child {
+    border-bottom: none;
   }
 
   .opcion-cliente:hover {
-    background: #1e293b;
+    background-color: #334155;
   }
 
-  .opcion-cliente .nombre-c {
+  .nombre-c {
     font-weight: 600;
+    font-size: 0.9rem;
     color: #f8fafc;
-    font-size: 0.95em;
   }
 
-  .opcion-cliente .correo-c {
-    font-size: 0.8em;
-    color: #64748b;
-  }
-
-  .btn-clear {
-    background: none;
-    border: none;
-    color: #64748b;
-    cursor: pointer;
-    margin-left: 8px;
-    padding: 4px;
-  }
-
-  .btn-clear:hover {
-    color: #cbd5e1;
-  }
-
-  .pantalla-carga {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 80px 0;
-  }
-
-  .spinner {
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border-left-color: #3b82f6;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  .pantalla-carga p {
-    margin-top: 16px;
+  .correo-c {
+    font-size: 0.75rem;
     color: #94a3b8;
   }
 
-  /* Panel del Cliente y Ficha */
+  /* Barra de Chips de Clientes Seleccionados */
+  .bar-clientes-seleccionados {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+  }
+
+  .chips-container {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .lbl-seleccionados {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-right: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .chip-cliente {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .avatar-chip {
+    font-size: 14px;
+  }
+
+  .btn-quitar-chip {
+    background: rgba(0, 0, 0, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: inherit;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin-left: 2px;
+    transition: background 0.2s;
+  }
+
+  .btn-quitar-chip:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .btn-quitar-chip i {
+    font-size: 12px;
+  }
+
+  .badge-cliente-tabla {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  /* Ficha de Cliente */
   .panel-cliente {
-    background: #111b27;
-    border: 1px solid #1e293b;
+    background-color: #1e293b;
     border-radius: 12px;
     padding: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
     gap: 16px;
   }
@@ -1249,123 +1418,113 @@
     gap: 16px;
   }
 
+  .ficha-datos.multi-clientes {
+    gap: 12px;
+  }
+
+  .avatar-cliente {
+    width: 56px;
+    height: 56px;
+    background-color: #3b82f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
   .avatar-cliente i {
-    font-size: 3.5em;
-    color: #3b82f6;
+    font-size: 36px;
+    color: #ffffff;
   }
 
   .info-texto h3 {
     margin: 0;
-    font-size: 1.4em;
+    font-size: 1.25rem;
     font-weight: 700;
     color: #f8fafc;
   }
 
   .info-texto .alias {
-    margin: 2px 0 8px 0;
-    font-style: italic;
+    margin: 2px 0 6px 0;
+    font-size: 0.85rem;
     color: #94a3b8;
-    font-size: 0.9em;
+    font-style: italic;
   }
 
   .tags-perfil {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
   }
 
-  .tag-perfil {
-    background: #1e293b;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.8em;
-    color: #cbd5e1;
-    font-weight: 600;
-  }
-
-  .tag-descuento {
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+  .tag-descuento, .tag-correo {
+    background-color: #0369a1;
+    color: #e0f2fe;
     padding: 3px 10px;
-    border-radius: 6px;
-    font-size: 0.8em;
-    color: #60a5fa;
+    border-radius: 12px;
+    font-size: 0.78rem;
     font-weight: 600;
   }
 
-  /* Insignias de Estado Comercial */
-  .insignia-estado {
-    padding: 12px 24px;
+  .lista-nombres-multi {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .badge-mini-cliente {
+    padding: 3px 8px;
     border-radius: 10px;
-    text-align: right;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .insignia-estado {
+    padding: 10px 20px;
+    border-radius: 10px;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-    min-width: 160px;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   .etiqueta-estado {
-    font-size: 1.15em;
-    font-weight: 800;
+    font-weight: 700;
+    font-size: 1.05rem;
   }
 
   .subtexto-estado {
-    font-size: 0.75em;
-    opacity: 0.8;
-    margin-top: 2px;
-  }
-
-  /* Animaciones especiales para las insignias */
-  .alto-valor {
-    box-shadow: 0 0 15px rgba(234, 179, 8, 0.4);
-    animation: pulso 2s infinite alternate;
-  }
-  .crecimiento {
-    box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
-  }
-  .riesgo {
-    box-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
-    animation: pulso-alerta 1.5s infinite alternate;
-  }
-
-  @keyframes pulso {
-    0% {
-      transform: scale(1);
-    }
-    100% {
-      transform: scale(1.03);
-    }
-  }
-
-  @keyframes pulso-alerta {
-    0% {
-      opacity: 0.85;
-    }
-    100% {
-      opacity: 1;
-    }
+    font-size: 0.7rem;
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   /* Filtros de Periodo */
   .filtros-periodo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #111b27;
-    border: 1px solid #1e293b;
-    padding: 14px 20px;
+    background-color: #1e293b;
     border-radius: 10px;
-    margin-bottom: 24px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     flex-wrap: wrap;
     gap: 16px;
   }
 
   .opcion-filtro-check label {
+    font-size: 0.9rem;
+    color: #e2e8f0;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
-    cursor: pointer;
-    font-weight: 600;
   }
 
   .fechas-inputs {
@@ -1377,47 +1536,49 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    font-size: 0.85rem;
+    color: #94a3b8;
   }
 
   .fecha-group input {
-    background: #0f172a;
+    background-color: #0f172a;
     border: 1px solid #334155;
-    color: #e2e8f0;
-    padding: 6px 10px;
     border-radius: 6px;
-    font-family: inherit;
+    padding: 6px 10px;
+    color: #f8fafc;
+    outline: none;
   }
 
-  /* Grid de KPIs */
+  /* Grid KPIs */
   .grid-kpis {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 16px;
     margin-bottom: 24px;
   }
 
   .kpi-card {
-    background: #111b27;
-    border: 1px solid #1e293b;
+    background-color: #1e293b;
     border-radius: 10px;
     padding: 16px;
     display: flex;
     flex-direction: column;
+    border-left: 4px solid #3b82f6;
   }
 
   .kpi-titulo {
-    font-size: 0.8em;
-    color: #64748b;
-    font-weight: 600;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    color: #94a3b8;
+    font-weight: 600;
+    letter-spacing: 0.5px;
   }
 
   .kpi-valor {
-    font-size: 1.6em;
+    font-size: 1.5rem;
     font-weight: 700;
     color: #f8fafc;
-    margin: 8px 0;
+    margin: 6px 0 2px 0;
   }
 
   .kpi-valor.total-dinero {
@@ -1425,79 +1586,70 @@
   }
 
   .kpi-valor.fecha {
-    font-size: 1.3em;
-    padding-top: 4px;
+    font-size: 1rem;
   }
 
   .kpi-subtexto {
-    font-size: 0.75em;
+    font-size: 0.72rem;
     color: #64748b;
   }
 
-  /* Grid de Gráficos */
+  /* Grid Gráficos */
   .grid-graficos {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
     gap: 20px;
     margin-bottom: 24px;
   }
 
-  @media (max-width: 768px) {
-    .grid-graficos {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .grafico-card {
-    background: #111b27;
-    border: 1px solid #1e293b;
+  .card-grafico {
+    background-color: #1e293b;
     border-radius: 12px;
-    padding: 20px;
-  }
-
-  .grafico-card h4 {
-    margin: 0 0 16px 0;
-    font-size: 1.1em;
-    font-weight: 700;
-    color: #f8fafc;
-  }
-
-  .svg-container {
-    height: 180px;
+    padding: 18px;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+  }
+
+  .header-grafico h4 {
+    margin: 0 0 16px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+
+  .contenedor-svg {
+    height: 200px;
+    position: relative;
+  }
+
+  .sin-datos-grafico {
+    text-align: center;
+    color: #64748b;
+    line-height: 200px;
+    font-size: 0.9rem;
+    margin: 0;
   }
 
   .barra-animada {
-    transition:
-      height 0.5s ease-out,
-      y 0.5s ease-out;
+    transition: height 0.5s ease-out, y 0.5s ease-out;
   }
 
   .barra-animada:hover {
     fill: #60a5fa;
-    cursor: pointer;
-  }
-
-  .sin-datos {
-    color: #64748b;
-    font-style: italic;
   }
 
   /* Tabla de Compras */
   .tabla-compras {
-    background: #111b27;
-    border: 1px solid #1e293b;
+    background-color: #1e293b;
     border-radius: 12px;
     padding: 20px;
   }
 
   .tabla-compras h4 {
     margin: 0 0 16px 0;
-    font-size: 1.1em;
-    font-weight: 700;
-    color: #f8fafc;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
   }
 
   .table-responsive {
@@ -1507,161 +1659,163 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    text-align: left;
-    font-size: 0.95em;
+    font-size: 0.88rem;
   }
 
   th {
-    border-bottom: 2px solid #1e293b;
-    padding: 12px;
+    background-color: #0f172a;
     color: #94a3b8;
+    text-align: left;
+    padding: 12px 14px;
     font-weight: 600;
+    border-bottom: 1px solid #334155;
   }
 
   td {
-    border-bottom: 1px solid #1e293b;
-    padding: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #334155;
     color: #cbd5e1;
   }
 
-  tr:hover td {
-    background: #1e293b;
+  .fila-compra:hover {
+    background-color: #334155;
+    cursor: pointer;
   }
 
-  td.folio {
+  .folio {
     font-weight: 700;
     color: #38bdf8;
   }
 
-  td.total {
+  .total {
     font-weight: 700;
-    color: #10b981;
+    color: #4ade80;
   }
 
   .paginador-tabla {
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 16px;
+    justify-content: flex-end;
+    gap: 12px;
     margin-top: 16px;
+    font-size: 0.85rem;
+    color: #94a3b8;
   }
 
   .paginador-tabla button {
-    background: #1e293b;
-    border: none;
+    background-color: #0f172a;
+    border: 1px solid #334155;
     color: #f8fafc;
     border-radius: 6px;
-    padding: 4px;
+    padding: 4px 8px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
   }
 
   .paginador-tabla button:disabled {
-    opacity: 0.3;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
   /* Panel Inicial */
   .panel-inicial {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 100px 0;
     text-align: center;
-    background: #111b27;
-    border: 1px dashed #334155;
+    padding: 60px 20px;
+    background-color: #1e293b;
     border-radius: 12px;
+    color: #94a3b8;
   }
 
   .icono-inicial {
-    font-size: 4.5em;
+    font-size: 64px;
     color: #475569;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .panel-inicial h3 {
     margin: 0;
-    font-weight: 700;
-    color: #cbd5e1;
+    font-size: 1.3rem;
+    color: #f8fafc;
   }
 
   .panel-inicial p {
-    color: #64748b;
-    max-width: 400px;
-    margin-top: 8px;
-    font-size: 0.9em;
+    font-size: 0.9rem;
+    max-width: 460px;
+    margin: 8px auto 0 auto;
   }
 
-  /* Estilos para el doble clic de fila */
-  tr.fila-compra {
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-  tr.fila-compra:hover td {
-    background-color: #1e293b !important;
+  .pantalla-carga {
+    text-align: center;
+    padding: 60px 20px;
   }
 
-  /* Estilos para el Modal de Detalle de Productos */
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #334155;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px auto;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .pantalla-carga p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+
+  /* Modal de Detalle */
   .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.7);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    padding: 20px;
   }
 
   .modal-box {
-    background: #0b1320;
-    border: 1px solid #1e293b;
+    background-color: #1e293b;
     border-radius: 12px;
-    width: 100%;
+    width: 90%;
     max-width: 650px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+    max-height: 85vh;
     display: flex;
     flex-direction: column;
-    max-height: 85vh;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
   }
 
   .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #334155;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #1e293b;
   }
 
   .modal-header h3 {
     margin: 0;
-    font-size: 1.25em;
-    font-weight: 700;
+    font-size: 1.1rem;
     color: #f8fafc;
   }
 
   .btn-close-modal {
     background: none;
     border: none;
-    color: #64748b;
+    color: #94a3b8;
     cursor: pointer;
-    padding: 4px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s;
   }
 
   .btn-close-modal:hover {
-    background-color: #1e293b;
-    color: #cbd5e1;
+    color: #f8fafc;
   }
 
   .modal-body {
@@ -1671,139 +1825,103 @@
 
   .pedido-info-resumen {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    background: #111b27;
-    border: 1px solid #1e293b;
-    padding: 14px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 16px;
+    background-color: #0f172a;
+    padding: 12px 16px;
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
   }
 
   .pedido-info-resumen p {
     margin: 0;
-    font-size: 0.9em;
-    color: #94a3b8;
-  }
-
-  .pedido-info-resumen p strong {
-    color: #cbd5e1;
   }
 
   .total-pedido-resumen {
-    color: #10b981;
+    color: #4ade80;
     font-weight: 700;
   }
 
   .modal-body h4 {
-    margin: 0 0 10px 0;
-    font-size: 1em;
-    color: #f8fafc;
-    font-weight: 600;
+    margin: 0 0 12px 0;
+    font-size: 0.95rem;
+    color: #e2e8f0;
   }
 
-  .modal-tabla-productos {
-    max-height: 300px;
-    border: 1px solid #1e293b;
-    border-radius: 8px;
-    overflow-y: auto;
+  .tabla-modal-productos th {
+    background-color: #0f172a;
+    font-size: 0.8rem;
   }
 
-  .modal-tabla-productos table {
-    width: 100%;
-    font-size: 0.88em;
+  .tabla-modal-productos td {
+    font-size: 0.82rem;
   }
 
-  .modal-tabla-productos th {
-    background: #111b27;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+  .codigo-prod {
+    font-family: monospace;
+    color: #94a3b8;
   }
 
-  .modal-tabla-productos td {
-    padding: 10px 12px;
+  .cantidad-prod {
+    font-weight: 700;
   }
 
-  .modal-tabla-productos td.codigo-prod {
+  .total-prod {
     font-weight: 700;
     color: #38bdf8;
   }
 
-  .modal-tabla-productos td.cantidad-prod {
-    font-weight: 600;
-    color: #e2e8f0;
-  }
-
-  .modal-tabla-productos td.total-prod {
-    font-weight: 700;
-    color: #10b981;
-  }
-
-  .derecha {
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid #334155;
     text-align: right;
   }
 
-  .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    padding: 14px 20px;
-    border-top: 1px solid #1e293b;
-    background: #111b27;
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
-  }
-
-  /* Estilos para el Tooltip Flotante de Barras */
+  /* Tooltip Flotante */
   .tooltip-grafico {
     position: fixed;
-    background: #0f172a;
-    border: 1px solid #334155;
+    background-color: #0f172a;
+    border: 1px solid #3b82f6;
     border-radius: 8px;
-    padding: 10px 14px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
-    z-index: 2000;
+    padding: 8px 12px;
     pointer-events: none;
-    font-family: inherit;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 170px;
+    z-index: 2000;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
   }
 
   .tooltip-anio {
     font-weight: 700;
-    font-size: 0.95em;
+    font-size: 0.85rem;
     color: #f8fafc;
-    border-bottom: 1px solid #1e293b;
-    padding-bottom: 4px;
     margin-bottom: 4px;
   }
 
   .tooltip-item {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    font-size: 0.82em;
     gap: 12px;
+    font-size: 0.78rem;
   }
 
   .tooltip-lbl {
-    color: #64748b;
+    color: #94a3b8;
   }
 
   .tooltip-val {
-    color: #cbd5e1;
     font-weight: 600;
+    color: #f8fafc;
   }
 
-  .tooltip-val.total {
+  .tooltip-val.total, .tooltip-val.total-mes {
     color: #38bdf8;
-    font-weight: 700;
   }
 
-  .tooltip-val.total-mes {
-    color: #10b981;
-    font-weight: 700;
+  .centrado {
+    text-align: center;
+  }
+
+  .derecha {
+    text-align: right;
   }
 </style>

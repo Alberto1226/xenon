@@ -29,18 +29,31 @@
   $: total_paginas_tabla = Math.ceil(pedidos.length / items_por_pagina);
   $: pedidos_paginados = pedidos.slice(
     (pagina_tabla - 1) * items_por_pagina,
-    pagina_tabla * items_por_pagina
+    pagina_tabla * items_por_pagina,
   );
 
   // Variables reactivas para compatibilidad con compilador Svelte antiguo (evita usar @const)
-  $: estilo_insignia = metricas ? obtener_estilos_insignia(metricas.estado_comercial) : null;
-  $: maxTotalAnual = compras_por_anio.length > 0 ? Math.max(...compras_por_anio.map(c => c.total), 1) : 1;
-  $: maxMesTotal = compras_por_mes.length > 0 ? Math.max(...compras_por_mes.map(m => m.total), 1) : 1;
-  $: puntosMensuales = compras_por_mes.length > 0 ? compras_por_mes.map((m, i) => {
-    const x = 40 + i * (340 / (compras_por_mes.length - 1 || 1));
-    const y = 170 - (m.total / maxMesTotal) * 130;
-    return `${x},${y}`;
-  }).join(" ") : "";
+  $: estilo_insignia = metricas
+    ? obtener_estilos_insignia(metricas.estado_comercial)
+    : null;
+  $: maxTotalAnual =
+    compras_por_anio.length > 0
+      ? Math.max(...compras_por_anio.map((c) => c.total), 1)
+      : 1;
+  $: maxMesTotal =
+    compras_por_mes.length > 0
+      ? Math.max(...compras_por_mes.map((m) => m.total), 1)
+      : 1;
+  $: puntosMensuales =
+    compras_por_mes.length > 0
+      ? compras_por_mes
+          .map((m, i) => {
+            const x = 40 + i * (340 / (compras_por_mes.length - 1 || 1));
+            const y = 170 - (m.total / maxMesTotal) * 130;
+            return `${x},${y}`;
+          })
+          .join(" ")
+      : "";
 
   onMount(() => {
     if ($cliente_selecto && $cliente_selecto._id) {
@@ -61,15 +74,15 @@
     timeout_busqueda = setTimeout(() => {
       postData("app/clientes/lista_de_clientes", {
         buscando: buscando_cliente,
-        pagina_actual: 1
+        pagina_actual: 1,
       })
-        .then(res => {
+        .then((res) => {
           if (res.ok) {
             lista_clientes_encontrados = res.lista;
             mostrar_desplegable = lista_clientes_encontrados.length > 0;
           }
         })
-        .catch(err => console.error("Error buscando clientes:", err));
+        .catch((err) => console.error("Error buscando clientes:", err));
     }, 300);
   }
 
@@ -89,12 +102,12 @@
     if (aplicar_rango_fechas && periodicidad.desde && periodicidad.hasta) {
       payload.periodicidad = {
         desde: new Date(periodicidad.desde + "T00:00:00"),
-        hasta: new Date(periodicidad.hasta + "T23:59:59")
+        hasta: new Date(periodicidad.hasta + "T23:59:59"),
       };
     }
 
     postData("app/clientes/analisis_comercial/obtener_analisis", payload)
-      .then(res => {
+      .then((res) => {
         cargando = false;
         if (res.ok) {
           datos_cliente = res.cliente;
@@ -107,7 +120,7 @@
           alert(res.mensaje || "Error al obtener el análisis comercial.");
         }
       })
-      .catch(err => {
+      .catch((err) => {
         cargando = false;
         console.error("Error al cargar análisis:", err);
       });
@@ -117,7 +130,7 @@
     if (valor === undefined || valor === null) return "$0.00";
     return new Intl.NumberFormat("es-MX", {
       style: "currency",
-      currency: "MXN"
+      currency: "MXN",
     }).format(valor);
   }
 
@@ -127,7 +140,7 @@
     return fecha.toLocaleDateString("es-MX", {
       year: "numeric",
       month: "short",
-      day: "numeric"
+      day: "numeric",
     });
   }
 
@@ -135,21 +148,61 @@
   function obtener_estilos_insignia(estado) {
     switch (estado) {
       case "Alto valor":
-        return { bg: "#eab308", texto: "#000", etiqueta: "Alto Valor ✨", clase: "alto-valor" };
+        return {
+          bg: "#eab308",
+          texto: "#000",
+          etiqueta: "Alto Valor ✨",
+          clase: "alto-valor",
+        };
       case "En crecimiento":
-        return { bg: "#22c55e", texto: "#fff", etiqueta: "En Crecimiento 📈", clase: "crecimiento" };
+        return {
+          bg: "#22c55e",
+          texto: "#fff",
+          etiqueta: "En Crecimiento 📈",
+          clase: "crecimiento",
+        };
       case "En riesgo":
-        return { bg: "#f97316", texto: "#fff", etiqueta: "En Riesgo ⚠️", clase: "riesgo" };
+        return {
+          bg: "#f97316",
+          texto: "#fff",
+          etiqueta: "En Riesgo ⚠️",
+          clase: "riesgo",
+        };
       case "Inactivo":
-        return { bg: "#64748b", texto: "#fff", etiqueta: "Inactivo 😴", clase: "inactivo" };
+        return {
+          bg: "#64748b",
+          texto: "#fff",
+          etiqueta: "Inactivo 😴",
+          clase: "inactivo",
+        };
       case "Cliente nuevo":
-        return { bg: "#06b6d4", texto: "#fff", etiqueta: "Cliente Nuevo 🆕", clase: "nuevo" };
+        return {
+          bg: "#06b6d4",
+          texto: "#fff",
+          etiqueta: "Cliente Nuevo 🆕",
+          clase: "nuevo",
+        };
       case "Frecuente":
-        return { bg: "#a855f7", texto: "#fff", etiqueta: "Frecuente 🔥", clase: "frecuente" };
+        return {
+          bg: "#a855f7",
+          texto: "#fff",
+          etiqueta: "Frecuente 🔥",
+          clase: "frecuente",
+        };
       case "Recurrente":
-        return { bg: "#3b82f6", texto: "#fff", etiqueta: "Recurrente 🔄", clase: "recurrente" };
+        return {
+          bg: "#3b82f6",
+          texto: "#fff",
+          etiqueta: "Recurrente 🔄",
+          clase: "recurrente",
+        };
       default:
-        return { bg: "#64748b", texto: "#fff", etiqueta: "Regular", clase: "regular" };
+        return {
+          bg: "#64748b",
+          texto: "#fff",
+          etiqueta: "Regular",
+          clase: "regular",
+        };
     }
   }
 
@@ -183,7 +236,7 @@
   function mover_tooltip(e) {
     tooltip_posicion = {
       x: e.clientX + 15,
-      y: e.clientY - 75
+      y: e.clientY - 75,
     };
   }
 
@@ -206,7 +259,7 @@
   function mover_tooltip_mes(e) {
     tooltip_mes_posicion = {
       x: e.clientX + 15,
-      y: e.clientY - 75
+      y: e.clientY - 75,
     };
   }
 
@@ -231,11 +284,13 @@
 
     // Inyectar pdfmake.min.js dinámicamente para no cargarlo en el bundler de Rollup
     const scriptPdfMake = document.createElement("script");
-    scriptPdfMake.src = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/pdfmake.min.js";
+    scriptPdfMake.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/pdfmake.min.js";
     scriptPdfMake.onload = () => {
       // Inyectar las fuentes
       const scriptFonts = document.createElement("script");
-      scriptFonts.src = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/vfs_fonts.js";
+      scriptFonts.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/vfs_fonts.js";
       scriptFonts.onload = () => {
         window.pdfMake.vfs = window.pdfMake.vfs || window.pdfMake.vfs;
         exportando_pdf = false;
@@ -258,112 +313,170 @@
     const docDefinition = {
       content: [
         // Encabezado principal corporativo
-        { text: 'XENÓN Y MÁS', style: 'headerCompany' },
-        { text: 'ESTADO DE CUENTA ANUAL Y REPORTE COMERCIAL', style: 'headerReport' },
-        { text: `Fecha de emisión: ${new Date().toLocaleDateString('es-MX')}`, style: 'dateEmission' },
-        
+        { text: "XENON Y MAS", style: "headerCompany" },
+        {
+          text: "ESTADO DE CUENTA ANUAL Y REPORTE COMERCIAL",
+          style: "headerReport",
+        },
+        {
+          text: `Fecha de emisión: ${new Date().toLocaleDateString("es-MX")}`,
+          style: "dateEmission",
+        },
+
         // Ficha del Cliente
-        { text: 'DATOS DE IDENTIFICACIÓN DEL CLIENTE', style: 'sectionTitle' },
+        { text: "DATOS DE IDENTIFICACIÓN DEL CLIENTE", style: "sectionTitle" },
         {
           table: {
-            widths: ['35%', '65%'],
+            widths: ["35%", "65%"],
             body: [
-              ['Razón Social / Nombre:', { text: datos_cliente.nombre, bold: true }],
-              ['Alias comercial:', datos_cliente.alias || 'Sin alias registrado'],
-              ['Correo electrónico:', datos_cliente.correo || 'Sin correo registrado'],
-              ['Teléfono de contacto:', datos_cliente.telefono || 'Sin teléfono'],
-              ['Descuento asignado:', `${datos_cliente.porcentaje_descuento}% de descuento`],
-            ]
+              [
+                "Razón Social / Nombre:",
+                { text: datos_cliente.nombre, bold: true },
+              ],
+              // [
+              //   "Alias comercial:",
+              //   datos_cliente.alias || "Sin alias registrado",
+              // ],
+              [
+                "Correo electrónico:",
+                datos_cliente.correo || "Sin correo registrado",
+              ],
+              [
+                "Teléfono de contacto:",
+                datos_cliente.telefono || "Sin teléfono",
+              ],
+              [
+                "Descuento asignado:",
+                `${datos_cliente.porcentaje_descuento}% de descuento`,
+              ],
+            ],
           },
-          layout: 'lightHorizontalLines',
-          margin: [0, 5, 0, 15]
+          layout: "lightHorizontalLines",
+          margin: [0, 5, 0, 15],
         },
 
         // Resumen Comercial y Desempeño
-        { text: 'RESUMEN ANALÍTICO DE CONSUMO', style: 'sectionTitle' },
+        { text: "RESUMEN ANALÍTICO DE CONSUMO", style: "sectionTitle" },
         {
           table: {
-            widths: ['50%', '50%'],
+            widths: ["50%", "50%"],
             body: [
-              ['Total Histórico Comprado:', { text: formato_moneda(metricas.total_historico), bold: true, color: '#0369a1' }],
-              ['Cantidad de Pedidos Entregados:', metricas.total_compras.toString()],
-              ['Importe de Ticket Promedio:', formato_moneda(metricas.ticket_promedio)],
-              ['Estado Comercial Calculado:', { text: metricas.estado_comercial, bold: true, color: '#15803d' }],
-              ['Fecha de Primera Compra:', `${formato_fecha(metricas.primera_compra ? metricas.primera_compra.fecha : null)} (${formato_moneda(metricas.primera_compra ? metricas.primera_compra.total : 0)})`],
-              ['Fecha de Última Compra:', `${formato_fecha(metricas.ultima_compra ? metricas.ultima_compra.fecha : null)} (${formato_moneda(metricas.ultima_compra ? metricas.ultima_compra.total : 0)})`],
-            ]
+              [
+                "Total Histórico Comprado:",
+                {
+                  text: formato_moneda(metricas.total_historico),
+                  bold: true,
+                  color: "#0369a1",
+                },
+              ],
+              [
+                "Cantidad de Pedidos Entregados:",
+                metricas.total_compras.toString(),
+              ],
+              [
+                "Importe de Ticket Promedio:",
+                formato_moneda(metricas.ticket_promedio),
+              ],
+              [
+                "Estado Comercial Calculado:",
+                {
+                  text: metricas.estado_comercial,
+                  bold: true,
+                  color: "#15803d",
+                },
+              ],
+              [
+                "Fecha de Primera Compra:",
+                `${formato_fecha(metricas.primera_compra ? metricas.primera_compra.fecha : null)} (${formato_moneda(metricas.primera_compra ? metricas.primera_compra.total : 0)})`,
+              ],
+              [
+                "Fecha de Última Compra:",
+                `${formato_fecha(metricas.ultima_compra ? metricas.ultima_compra.fecha : null)} (${formato_moneda(metricas.ultima_compra ? metricas.ultima_compra.total : 0)})`,
+              ],
+            ],
           },
-          layout: 'lightHorizontalLines',
-          margin: [0, 5, 0, 15]
+          layout: "lightHorizontalLines",
+          margin: [0, 5, 0, 15],
         },
 
         // Historial de Compras (Tabla de datos)
-        { text: 'HISTORIAL DETALLADO DE COMPRAS (PEDIDOS ENTREGADOS)', style: 'sectionTitle' },
+        {
+          text: "HISTORIAL DETALLADO DE COMPRAS (PEDIDOS ENTREGADOS)",
+          style: "sectionTitle",
+        },
         {
           table: {
             headerRows: 1,
-            widths: ['15%', '25%', '25%', '15%', '20%'],
+            widths: ["15%", "25%", "25%", "15%", "20%"],
             body: [
               [
-                { text: 'Folio', style: 'tableHeader' },
-                { text: 'Fecha de Pago', style: 'tableHeader' },
-                { text: 'Total Surtido', style: 'tableHeader' },
-                { text: 'Divisa', style: 'tableHeader' },
-                { text: 'Registró', style: 'tableHeader' }
+                { text: "Folio", style: "tableHeader" },
+                { text: "Fecha de Pago", style: "tableHeader" },
+                { text: "Total Surtido", style: "tableHeader" },
+                { text: "Divisa", style: "tableHeader" },
+                { text: "Registró", style: "tableHeader" },
               ],
-              ...pedidos.map(p => [
+              ...pedidos.map((p) => [
                 { text: `#${p.folio}`, bold: true },
                 formato_fecha(p.fecha),
-                { text: formato_moneda(p.total_pedido), color: '#15803d', bold: true },
+                {
+                  text: formato_moneda(p.total_pedido),
+                  color: "#15803d",
+                  bold: true,
+                },
                 p.metodo_pago,
-                p.sucursal
-              ])
-            ]
+                p.sucursal,
+              ]),
+            ],
           },
-          layout: 'lightHorizontalLines',
-          margin: [0, 5, 0, 10]
-        }
+          layout: "lightHorizontalLines",
+          margin: [0, 5, 0, 10],
+        },
       ],
       styles: {
         headerCompany: {
           fontSize: 22,
           bold: true,
-          color: '#1e3a8a',
-          alignment: 'center',
-          margin: [0, 0, 0, 2]
+          color: "#1e3a8a",
+          alignment: "center",
+          margin: [0, 0, 0, 2],
         },
         headerReport: {
           fontSize: 13,
           bold: true,
-          color: '#475569',
-          alignment: 'center',
-          margin: [0, 0, 0, 4]
+          color: "#475569",
+          alignment: "center",
+          margin: [0, 0, 0, 4],
         },
         dateEmission: {
           fontSize: 9,
-          color: '#64748b',
-          alignment: 'right',
-          margin: [0, 0, 0, 15]
+          color: "#64748b",
+          alignment: "right",
+          margin: [0, 0, 0, 15],
         },
         sectionTitle: {
           fontSize: 11,
           bold: true,
-          color: '#1e293b',
-          fillColor: '#f8fafc',
-          margin: [0, 10, 0, 5]
+          color: "#1e293b",
+          fillColor: "#f8fafc",
+          margin: [0, 10, 0, 5],
         },
         tableHeader: {
           bold: true,
           fontSize: 9,
-          color: '#1e293b'
-        }
+          color: "#1e293b",
+        },
       },
       defaultStyle: {
-        fontSize: 9
-      }
+        fontSize: 9,
+      },
     };
 
-    window.pdfMake.createPdf(docDefinition).download(`Estado_Cuenta_${datos_cliente.nombre.replace(/\s+/g, '_')}.pdf`);
+    window.pdfMake
+      .createPdf(docDefinition)
+      .download(
+        `Estado_Cuenta_${datos_cliente.nombre.replace(/\s+/g, "_")}.pdf`,
+      );
   }
 </script>
 
@@ -388,10 +501,19 @@
         autocomplete="off"
         bind:value={buscando_cliente}
         on:input={buscar_clientes_debounce}
-        on:focus={() => { if(lista_clientes_encontrados.length > 0) mostrar_desplegable = true; }}
+        on:focus={() => {
+          if (lista_clientes_encontrados.length > 0) mostrar_desplegable = true;
+        }}
       />
       {#if buscando_cliente}
-        <button class="btn-clear" on:click={() => { buscando_cliente = ""; $cliente_selecto = null; datos_cliente = null; }}>
+        <button
+          class="btn-clear"
+          on:click={() => {
+            buscando_cliente = "";
+            $cliente_selecto = null;
+            datos_cliente = null;
+          }}
+        >
           <i class="material-icons">close</i>
         </button>
       {/if}
@@ -400,7 +522,7 @@
           {#each lista_clientes_encontrados as c}
             <div class="opcion-cliente" on:click={() => seleccionar_cliente(c)}>
               <span class="nombre-c">{c.nombre}</span>
-              <span class="correo-c">{c.correo || 'Sin correo'}</span>
+              <span class="correo-c">{c.correo || "Sin correo"}</span>
             </div>
           {/each}
         </div>
@@ -422,16 +544,23 @@
         </div>
         <div class="info-texto">
           <h3>{datos_cliente.nombre}</h3>
-          <p class="alias">{datos_cliente.alias ? `"${datos_cliente.alias}"` : 'Sin alias'}</p>
+          <p class="alias">
+            {datos_cliente.alias ? `"${datos_cliente.alias}"` : "Sin alias"}
+          </p>
           <div class="tags-perfil">
-            <span class="tag-descuento">Descuento: {datos_cliente.porcentaje_descuento}%</span>
+            <span class="tag-descuento"
+              >Descuento: {datos_cliente.porcentaje_descuento}%</span
+            >
           </div>
         </div>
       </div>
 
       <!-- Insignia del Estado Comercial -->
       {#if metricas && estilo_insignia}
-        <div class="insignia-estado {estilo_insignia.clase}" style="background-color: {estilo_insignia.bg}; color: {estilo_insignia.texto};">
+        <div
+          class="insignia-estado {estilo_insignia.clase}"
+          style="background-color: {estilo_insignia.bg}; color: {estilo_insignia.texto};"
+        >
           <span class="etiqueta-estado">{estilo_insignia.etiqueta}</span>
           <span class="subtexto-estado">Estado Comercial</span>
         </div>
@@ -442,7 +571,11 @@
     <div class="filtros-periodo" transition:fade>
       <div class="opcion-filtro-check">
         <label>
-          <input type="checkbox" bind:checked={aplicar_rango_fechas} on:change={cargar_analisis_comercial} />
+          <input
+            type="checkbox"
+            bind:checked={aplicar_rango_fechas}
+            on:change={cargar_analisis_comercial}
+          />
           Filtrar por Rango de Fechas
         </label>
       </div>
@@ -450,19 +583,33 @@
         <div class="fechas-inputs" transition:slide>
           <div class="fecha-group">
             <label>Desde:</label>
-            <input type="date" bind:value={periodicidad.desde} on:change={cargar_analisis_comercial} />
+            <input
+              type="date"
+              bind:value={periodicidad.desde}
+              on:change={cargar_analisis_comercial}
+            />
           </div>
           <div class="fecha-group">
             <label>Hasta:</label>
-            <input type="date" bind:value={periodicidad.hasta} on:change={cargar_analisis_comercial} />
+            <input
+              type="date"
+              bind:value={periodicidad.hasta}
+              on:change={cargar_analisis_comercial}
+            />
           </div>
         </div>
       {/if}
 
       <!-- Acciones -->
       <div class="acciones-reporte">
-        <Button raised color="primary" on:click={exportar_pdf} disabled={exportando_pdf}>
-          <i class="material-icons">picture_as_pdf</i> {exportando_pdf ? 'Cargando exportador...' : 'Exportar a PDF'}
+        <Button
+          raised
+          color="primary"
+          on:click={exportar_pdf}
+          disabled={exportando_pdf}
+        >
+          <i class="material-icons">picture_as_pdf</i>
+          {exportando_pdf ? "Cargando exportador..." : "Exportar a PDF"}
         </Button>
       </div>
     </div>
@@ -472,7 +619,9 @@
       <div class="grid-kpis" transition:fade>
         <div class="kpi-card">
           <span class="kpi-titulo">Total Histórico Vendido</span>
-          <span class="kpi-valor total-dinero">{formato_moneda(metricas.total_historico)}</span>
+          <span class="kpi-valor total-dinero"
+            >{formato_moneda(metricas.total_historico)}</span
+          >
           <span class="kpi-subtexto">Compras acumuladas entregadas</span>
         </div>
         <div class="kpi-card">
@@ -482,18 +631,36 @@
         </div>
         <div class="kpi-card">
           <span class="kpi-titulo">Ticket Promedio</span>
-          <span class="kpi-valor">{formato_moneda(metricas.ticket_promedio)}</span>
+          <span class="kpi-valor"
+            >{formato_moneda(metricas.ticket_promedio)}</span
+          >
           <span class="kpi-subtexto">Consumo promedio por pedido</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-titulo">Primera Compra</span>
-          <span class="kpi-valor fecha">{formato_fecha(metricas.primera_compra ? metricas.primera_compra.fecha : null)}</span>
-          <span class="kpi-subtexto">Importe: {formato_moneda(metricas.primera_compra ? metricas.primera_compra.total : 0)}</span>
+          <span class="kpi-valor fecha"
+            >{formato_fecha(
+              metricas.primera_compra ? metricas.primera_compra.fecha : null,
+            )}</span
+          >
+          <span class="kpi-subtexto"
+            >Importe: {formato_moneda(
+              metricas.primera_compra ? metricas.primera_compra.total : 0,
+            )}</span
+          >
         </div>
         <div class="kpi-card">
           <span class="kpi-titulo">Última Compra</span>
-          <span class="kpi-valor fecha">{formato_fecha(metricas.ultima_compra ? metricas.ultima_compra.fecha : null)}</span>
-          <span class="kpi-subtexto">Importe: {formato_moneda(metricas.ultima_compra ? metricas.ultima_compra.total : 0)}</span>
+          <span class="kpi-valor fecha"
+            >{formato_fecha(
+              metricas.ultima_compra ? metricas.ultima_compra.fecha : null,
+            )}</span
+          >
+          <span class="kpi-subtexto"
+            >Importe: {formato_moneda(
+              metricas.ultima_compra ? metricas.ultima_compra.total : 0,
+            )}</span
+          >
         </div>
       </div>
     {/if}
@@ -507,10 +674,38 @@
           {#if compras_por_anio.length > 0}
             <svg viewBox="0 0 400 200" width="100%" height="100%">
               <!-- Grid lines -->
-              <line x1="40" y1="20" x2="380" y2="20" stroke="#334155" stroke-dasharray="4" />
-              <line x1="40" y1="85" x2="380" y2="85" stroke="#334155" stroke-dasharray="4" />
-              <line x1="40" y1="150" x2="380" y2="150" stroke="#334155" stroke-dasharray="4" />
-              <line x1="40" y1="170" x2="380" y2="170" stroke="#475569" stroke-width="1.5" />
+              <line
+                x1="40"
+                y1="20"
+                x2="380"
+                y2="20"
+                stroke="#334155"
+                stroke-dasharray="4"
+              />
+              <line
+                x1="40"
+                y1="85"
+                x2="380"
+                y2="85"
+                stroke="#334155"
+                stroke-dasharray="4"
+              />
+              <line
+                x1="40"
+                y1="150"
+                x2="380"
+                y2="150"
+                stroke="#334155"
+                stroke-dasharray="4"
+              />
+              <line
+                x1="40"
+                y1="170"
+                x2="380"
+                y2="170"
+                stroke="#475569"
+                stroke-width="1.5"
+              />
 
               {#each compras_por_anio as anioData, i}
                 <!-- Barra -->
@@ -529,17 +724,46 @@
                   style="cursor: pointer;"
                 />
                 <!-- Valor encima de la barra -->
-                <text x={60 + i * (300 / compras_por_anio.length) + 15} y={160 - (anioData.total / maxTotalAnual) * 130} text-anchor="middle" fill="#94a3b8" font-size="9" on:click={() => filtrar_por_anio_grafico(anioData.anio)} on:mouseenter={(e) => mostrar_tooltip(e, anioData)} on:mousemove={(e) => mover_tooltip(e)} on:mouseleave={ocultar_tooltip} style="cursor: pointer;">
+                <text
+                  x={60 + i * (300 / compras_por_anio.length) + 15}
+                  y={160 - (anioData.total / maxTotalAnual) * 130}
+                  text-anchor="middle"
+                  fill="#94a3b8"
+                  font-size="9"
+                  on:click={() => filtrar_por_anio_grafico(anioData.anio)}
+                  on:mouseenter={(e) => mostrar_tooltip(e, anioData)}
+                  on:mousemove={(e) => mover_tooltip(e)}
+                  on:mouseleave={ocultar_tooltip}
+                  style="cursor: pointer;"
+                >
                   {formato_moneda(anioData.total).split(".")[0]}
                 </text>
                 <!-- Nombre del Año abajo -->
-                <text x={60 + i * (300 / compras_por_anio.length) + 15} y={185} text-anchor="middle" fill="#cbd5e1" font-size="10" font-weight="bold" on:click={() => filtrar_por_anio_grafico(anioData.anio)} on:mouseenter={(e) => mostrar_tooltip(e, anioData)} on:mousemove={(e) => mover_tooltip(e)} on:mouseleave={ocultar_tooltip} style="cursor: pointer;">
+                <text
+                  x={60 + i * (300 / compras_por_anio.length) + 15}
+                  y={185}
+                  text-anchor="middle"
+                  fill="#cbd5e1"
+                  font-size="10"
+                  font-weight="bold"
+                  on:click={() => filtrar_por_anio_grafico(anioData.anio)}
+                  on:mouseenter={(e) => mostrar_tooltip(e, anioData)}
+                  on:mousemove={(e) => mover_tooltip(e)}
+                  on:mouseleave={ocultar_tooltip}
+                  style="cursor: pointer;"
+                >
                   {anioData.anio}
                 </text>
               {/each}
 
               <defs>
-                <linearGradient id="gradient-barras" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient
+                  id="gradient-barras"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
                   <stop offset="0%" stop-color="#3b82f6" />
                   <stop offset="100%" stop-color="#1d4ed8" />
                 </linearGradient>
@@ -558,10 +782,38 @@
           {#if compras_por_mes.length > 0}
             <svg viewBox="0 0 400 200" width="100%" height="100%">
               <!-- Grid lines -->
-              <line x1="40" y1="20" x2="380" y2="20" stroke="#334155" stroke-dasharray="4" />
-              <line x1="40" y1="85" x2="380" y2="85" stroke="#334155" stroke-dasharray="4" />
-              <line x1="40" y1="150" x2="380" y2="150" stroke="#334155" stroke-dasharray="4" />
-              <line x1="40" y1="170" x2="380" y2="170" stroke="#475569" stroke-width="1.5" />
+              <line
+                x1="40"
+                y1="20"
+                x2="380"
+                y2="20"
+                stroke="#334155"
+                stroke-dasharray="4"
+              />
+              <line
+                x1="40"
+                y1="85"
+                x2="380"
+                y2="85"
+                stroke="#334155"
+                stroke-dasharray="4"
+              />
+              <line
+                x1="40"
+                y1="150"
+                x2="380"
+                y2="150"
+                stroke="#334155"
+                stroke-dasharray="4"
+              />
+              <line
+                x1="40"
+                y1="170"
+                x2="380"
+                y2="170"
+                stroke="#475569"
+                stroke-width="1.5"
+              />
 
               <!-- Línea de trazado -->
               <polyline
@@ -584,10 +836,16 @@
                   on:mouseleave={ocultar_tooltip_mes}
                   style={aplicar_rango_fechas ? "cursor: pointer;" : ""}
                 />
-                
+
                 <!-- Mostrar etiqueta abreviada abajo solo si caben -->
                 {#if compras_por_mes.length <= 12 || i % 2 === 0}
-                  <text x={40 + i * (340 / (compras_por_mes.length - 1 || 1))} y={185} text-anchor="middle" fill="#94a3b8" font-size="8">
+                  <text
+                    x={40 + i * (340 / (compras_por_mes.length - 1 || 1))}
+                    y={185}
+                    text-anchor="middle"
+                    fill="#94a3b8"
+                    font-size="8"
+                  >
                     {mesData.mesAnio.split(" ")[0].slice(0, 3)}
                   </text>
                 {/if}
@@ -617,7 +875,11 @@
           <tbody>
             {#if pedidos_paginados.length > 0}
               {#each pedidos_paginados as p}
-                <tr on:dblclick={() => ver_detalle_pedido(p)} class="fila-compra" title="Doble clic para ver productos">
+                <tr
+                  on:dblclick={() => ver_detalle_pedido(p)}
+                  class="fila-compra"
+                  title="Doble clic para ver productos"
+                >
                   <td class="folio">#{p.folio}</td>
                   <td>{formato_fecha(p.fecha)}</td>
                   <td class="total">{formato_moneda(p.total_pedido)}</td>
@@ -627,7 +889,9 @@
               {/each}
             {:else}
               <tr>
-                <td colspan="5" class="centrado">No se encontraron compras en el periodo seleccionado</td>
+                <td colspan="5" class="centrado"
+                  >No se encontraron compras en el periodo seleccionado</td
+                >
               </tr>
             {/if}
           </tbody>
@@ -641,7 +905,10 @@
             <i class="material-icons">keyboard_arrow_left</i>
           </button>
           <span>Página {pagina_tabla} de {total_paginas_tabla}</span>
-          <button disabled={pagina_tabla === total_paginas_tabla} on:click={() => pagina_tabla++}>
+          <button
+            disabled={pagina_tabla === total_paginas_tabla}
+            on:click={() => pagina_tabla++}
+          >
             <i class="material-icons">keyboard_arrow_right</i>
           </button>
         </div>
@@ -652,26 +919,50 @@
     <div class="panel-inicial" transition:fade>
       <i class="material-icons icono-inicial">analytics</i>
       <h3>Por favor, selecciona un cliente</h3>
-      <p>Usa la barra de búsqueda superior para ingresar el nombre de un cliente y analizar su comportamiento comercial.</p>
+      <p>
+        Usa la barra de búsqueda superior para ingresar el nombre de un cliente
+        y analizar su comportamiento comercial.
+      </p>
     </div>
   {/if}
 
   <!-- Modal de Detalle de Productos del Pedido -->
   {#if modal_detalle_abierto && pedido_seleccionado}
-    <div class="modal-overlay" transition:fade on:click={() => modal_detalle_abierto = false}>
+    <div
+      class="modal-overlay"
+      transition:fade
+      on:click={() => (modal_detalle_abierto = false)}
+    >
       <div class="modal-box" transition:slide on:click|stopPropagation>
         <div class="modal-header">
           <h3>Detalle del Pedido - Folio #{pedido_seleccionado.folio}</h3>
-          <button class="btn-close-modal" on:click={() => modal_detalle_abierto = false}>
+          <button
+            class="btn-close-modal"
+            on:click={() => (modal_detalle_abierto = false)}
+          >
             <i class="material-icons">close</i>
           </button>
         </div>
         <div class="modal-body">
           <div class="pedido-info-resumen">
-            <p><strong>Fecha de Compra:</strong> {formato_fecha(pedido_seleccionado.fecha)}</p>
-            <p><strong>Total Surtido:</strong> <span class="total-pedido-resumen">{formato_moneda(pedido_seleccionado.total_pedido)}</span></p>
-            <p><strong>Atendido por / Registró:</strong> {pedido_seleccionado.sucursal}</p>
-            <p><strong>Método / Divisa:</strong> {pedido_seleccionado.metodo_pago}</p>
+            <p>
+              <strong>Fecha de Compra:</strong>
+              {formato_fecha(pedido_seleccionado.fecha)}
+            </p>
+            <p>
+              <strong>Total Surtido:</strong>
+              <span class="total-pedido-resumen"
+                >{formato_moneda(pedido_seleccionado.total_pedido)}</span
+              >
+            </p>
+            <p>
+              <strong>Atendido por / Registró:</strong>
+              {pedido_seleccionado.sucursal}
+            </p>
+            <p>
+              <strong>Método / Divisa:</strong>
+              {pedido_seleccionado.metodo_pago}
+            </p>
           </div>
 
           <h4>Productos Adquiridos</h4>
@@ -694,12 +985,16 @@
                       <td>{item.nombre}</td>
                       <td class="derecha cantidad-prod">{item.cantidad}</td>
                       <td class="derecha">{formato_moneda(item.precio)}</td>
-                      <td class="derecha total-prod">{formato_moneda(item.cantidad * item.precio)}</td>
+                      <td class="derecha total-prod"
+                        >{formato_moneda(item.cantidad * item.precio)}</td
+                      >
                     </tr>
                   {/each}
                 {:else}
                   <tr>
-                    <td colspan="5" class="centrado">No se encontraron productos registrados en este pedido</td>
+                    <td colspan="5" class="centrado"
+                      >No se encontraron productos registrados en este pedido</td
+                    >
                   </tr>
                 {/if}
               </tbody>
@@ -707,7 +1002,11 @@
           </div>
         </div>
         <div class="modal-footer">
-          <Button raised color="primary" on:click={() => modal_detalle_abierto = false}>Aceptar</Button>
+          <Button
+            raised
+            color="primary"
+            on:click={() => (modal_detalle_abierto = false)}>Aceptar</Button
+          >
         </div>
       </div>
     </div>
@@ -715,11 +1014,17 @@
 
   <!-- Tooltip flotante para barras de años -->
   {#if tooltip_activo}
-    <div class="tooltip-grafico" style="left: {tooltip_posicion.x}px; top: {tooltip_posicion.y}px;" transition:fade>
+    <div
+      class="tooltip-grafico"
+      style="left: {tooltip_posicion.x}px; top: {tooltip_posicion.y}px;"
+      transition:fade
+    >
       <div class="tooltip-anio">{tooltip_contenido.anio}</div>
       <div class="tooltip-item">
         <span class="tooltip-lbl">Total vendido:</span>
-        <span class="tooltip-val total">{formato_moneda(tooltip_contenido.total)}</span>
+        <span class="tooltip-val total"
+          >{formato_moneda(tooltip_contenido.total)}</span
+        >
       </div>
       <div class="tooltip-item">
         <span class="tooltip-lbl">Pedidos hechos:</span>
@@ -730,11 +1035,17 @@
 
   <!-- Tooltip flotante para meses (activo solo al filtrar por año/fechas) -->
   {#if tooltip_mes_activo && aplicar_rango_fechas}
-    <div class="tooltip-grafico" style="left: {tooltip_mes_posicion.x}px; top: {tooltip_mes_posicion.y}px;" transition:fade>
+    <div
+      class="tooltip-grafico"
+      style="left: {tooltip_mes_posicion.x}px; top: {tooltip_mes_posicion.y}px;"
+      transition:fade
+    >
       <div class="tooltip-anio">{tooltip_mes_contenido.mesAnio}</div>
       <div class="tooltip-item">
         <span class="tooltip-lbl">Total vendido:</span>
-        <span class="tooltip-val total-mes">{formato_moneda(tooltip_mes_contenido.total)}</span>
+        <span class="tooltip-val total-mes"
+          >{formato_moneda(tooltip_mes_contenido.total)}</span
+        >
       </div>
       <div class="tooltip-item">
         <span class="tooltip-lbl">Pedidos hechos:</span>
@@ -751,7 +1062,7 @@
     padding: 24px;
     border-radius: 12px;
     min-height: 80vh;
-    font-family: 'Outfit', sans-serif;
+    font-family: "Outfit", sans-serif;
   }
 
   .row-cabecera {
@@ -905,8 +1216,12 @@
   }
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   .pantalla-carga p {
@@ -1014,13 +1329,21 @@
   }
 
   @keyframes pulso {
-    0% { transform: scale(1); }
-    100% { transform: scale(1.03); }
+    0% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1.03);
+    }
   }
 
   @keyframes pulso-alerta {
-    0% { opacity: 0.85; }
-    100% { opacity: 1; }
+    0% {
+      opacity: 0.85;
+    }
+    100% {
+      opacity: 1;
+    }
   }
 
   /* Filtros de Periodo */
@@ -1147,7 +1470,9 @@
   }
 
   .barra-animada {
-    transition: height 0.5s ease-out, y 0.5s ease-out;
+    transition:
+      height 0.5s ease-out,
+      y 0.5s ease-out;
   }
 
   .barra-animada:hover {

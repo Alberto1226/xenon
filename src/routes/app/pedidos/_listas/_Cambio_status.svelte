@@ -63,15 +63,17 @@
         'Entregado': 6
     };
 
-    function estatus_anterior_deshabilitado(status_boton, status_actual) {
+    $: es_carrito_ruta = !!(pedido && (pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || !pedido.cliente.nombre)) || pedido.folio_salida || pedido.ruta));
+    $: bloqueado_por_en_ruta = es_carrito_ruta && (pedido && (pedido.status === "En Ruta" || pedido.status === "En ruta"));
+
+    function estatus_deshabilitado(status_boton, status_actual) {
+        if (bloqueado_por_en_ruta) return true;
         if (!status_actual) return false;
-        const nivelBoton = STATUS_NIVELES[status_boton] || 0;
-        const nivelActual = STATUS_NIVELES[status_actual] || 0;
-        return nivelBoton <= nivelActual;
+        return status_boton === status_actual;
     }
 
     function get_button_color(status_boton, status_actual) {
-        if (estatus_anterior_deshabilitado(status_boton, status_actual)) {
+        if (estatus_deshabilitado(status_boton, status_actual)) {
             return "#a5a5a5";
         }
         if (status_boton === "Envío") {
@@ -82,7 +84,7 @@
 
     function get_button_style(status_boton, status_actual) {
         let base = "width: 150px; height: 150px;";
-        if (estatus_anterior_deshabilitado(status_boton, status_actual)) {
+        if (estatus_deshabilitado(status_boton, status_actual)) {
             base += " opacity: 0.5; cursor: not-allowed; background-color: #f0f0f0; border: 1px solid #d0d0d0; color: #777777 !important;";
         }
         return base;
@@ -265,14 +267,14 @@
                             <Button
                                 style={get_button_style("Pedido", pedido.status)}
                                 disabled={procesando ||
-                                    estatus_anterior_deshabilitado("Pedido", pedido.status)}
+                                    estatus_deshabilitado("Pedido", pedido.status)}
                                 color={get_button_color("Pedido", pedido.status)}
-                                raised={!estatus_anterior_deshabilitado("Pedido", pedido.status)}
+                                raised={!estatus_deshabilitado("Pedido", pedido.status)}
                                 on:click={() => {
                                     cambiar_status("Pedido");
                                 }}
                             >
-                                {#if estatus_anterior_deshabilitado("Pedido", pedido.status)}
+                                {#if estatus_deshabilitado("Pedido", pedido.status)}
                                     <i class="material-icons" style="font-size:16px; margin-right:4px;">lock</i>
                                 {/if}
                                 Pedido
@@ -283,14 +285,14 @@
                             <Button
                                 style={get_button_style("Ficha Pago", pedido.status)}
                                 disabled={procesando ||
-                                    estatus_anterior_deshabilitado("Ficha Pago", pedido.status)}
+                                    estatus_deshabilitado("Ficha Pago", pedido.status)}
                                 color={get_button_color("Ficha Pago", pedido.status)}
-                                raised={!estatus_anterior_deshabilitado("Ficha Pago", pedido.status)}
+                                raised={!estatus_deshabilitado("Ficha Pago", pedido.status)}
                                 on:click={() => {
                                     cambiar_status("Ficha Pago");
                                 }}
                             >
-                                {#if estatus_anterior_deshabilitado("Ficha Pago", pedido.status)}
+                                {#if estatus_deshabilitado("Ficha Pago", pedido.status)}
                                     <i class="material-icons" style="font-size:16px; margin-right:4px;">lock</i>
                                 {/if}
                                 Ficha Pago
@@ -301,14 +303,14 @@
                             <Button
                                 style={get_button_style("Pagado", pedido.status)}
                                 disabled={procesando ||
-                                    estatus_anterior_deshabilitado("Pagado", pedido.status)}
+                                    estatus_deshabilitado("Pagado", pedido.status)}
                                 color={get_button_color("Pagado", pedido.status)}
-                                raised={!estatus_anterior_deshabilitado("Pagado", pedido.status)}
+                                raised={!estatus_deshabilitado("Pagado", pedido.status)}
                                 on:click={() => {
                                     cambiar_status("Pagado");
                                 }}
                             >
-                                {#if estatus_anterior_deshabilitado("Pagado", pedido.status)}
+                                {#if estatus_deshabilitado("Pagado", pedido.status)}
                                     <i class="material-icons" style="font-size:16px; margin-right:4px;">lock</i>
                                 {/if}
                                 Pagado
@@ -321,14 +323,14 @@
                             <Button
                                 style={get_button_style("Empaque", pedido.status)}
                                 disabled={procesando ||
-                                    estatus_anterior_deshabilitado("Empaque", pedido.status)}
+                                    estatus_deshabilitado("Empaque", pedido.status)}
                                 color={get_button_color("Empaque", pedido.status)}
-                                raised={!estatus_anterior_deshabilitado("Empaque", pedido.status)}
+                                raised={!estatus_deshabilitado("Empaque", pedido.status)}
                                 on:click={() => {
                                     cambiar_status("Empaque");
                                 }}
                             >
-                                {#if estatus_anterior_deshabilitado("Empaque", pedido.status)}
+                                {#if estatus_deshabilitado("Empaque", pedido.status)}
                                     <i class="material-icons" style="font-size:16px; margin-right:4px;">lock</i>
                                 {/if}
                                 Empaque
@@ -339,13 +341,13 @@
                             <Button
                                 style={get_button_style("Envío", pedido.status)}
                                 disabled={procesando ||
-                                    estatus_anterior_deshabilitado("Envío", pedido.status)}
+                                    estatus_deshabilitado("Envío", pedido.status)}
                                 color={get_button_color("Envío", pedido.status)}
                                 title="Descontar de inventario"
-                                raised={!estatus_anterior_deshabilitado("Envío", pedido.status)}
+                                raised={!estatus_deshabilitado("Envío", pedido.status)}
                                 on:click={cambiar_status_a_envio}
                             >
-                                {#if estatus_anterior_deshabilitado("Envío", pedido.status)}
+                                {#if estatus_deshabilitado("Envío", pedido.status)}
                                     <i class="material-icons" style="font-size:16px; margin-right:4px;">lock</i>
                                 {/if}
                                 {mensaje_envio}

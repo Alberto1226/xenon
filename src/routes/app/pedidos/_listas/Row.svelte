@@ -57,6 +57,9 @@
   let lista_visible = false;
   var es_par = false;
 
+  $: es_carrito_ruta = !!(pedido && (pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || !pedido.cliente.nombre)) || pedido.folio_salida || pedido.ruta));
+  $: bloqueado_por_en_ruta = es_carrito_ruta && (pedido && (pedido.status === "En Ruta" || pedido.status === "En ruta"));
+
   onMount(() => {
     es_par = isOdd(indice + 1) == 0;
   });
@@ -393,7 +396,7 @@
     {#if pedido.total_pedido > 0}
       <div class="pill no_select" class:pill_envio={pedido.status == "Envío"}>
         {pedido.status}
-        {#if $usuario_db.rol == "administrador" && !['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(pedido.status)}
+        {#if ($usuario_db.rol == "administrador" || $usuario_db.rol == "vendedor" || $usuario_db.rol == "gerente") && !['Entregado', 'Finalizada'].includes(pedido.status) && !bloqueado_por_en_ruta}
           <Button
             icon
             dense

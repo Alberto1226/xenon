@@ -119,13 +119,12 @@ export async function cambiar_status_basico(carrito_id, nuevo_status, usuario, r
         const carrito = await Carrito.findById(carrito_id);
         if (!carrito) return { ok: false, mensaje: "El pedido no existe" };
 
-        const nivelActual = STATUS_NIVELES[carrito.status] || 1;
-        const nivelNuevo = STATUS_NIVELES[nuevo_status] || 1;
+        const es_de_ruta = !!(carrito.rutas || (carrito.cliente && (carrito.cliente.id == "" || !carrito.cliente.nombre)) || carrito.folio_salida || carrito.ruta);
 
-        if (nivelNuevo <= nivelActual) {
+        if (es_de_ruta && (carrito.status === "En Ruta" || carrito.status === "En ruta")) {
             return {
                 ok: false,
-                mensaje: `No se permite regresar a un estatus anterior (${carrito.status} ➔ ${nuevo_status}).`
+                mensaje: `El pedido de ruta está en estatus "${carrito.status}" y no se puede modificar desde la web.`
             };
         }
 

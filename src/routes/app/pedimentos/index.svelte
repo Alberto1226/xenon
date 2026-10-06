@@ -141,6 +141,28 @@
     }
   }
 
+  let totalPiezasNuevas = 0;
+  let totalPrecioPagadoMxn = 0;
+  let totalValorAduanaMxn = 0;
+  let totalUsdNuevas = 0;
+  let partidasSinVincularCount = 0;
+
+  $: {
+    if (nuevoPedimento && nuevoPedimento.productos) {
+      totalPiezasNuevas = nuevoPedimento.productos.reduce((acc, p) => acc + (parseFloat(p.cantidad) || 0), 0);
+      totalPrecioPagadoMxn = nuevoPedimento.productos.reduce((acc, p) => acc + ((parseFloat(p.precio_compra_usd) || 0) * (parseFloat(p.cantidad) || 0) * (parseFloat(nuevoPedimento.tipo_cambio) || 1)), 0);
+      totalValorAduanaMxn = nuevoPedimento.productos.reduce((acc, p) => acc + (parseFloat(p.valor_aduana_partida_mxn) || 0), 0);
+      totalUsdNuevas = nuevoPedimento.productos.reduce((acc, p) => acc + ((parseFloat(p.cantidad) || 0) * (parseFloat(p.precio_compra_usd) || 0)), 0);
+      partidasSinVincularCount = nuevoPedimento.productos.filter(p => !p.producto).length;
+    } else {
+      totalPiezasNuevas = 0;
+      totalPrecioPagadoMxn = 0;
+      totalValorAduanaMxn = 0;
+      totalUsdNuevas = 0;
+      partidasSinVincularCount = 0;
+    }
+  }
+
   // Filtrado de productos para el buscador predictivo
   $: {
     if (searchProductQuery.trim() === "") {
@@ -251,6 +273,21 @@
     nuevoPedimento.productos = nuevoPedimento.productos;
   }
 
+  function vincularProductoAPartida(prod, prodId) {
+    if (!prodId || prodId === "null") {
+      prod.producto = null;
+      nuevoPedimento.productos = nuevoPedimento.productos;
+      return;
+    }
+    const selected = allProducts.find(p => String(p._id) === String(prodId));
+    if (selected) {
+      prod.producto = selected._id;
+      prod.nombre = selected.nombre;
+      prod.codigo = selected.codigo;
+      nuevoPedimento.productos = nuevoPedimento.productos;
+    }
+  }
+
   async function guardarPedimento() {
     if (!nuevoPedimento.numero_pedimento) {
       mensaje_error("Por favor ingresa el número de pedimento");
@@ -258,6 +295,13 @@
     }
     if (nuevoPedimento.productos.length === 0) {
       mensaje_error("Debes agregar al menos un producto al pedimento");
+      return;
+    }
+
+    const sinVincular = nuevoPedimento.productos.filter(p => !p.producto);
+    if (sinVincular.length > 0) {
+      const secs = sinVincular.map(p => `#${p.sec}`).join(', ');
+      mensaje_error(`Atención: La(s) partida(s) ${secs} no tienen un producto de Xenon vinculado. Por favor selecciona el producto correspondiente en la tabla antes de guardar.`);
       return;
     }
 
@@ -385,6 +429,47 @@
   function irACalcularCostos(ped) {
     pedimentoSeleccionado = ped;
     activeTab = "calculate";
+  }
+
+  let showFormulaModal = false;
+
+  async function handleM3FileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    loading = true;
+    try {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const fileContent = evt.target.result;
+        const res = await postData("app/pedimentos/parse", { file_content: fileContent });
+        
+        if (res.ok && res.data) {
+          const d = res.data;
+          nuevoPedimento.numero_pedimento = d.numero_pedimento || nuevoPedimento.numero_pedimento;
+          nuevoPedimento.clave_pedimento = d.clave_pedimento || nuevoPedimento.clave_pedimento;
+          nuevoPedimento.fecha_pedimento = d.fecha_pedimento || nuevoPedimento.fecha_pedimento;
+          nuevoPedimento.tipo_cambio = d.tipo_cambio || nuevoPedimento.tipo_cambio;
+          nuevoPedimento.cove = d.cove || nuevoPedimento.cove;
+          nuevoPedimento.proveedor = d.proveedor || nuevoPedimento.proveedor;
+          nuevoPedimento.incrementables_sat = d.incrementables_sat || nuevoPedimento.incrementables_sat;
+          nuevoPedimento.contribuciones_sat = d.contribuciones_sat || nuevoPedimento.contribuciones_sat;
+          nuevoPedimento.gastos_importacion = d.gastos_importacion || nuevoPedimento.gastos_importacion;
+          nuevoPedimento.productos = d.productos || [];
+
+          mensaje_bueno(res.mensaje || "Archivo M3 cargado y procesado con éxito.");
+        } else {
+          mensaje_error(res.mensaje || "Error al procesar el archivo M3.");
+        }
+        loading = false;
+      };
+
+      reader.readAsText(file, "UTF-8");
+    } catch (err) {
+      console.error(err);
+      mensaje_error("Error al leer el archivo M3.");
+      loading = false;
+    }
   }
 
   // --- VARIABLES Y FUNCIONES PARA EDICIÓN DE PEDIMENTOS (FASE 4+) ---
@@ -846,7 +931,27 @@
     {:else if activeTab === "new"}
       <div class="section-title mb-4">
         <h2>Registrar Nuevo Pedimento de Importación (SAT)</h2>
-        <p class="subtitulo">Ingresa los datos generales, desglosa los gastos de flete e impuestos y agrega los productos.</p>
+        <p class="subtitulo">Ingresa los datos generales, desglosa los gastos de flete e impuestos o carga el archivo plano M3 del SAT.</p>
+      </div>
+
+      <!-- Banner de Carga Masiva M3 SAT -->
+      <div class="card p-4 mb-4" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; border-radius: 12px; border: 1px solid #334155;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <div>
+            <h4 class="m-0 font-bold" style="color: #38bdf8; font-size: 1.1rem;">
+              <i class="material-icons vertical-align-middle me-1">cloud_upload</i> Carga Masiva desde Archivo Plano M3 (SAT Anexo 22)
+            </h4>
+            <p class="text-small m-0 mt-1" style="color: #94a3b8; font-size: 0.85rem;">
+              Sube el archivo plano de la agencia aduanal (.338, .034, .txt o .m3) para auto-completar los datos del pedimento, contribuciones y vincular las partidas con tus productos registrados en Xenon.
+            </p>
+          </div>
+          <div>
+            <label class="btn font-bold cursor-pointer" style="background: #0284c7; color: white; border-radius: 8px; padding: 10px 20px; font-size: 0.9rem;">
+              <i class="material-icons text-medium vertical-align-middle me-1">folder_open</i> Seleccionar Archivo M3
+              <input type="file" accept=".338,.034,.txt,.m3" style="display: none;" on:change={handleM3FileUpload} />
+            </label>
+          </div>
+        </div>
       </div>
 
       <div class="secciones-verticales">
@@ -1258,58 +1363,129 @@
             </button>
           </div>
 
-          <!-- Tabla de Productos Agregados -->
-          <h5 class="font-bold text-dark border-bottom pb-2">Lista de Partidas ({nuevoPedimento.productos.length})</h5>
-          <div class="table-container-fixed mb-4" style="max-height: 250px;">
-            {#if nuevoPedimento.productos.length === 0}
-              <div class="p-3 text-center text-muted text-small">No hay productos agregados en este cargamento</div>
-            {:else}
-              <table class="table table-sm table-striped align-middle">
-                <thead>
-                  <tr>
-                    <th>Sec</th>
-                    <th>Producto</th>
-                    <th>Marca/Modelo</th>
-                    <th>NICO/Fracción</th>
-                    <th>Cantidad</th>
-                    <th>P. Unitario (USD)</th>
-                    <th>Imp. Precio Pagado (MXN)</th>
-                    <th>Valor Aduana (MXN)</th>
-                    <th>Total (USD)</th>
-                    <th class="text-center">X</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {#each nuevoPedimento.productos as prod, index}
+          <!-- Tabla de Productos Agregados (Partidas) -->
+          <div class="partidas-table-wrapper card shadow-sm border mb-4">
+            <div class="card-header bg-white py-3 px-4 d-flex align-items-center justify-content-between border-bottom">
+              <div class="d-flex align-items-center gap-2">
+                <i class="material-icons text-primary" style="font-size: 22px;">format_list_bulleted</i>
+                <h5 class="m-0 font-bold text-dark">Lista de Partidas ({nuevoPedimento.productos.length})</h5>
+              </div>
+              {#if nuevoPedimento.productos.length > 0}
+                <div class="d-flex gap-2 align-items-center">
+                  {#if partidasSinVincularCount > 0}
+                    <span class="badge bg-danger text-white font-mono px-3 py-2 animate-pulse">
+                      ⚠️ {partidasSinVincularCount} partida(s) sin vincular
+                    </span>
+                  {/if}
+                  <span class="badge bg-light text-dark font-mono px-3 py-2 border">
+                    Total Piezas: <strong class="text-primary">{totalPiezasNuevas.toLocaleString()}</strong>
+                  </span>
+                  <span class="badge bg-light text-dark font-mono px-3 py-2 border">
+                    Total USD: <strong class="text-success">${totalUsdNuevas.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD</strong>
+                  </span>
+                </div>
+              {/if}
+            </div>
+
+            <div class="table-responsive partidas-scroll-container">
+              {#if nuevoPedimento.productos.length === 0}
+                <div class="p-4 text-center text-muted">
+                  <i class="material-icons text-muted" style="font-size: 36px;">inventory_2</i>
+                  <p class="m-0 mt-2 text-small">No hay productos ni partidas agregadas a este pedimento.</p>
+                </div>
+              {:else}
+                <table class="table table-custom-partidas align-middle mb-0">
+                  <thead>
                     <tr>
-                      <td><strong>{prod.sec}</strong></td>
-                      <td>
-                        <div class="font-bold">{prod.nombre}</div>
-                        <div class="text-muted text-small">{prod.codigo || 'S/C'}</div>
-                      </td>
-                      <td>
-                        <div class="text-small">{prod.marca || 'S/M'}</div>
-                        <div class="text-small text-muted">{prod.modelo || 'S/Mod'}</div>
-                      </td>
-                      <td>
-                        <div class="font-mono text-small">{prod.fraccion_arancelaria || 'S/F'}</div>
-                        <div class="text-small text-muted">NICO: {prod.nico}</div>
-                      </td>
-                      <td>{prod.cantidad} {prod.unidad_medida}</td>
-                      <td>${prod.precio_compra_usd.toFixed(4)} USD</td>
-                      <td>{formatMoney(prod.precio_compra_usd * prod.cantidad * nuevoPedimento.tipo_cambio)}</td>
-                      <td>{formatMoney(prod.valor_aduana_partida_mxn)}</td>
-                      <td>${(prod.cantidad * prod.precio_compra_usd).toFixed(2)} USD</td>
-                      <td class="text-center">
-                        <button class="btn btn-danger-icon btn-sm" on:click={() => removerProductoDeLista(index)}>
-                          <i class="material-icons text-small">close</i>
-                        </button>
-                      </td>
+                      <th class="text-center" style="width: 50px;">Sec</th>
+                      <th>Producto</th>
+                      <th>Marca / Modelo</th>
+                      <th>Fracción / NICO</th>
+                      <th class="text-end" style="width: 110px;">Cantidad</th>
+                      <th class="text-end" style="width: 140px;">P. Unit. (USD)</th>
+                      <th class="text-end" style="width: 160px;">Imp. Pagado (MXN)</th>
+                      <th class="text-end" style="width: 150px;">Val. Aduana (MXN)</th>
+                      <th class="text-end" style="width: 140px;">Total (USD)</th>
+                      <th class="text-center" style="width: 60px;">Acción</th>
                     </tr>
-                  {/each}
-                </tbody>
-              </table>
-            {/if}
+                  </thead>
+                  <tbody>
+                    {#each nuevoPedimento.productos as prod, index}
+                      <tr class={!prod.producto ? 'bg-warning-subtle' : ''}>
+                        <td class="text-center">
+                          <span class="sec-badge">{prod.sec}</span>
+                        </td>
+                        <td>
+                          {#if prod.producto}
+                            <div class="font-bold text-dark">{prod.nombre}</div>
+                            <span class="sku-tag">{prod.codigo || 'S/C'}</span>
+                          {:else}
+                            <div class="d-flex align-items-center gap-1 mb-1">
+                              <span class="badge bg-danger text-white text-small" style="font-size: 0.72rem;">⚠️ Sin Vincular</span>
+                              <span class="text-small text-muted font-bold" title={prod.nombre}>
+                                SAT: {prod.nombre.length > 25 ? prod.nombre.substring(0,25) + '...' : prod.nombre}
+                              </span>
+                            </div>
+                            <select 
+                              class="form-select form-select-sm border-danger text-small py-1 px-2" 
+                              style="max-width: 280px; background-color: #fff1f2; font-size: 0.8rem;"
+                              bind:value={prod.producto}
+                              on:change={(e) => vincularProductoAPartida(prod, e.target.value)}
+                            >
+                              <option value={null}>-- Seleccionar Producto Xenon --</option>
+                              {#each allProducts as p}
+                                <option value={p._id}>[{p.codigo || 'S/C'}] {p.nombre}</option>
+                              {/each}
+                            </select>
+                          {/if}
+                        </td>
+                        <td>
+                          <div class="badge-marca">{prod.marca || 'S/M'}</div>
+                          <div class="text-muted text-small font-mono">{prod.modelo || 'S/Mod'}</div>
+                        </td>
+                        <td>
+                          <div class="fraccion-code">{prod.fraccion_arancelaria || 'S/F'}</div>
+                          <span class="nico-badge">NICO: {prod.nico || '00'}</span>
+                        </td>
+                        <td class="text-end font-mono">
+                          <strong class="text-dark">{prod.cantidad.toLocaleString()}</strong> <span class="text-muted text-small">{prod.unidad_medida}</span>
+                        </td>
+                        <td class="text-end font-mono text-small">
+                          ${prod.precio_compra_usd.toFixed(4)}
+                        </td>
+                        <td class="text-end font-mono font-bold text-dark">
+                          {formatMoney(prod.precio_compra_usd * prod.cantidad * nuevoPedimento.tipo_cambio)}
+                        </td>
+                        <td class="text-end font-mono text-secondary">
+                          {formatMoney(prod.valor_aduana_partida_mxn)}
+                        </td>
+                        <td class="text-end font-mono font-bold text-success">
+                          ${(prod.cantidad * prod.precio_compra_usd).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </td>
+                        <td class="text-center">
+                          <button class="btn btn-action-red btn-sm" on:click={() => removerProductoDeLista(index)} title="Eliminar partida">
+                            <i class="material-icons text-medium">close</i>
+                          </button>
+                        </td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                  {#if nuevoPedimento.productos.length > 0}
+                    <tfoot class="table-foot-summary">
+                      <tr>
+                        <td colspan="4" class="text-end font-bold text-dark">Totales del Cargamento:</td>
+                        <td class="text-end font-bold text-dark font-mono">{totalPiezasNuevas.toLocaleString()}</td>
+                        <td class="text-end text-muted font-mono">-</td>
+                        <td class="text-end font-bold text-primary font-mono">{formatMoney(totalPrecioPagadoMxn)}</td>
+                        <td class="text-end font-bold text-secondary font-mono">{formatMoney(totalValorAduanaMxn)}</td>
+                        <td class="text-end font-bold text-success font-mono">${totalUsdNuevas.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  {/if}
+                </table>
+              {/if}
+            </div>
           </div>
 
           <div class="text-end">
@@ -1389,7 +1565,12 @@
 
         <!-- Panel de Prorrateo -->
         <div class="card p-4">
-          <h4 class="font-bold text-dark mb-4">Metodología de Prorrateo Fiscal</h4>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="font-bold text-dark m-0">Metodología de Prorrateo Fiscal</h4>
+            <button class="btn btn-outline-info btn-sm font-bold" style="border-radius: 8px; font-size: 0.82rem; padding: 6px 14px;" on:click={() => (showFormulaModal = true)}>
+              <i class="material-icons text-small vertical-align-middle me-1">help_outline</i> Información de Fórmulas
+            </button>
+          </div>
           
           <div class="mb-4">
             <label class="form-label font-bold">Fórmula / Metodología de cálculo:</label>
@@ -2103,7 +2284,204 @@
   </div>
 {/if}
 
+<!-- Modal de Información de Fórmulas de Prorrateo -->
+{#if showFormulaModal}
+  <div class="modal-arribo-backdrop" on:click={() => (showFormulaModal = false)}>
+    <div class="modal-arribo-container" style="max-width: 850px;" on:click|stopPropagation>
+      <div class="modal-arribo-header" style="background: #0f172a; color: white;">
+        <div class="modal-arribo-title-container">
+          <div class="modal-arribo-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+            <i class="material-icons">functions</i>
+          </div>
+          <div>
+            <h3 style="color: white; margin: 0;">Fórmulas y Metodologías de Prorrateo Fiscal</h3>
+            <span class="pedimento-numero-badge" style="background: #0284c7;">Explicación Matemática de Costos</span>
+          </div>
+        </div>
+        <button class="btn-close-modal" style="color: white;" on:click={() => (showFormulaModal = false)} aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-arribo-body" style="max-height: 75vh; overflow-y: auto; padding: 24px;">
+        <p class="text-small text-muted mb-4">
+          El objetivo del prorrateo es distribuir los <strong>Gastos Indirectos Totales (Flete + Seguros + Impuesto Aduanal + Agente + Seguridad)</strong> entre cada producto para determinar su <strong>Costo Fiscal Unitario Real en Pesos (MXN)</strong>.
+        </p>
+
+        <!-- Fórmula A -->
+        <div class="card p-3 mb-3 border-start border-4 border-primary" style="background: #f8fafc;">
+          <h5 class="font-bold text-primary mb-2">1. Opción A: Prorrateo Ad-Valorem (Por Valor Comercial - SAT)</h5>
+          <p class="text-small text-secondary mb-2">
+            Distribuye los gastos indirectos en proporción al valor económico de cada producto. Los artículos de mayor precio asumen una fracción mayor del flete y los aranceles.
+          </p>
+          <div class="p-2 bg-white rounded font-mono text-small border">
+            <div><strong>Factor Proporcional</strong> = Gastos Indirectos Totales / Total Compra Mercancías MXN</div>
+            <div><strong>Costo Fiscal Unitario MXN</strong> = Precio Base MXN × (1 + Factor Proporcional)</div>
+          </div>
+        </div>
+
+        <!-- Fórmula B -->
+        <div class="card p-3 mb-3 border-start border-4 border-success" style="background: #f8fafc;">
+          <h5 class="font-bold text-success mb-2">2. Opción B: Prorrateo Unitario (Equitativo por Piezas)</h5>
+          <p class="text-small text-secondary mb-2">
+            Divide el monto total de gastos indirectos en partes iguales entre la cantidad total de piezas físicas importadas, independientemente del costo de cada una.
+          </p>
+          <div class="p-2 bg-white rounded font-mono text-small border">
+            <div><strong>Gasto por Pieza MXN</strong> = Gastos Indirectos Totales / Total Piezas del Pedimento</div>
+            <div><strong>Costo Fiscal Unitario MXN</strong> = Precio Base MXN + Gasto por Pieza MXN</div>
+          </div>
+        </div>
+
+        <!-- Fórmula C -->
+        <div class="card p-3 mb-3 border-start border-4 border-warning" style="background: #f8fafc;">
+          <h5 class="font-bold text-warning mb-2">3. Opción C: Prorrateo Mixto (Impuestos por Valor + Fletes por Pieza)</h5>
+          <p class="text-small text-secondary mb-2">
+            Aplica Ad-Valorem a los Impuestos Aduanales y Agente Aduanal, y reparte los Fletes y Seguridad de forma equitativa por unidad física.
+          </p>
+          <div class="p-2 bg-white rounded font-mono text-small border">
+            <div><strong>Factor Valor</strong> = (Impuesto Aduanal + Agente Aduanal) / Total Compra Mercancías MXN</div>
+            <div><strong>Gasto Flete por Pieza</strong> = (Flete + Seguridad + Otros) / Total Piezas</div>
+            <div><strong>Costo Fiscal Unitario MXN</strong> = [Precio Base MXN × (1 + Factor Valor)] + Gasto Flete por Pieza</div>
+          </div>
+        </div>
+
+        <!-- Fórmula D -->
+        <div class="card p-3 mb-3 border-start border-4 border-secondary" style="background: #f8fafc;">
+          <h5 class="font-bold text-dark mb-2">4. Opción D: Porcentaje Fijo de Incremento Manual</h5>
+          <p class="text-small text-secondary mb-2">
+            Aplica un porcentaje o coeficiente fijo directo sobre el valor base en pesos de cada producto.
+          </p>
+          <div class="p-2 bg-white rounded font-mono text-small border">
+            <div><strong>Costo Fiscal Unitario MXN</strong> = Precio Base MXN × [1 + (% Factor Fijo / 100)]</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-arribo-footer">
+        <button class="btn btn-primary-custom" on:click={() => (showFormulaModal = false)}>Entendido</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
+  /* Estilos mejorados para la Lista de Partidas */
+  .partidas-table-wrapper {
+    border-radius: 12px;
+    background: #ffffff;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+
+  .partidas-scroll-container {
+    max-height: 420px;
+    overflow-y: auto;
+  }
+
+  .table-custom-partidas {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .table-custom-partidas thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 12px 14px;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .table-custom-partidas tbody tr {
+    transition: background-color 0.15s ease-in-out;
+  }
+
+  .table-custom-partidas tbody tr:hover {
+    background-color: #f1f5f9;
+  }
+
+  .table-custom-partidas tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    font-size: 0.875rem;
+  }
+
+  .table-foot-summary {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: #f8fafc;
+    border-top: 2px solid #cbd5e1;
+    box-shadow: 0 -2px 6px rgba(0,0,0,0.03);
+  }
+
+  .table-foot-summary td {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+  }
+
+  .sec-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #334155;
+    font-weight: 700;
+    font-size: 0.78rem;
+    font-family: monospace;
+  }
+
+  .sku-tag {
+    display: inline-block;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.75rem;
+    font-family: monospace;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  .badge-marca {
+    display: inline-block;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .fraccion-code {
+    font-family: monospace;
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.82rem;
+  }
+
+  .nico-badge {
+    display: inline-block;
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 0px 5px;
+    font-size: 0.72rem;
+    font-family: monospace;
+  }
+
   .input-inline {
     border: none;
     border-bottom: 1.5px dashed #cbd5e1;

@@ -179,6 +179,12 @@ export async function cambiar_status_a_entregado(carrito_id, usuario, req) {
         delete pedido_temp._id;
         delete pedido_temp.__v;
 
+        // Datos legados pueden traer id de agente/cliente como string vacío en vez de null,
+        // lo cual revienta el cast a ObjectId de Mongoose al crear el Pedido.
+        if (pedido_temp.agente && pedido_temp.agente.id === '') pedido_temp.agente.id = null;
+        if (pedido_temp.cliente && pedido_temp.cliente.id === '') pedido_temp.cliente.id = null;
+        if (pedido_temp.usuario_que_registro && pedido_temp.usuario_que_registro.id === '') pedido_temp.usuario_que_registro.id = null;
+
         const pedido_nuevo = new Pedido(pedido_temp);
         await pedido_nuevo.save();
 
@@ -193,7 +199,7 @@ export async function cambiar_status_a_entregado(carrito_id, usuario, req) {
         return { ok: true, mensaje: "Pedido entregado y trasladado al histórico" };
     } catch (err) {
         console.error("Error en cambiar_status_a_entregado:", err);
-        return { ok: false, err };
+        return { ok: false, mensaje: err.message || "Error al trasladar el pedido al histórico", err };
     }
 }
 

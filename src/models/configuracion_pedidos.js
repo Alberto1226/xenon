@@ -9,6 +9,9 @@ var schema = new Schema({
         default: 'Pagado' 
     },
     aplicar_regla_status_minimo: { type: Boolean, default: true },
+    restringir_pedidos_datos_incompletos: { type: Boolean, default: true },
+    // El administrador habilita la edición de clientes propios para agentes; inicia desactivado.
+    permitir_edicion_clientes_agentes: { type: Boolean, default: false },
     fecha_modificacion: { type: Date, default: Date.now },
     usuario_modifico: { type: String }
 });

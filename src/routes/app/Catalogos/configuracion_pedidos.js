@@ -17,7 +17,8 @@ export async function post(req, res, next) {
                 config = await ConfiguracionPedidos.create({
                     limite_pedidos_abiertos: 3,
                     status_minimo_requerido: 'Pagado',
-                    aplicar_regla_status_minimo: true
+                    aplicar_regla_status_minimo: true,
+                    restringir_pedidos_datos_incompletos: true
                 });
             }
             res.send({ ok: true, config });
@@ -29,6 +30,10 @@ export async function post(req, res, next) {
     }
 
     if (tipo === "guardar") {
+        // El switch de permisos de edición solo puede modificarlo un administrador.
+        if (accesos.tiene_permisos_administrativos(req) === false) {
+            return res.send({ ok: false, mensaje: "Solo el administrador puede cambiar la configuración de edición de clientes." });
+        }
         try {
             if (!dato) {
                 res.send({ ok: false, mensaje: "Los datos de configuración no pueden estar vacíos" });
@@ -48,6 +53,12 @@ export async function post(req, res, next) {
             }
             if (dato.aplicar_regla_status_minimo !== undefined) {
                 config.aplicar_regla_status_minimo = Boolean(dato.aplicar_regla_status_minimo);
+            }
+            if (dato.restringir_pedidos_datos_incompletos !== undefined) {
+                config.restringir_pedidos_datos_incompletos = dato.restringir_pedidos_datos_incompletos === true;
+            }
+            if (dato.permitir_edicion_clientes_agentes !== undefined) {
+                config.permitir_edicion_clientes_agentes = dato.permitir_edicion_clientes_agentes === true;
             }
 
             config.fecha_modificacion = new Date();

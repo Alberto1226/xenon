@@ -17,6 +17,8 @@
   import { onMount } from "svelte";
   export var buscando = "";
   export var pagina_actual = 1;
+  export var puede_editar_clientes = false;
+  let restringir_pedidos_datos_incompletos = true;
 
   var ancho_side_panel = 250;
   var limite_lista = 10;
@@ -77,6 +79,8 @@
         }, 200);
         //console.log(res);
         if (res.ok) {
+          restringir_pedidos_datos_incompletos =
+            res.restringir_pedidos_datos_incompletos !== false;
           $clientes.lista = res.lista;
           $clientes.lista_actualizada = new Date(); //  cuando se actualizo la lista completa por ultima vez
           $clientes = $clientes;
@@ -169,6 +173,8 @@
         <!-- REGISTRO -->
         <Row
           {cliente}
+          {puede_editar_clientes}
+          {restringir_pedidos_datos_incompletos}
           on:cliente_seleccioando
           on:editar_cliente
           on:refrescar_lista={refrescar_lista}

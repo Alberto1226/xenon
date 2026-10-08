@@ -153,6 +153,9 @@
 
     let tipo_telefono = "Celular";
     let telefono_numero = "";
+    let permisos_edicion_cargando = false;
+    let puede_editar_cliente = false;
+    $: puede_reasignar_agente = $usuario_db.rol === "administrador";
 
 
 
@@ -420,7 +423,9 @@
     ];
 
     onMount(() => {
-        DatosAgenteSelect();
+        if ($usuario_db.rol === "administrador") {
+            DatosAgenteSelect();
+        }
 
         const forms = document.querySelectorAll(".needs-validation");
 
@@ -444,8 +449,38 @@
         if ($donde === "editar") {
             asignarDatosClienteSelecto();
             IdClientSelect = $editar_store.cliente._id;
+            // Mantener el formulario bloqueado hasta confirmar autorización con el servidor.
+            consultarPermisosEdicion();
+        } else if (["vendedor", "marketing", "ComercioExterior", "gerente"].includes($usuario_db.rol)) {
+            cliente.agente = {
+                id: $usuario_db._id,
+                nombre: $usuario_db.nombre,
+                correo: $usuario_db.correo
+            };
         }
     });
+
+    async function consultarPermisosEdicion() {
+        permisos_edicion_cargando = true;
+        try {
+            const respuesta = await postData("app/clientes/permisos_edicion", {
+                cliente_id: IdClientSelect
+            });
+            puede_editar_cliente = respuesta.ok && respuesta.puede_editar;
+            if (!puede_editar_cliente) {
+                $mensajes_app.push({
+                    tipo: "error",
+                    mensaje: respuesta.mensaje || "No tienes permiso para editar este cliente."
+                });
+                $mensajes_app = $mensajes_app;
+            }
+        } catch (err) {
+            console.error("No se pudieron validar permisos de edición:", err);
+            puede_editar_cliente = false;
+        } finally {
+            permisos_edicion_cargando = false;
+        }
+    }
 
     $: cliente.alias = generarAlias(cliente.nombre);
 
@@ -795,6 +830,11 @@
         // Handle form submission
 
         if ($donde === "editar") {
+            if (!puede_editar_cliente) {
+                $mensajes_app.push({ tipo: "error", mensaje: "No tienes permiso para editar este cliente." });
+                $mensajes_app = $mensajes_app;
+                return;
+            }
             await EditarClienteSelecto();
         }
 
@@ -985,10 +1025,7 @@
             predeterminada: direccion.predeterminada,
         };
 
-        if (
-            $usuario_db.rol === "administrador" ||
-            $usuario_db.rol === "gerente"
-        ) {
+        if (puede_reasignar_agente) {
             $editar_store.cliente.agente.id = cliente.agente.id;
             $editar_store.cliente.agente.nombre = cliente.agente.nombre;
         }
@@ -1010,6 +1047,14 @@
     {:else}
         <h2>Registro de Cliente</h2>
     {/if}
+    {#if $donde === "editar" && permisos_edicion_cargando}
+        <p>Verificando permisos para editar este cliente...</p>
+    {:else if $donde === "editar" && !puede_editar_cliente}
+        <div class="alert alert-danger" role="alert">
+            No tienes permiso para editar este cliente.
+            <button type="button" class="btn btn-link" on:click={() => goto("app/clientes")}>Volver a clientes</button>
+        </div>
+    {:else}
     <form
         on:submit|preventDefault={handleSubmit}
         class="row g-3 needs-validation"
@@ -1158,7 +1203,7 @@
                 <label for="floatingPerfil">Descuento</label>
             </div>
         </div>
-        {#if $usuario_db.rol === "administrador" || $usuario_db.rol === "gerente"}
+        {#if puede_reasignar_agente}
             <div class="col-md-3">
                 <div class="form-floating">
                     <select
@@ -1175,6 +1220,13 @@
                         {/each}
                     </select>
                     <label for="floatingSelect">Agente</label>
+                </div>
+            </div>
+        {:else}
+            <div class="col-md-3">
+                <label class="form-label">Agente asignado</label>
+                <div class="form-control-plaintext">
+                    {cliente.agente.nombre || "Se asignará al usuario actual"}
                 </div>
             </div>
         {/if}
@@ -1464,6 +1516,7 @@
             </button>
         </div>
     </form>
+    {/if}
 </div>
 
 {#if visibleModalSat}

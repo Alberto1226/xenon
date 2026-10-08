@@ -1,6 +1,11 @@
 import { Cliente } from "../../../../models/cliente";
+import { Usuario } from "../../../../models/usuario";
 import * as accesos from "../../accesos";
 import { evaluar_datos_completos } from "../_datos_completos";
+import {
+    filtrarCamposEditablesCliente,
+    puedeEditarCliente
+} from "../../../../services/permisosEdicionClientes";
 
 /**
  * Maneja la solicitud POST para crear o editar un cliente.
@@ -17,7 +22,7 @@ import { evaluar_datos_completos } from "../_datos_completos";
  * @param {Object} res - El objeto de respuesta.
  * @param {Function} next - La siguiente función de middleware.
  */
-export function post(req, res, next) {
+export async function post(req, res, next) {
 
     if (accesos.esta_logueado(req) === false) {
         res.send({ ok: false, mensaje: "sesion expirada" })
@@ -64,47 +69,65 @@ export function post(req, res, next) {
     }
 
     if (req.body.accion === "editar") {
-        const mongoose = require('mongoose');
+        try {
+            const clienteExistente = await Cliente.findById(req.body.IdClientSelect).exec();
+            if (!clienteExistente) {
+                return res.send({ ok: false, mensaje: "Cliente no encontrado" });
+            }
+            // La validación se hace en servidor aunque la interfaz ya consulte permisos.
+            if (!(await puedeEditarCliente(req.user, clienteExistente))) {
+                return res.send({ ok: false, mensaje: "No tienes permiso para editar este cliente." });
+            }
 
-        let idCliente = new mongoose.Types.ObjectId(req.body.IdClientSelect);
-        let nuevo_cliente = req.body.cliMod;
-
-        if (req.user.rol === 'vendedor' && (!nuevo_cliente.agente || !nuevo_cliente.agente.id)) {
-            nuevo_cliente.agente = {
-                id: req.user._id,
-                nombre: req.user.nombre,
-                correo: req.user.correo
-            };
-        }
-
-        if (!nuevo_cliente.agente || !nuevo_cliente.agente.id) {
-            res.send({ ok: false, mensaje: "El agente es obligatorio" });
-            return;
-        }
-
-        const resultado_completos = evaluar_datos_completos(nuevo_cliente, nuevo_cliente.direcciones_asociadas && nuevo_cliente.direcciones_asociadas[0]);
-        nuevo_cliente.datos_completos = resultado_completos.completos;
-        if (resultado_completos.completos) {
-            nuevo_cliente.cotizaciones_con_datos_incompletos = 0;
-        }
-
-        Cliente.findByIdAndUpdate(idCliente, { $set: nuevo_cliente }, { new: true })
-            .then((data) => {
-                if (!data) {
-                    return res.send({ ok: false, mensaje: "Cliente no encontrado" });
+            const nuevo_cliente = filtrarCamposEditablesCliente(req.body.cliMod);
+            if (req.user.rol === "administrador" && req.body.cliMod && req.body.cliMod.agente) {
+                const agente = await Usuario.findById(req.body.cliMod.agente.id).select("nombre correo").lean().exec();
+                if (!agente) {
+                    return res.send({ ok: false, mensaje: "El agente seleccionado no existe." });
                 }
-                res.send({ ok: true, mensaje: "Cliente editado", data: data });
-            })
-            .catch((err) => {
-                console.error("Error al actualizar cliente:", err);
-                res.send({ ok: false, mensaje: "No se pudo editar el cliente" });
-            });
+                nuevo_cliente.agente = {
+                    id: agente._id,
+                    nombre: agente.nombre,
+                    correo: agente.correo
+                };
+            } else {
+                // Ningún rol distinto al administrador puede cambiar la asignación recibida.
+                nuevo_cliente.agente = clienteExistente.agente;
+            }
+
+            if (!nuevo_cliente.agente || !nuevo_cliente.agente.id) {
+                return res.send({ ok: false, mensaje: "El agente del cliente no está asignado." });
+            }
+
+            const clienteActualizado = {
+                ...clienteExistente.toObject(),
+                ...nuevo_cliente
+            };
+            const resultado_completos = evaluar_datos_completos(
+                clienteActualizado,
+                clienteActualizado.direcciones_asociadas && clienteActualizado.direcciones_asociadas[0]
+            );
+            nuevo_cliente.datos_completos = resultado_completos.completos;
+            if (resultado_completos.completos) {
+                nuevo_cliente.cotizaciones_con_datos_incompletos = 0;
+            }
+
+            const data = await Cliente.findByIdAndUpdate(
+                clienteExistente._id,
+                { $set: nuevo_cliente },
+                { new: true }
+            ).exec();
+            return res.send({ ok: true, mensaje: "Cliente editado", data });
+        } catch (err) {
+            console.error("Error al actualizar cliente:", err);
+            return res.send({ ok: false, mensaje: "No se pudo editar el cliente" });
+        }
     }
 }
 
 function AcomodarCliente(cliente, direccion, usuario, accion) {
     let cliente_nuevo_tmp = cliente;
-    if (usuario.rol === 'vendedor' || usuario.rol === 'marketing' || usuario.rol === 'ComercioExterior') {
+    if (usuario.rol !== "administrador" && accion === "crear") {
         cliente_nuevo_tmp.agente = {
             id: usuario._id,
             nombre: usuario.nombre,

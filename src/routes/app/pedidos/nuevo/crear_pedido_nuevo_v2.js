@@ -30,13 +30,15 @@ export async function post(req, res, next) {
         return;
     }
 
-    // Revalidar en backend el límite de cotizaciones con datos incompletos
+    // Revalidar en backend el límite de cotizaciones solo si está habilitado en configuración.
     const cliente_db_validacion = await Cliente.findById(cliente_id);
     let resultado_datos_completos = { completos: true, campos_faltantes: [] };
     if (cliente_db_validacion) {
         resultado_datos_completos = evaluar_datos_completos(cliente_db_validacion);
         const cotizaciones_previas = cliente_db_validacion.cotizaciones_con_datos_incompletos || 0;
-        if (!resultado_datos_completos.completos && cotizaciones_previas >= LIMITE_COTIZACIONES_CON_DATOS_INCOMPLETOS) {
+        if (evaluacion.restringir_datos_incompletos &&
+            !resultado_datos_completos.completos &&
+            cotizaciones_previas >= LIMITE_COTIZACIONES_CON_DATOS_INCOMPLETOS) {
             res.send({
                 ok: false,
                 mensaje: "El cliente alcanzó el límite de cotizaciones con información incompleta. Completa: " + resultado_datos_completos.campos_faltantes.join(", "),
@@ -49,7 +51,9 @@ export async function post(req, res, next) {
     const resultado_pipeline = await crear_pedido(data, req.user, req);
 
     if (resultado_pipeline.ok) {
-        if (cliente_db_validacion && !resultado_datos_completos.completos) {
+        if (evaluacion.restringir_datos_incompletos &&
+            cliente_db_validacion &&
+            !resultado_datos_completos.completos) {
             Cliente.findByIdAndUpdate(cliente_db_validacion._id, { $inc: { cotizaciones_con_datos_incompletos: 1 } }).catch((err) => console.log(err));
         }
 

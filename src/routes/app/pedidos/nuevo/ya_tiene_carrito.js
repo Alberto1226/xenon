@@ -21,9 +21,11 @@ export async function evaluar_restricciones_pedido_cliente(cliente_id) {
         config = {
             limite_pedidos_abiertos: 3,
             status_minimo_requerido: 'Pagado',
-            aplicar_regla_status_minimo: true
+            aplicar_regla_status_minimo: true,
+            restringir_pedidos_datos_incompletos: true
         };
     }
+    const restringir_datos_incompletos = config.restringir_pedidos_datos_incompletos !== false;
 
     // Pedidos abiertos (excluye Envío, Envio, Entregado y Cancelado)
     const carritosAbiertos = await Carrito.find({
@@ -44,6 +46,7 @@ export async function evaluar_restricciones_pedido_cliente(cliente_id) {
             carrito: carritosAbiertos[0],
             pedidos_abiertos,
             total_pedidos_abiertos,
+            restringir_datos_incompletos,
             mensaje: `El cliente ha alcanzado el límite máximo permitido de ${config.limite_pedidos_abiertos} pedido(s) abierto(s).`
         };
     }
@@ -62,6 +65,7 @@ export async function evaluar_restricciones_pedido_cliente(cliente_id) {
                 carrito: pedidoConStatusBajo,
                 pedidos_abiertos,
                 total_pedidos_abiertos,
+                restringir_datos_incompletos,
                 mensaje: `El cliente tiene un pedido activo en estatus '${pedidoConStatusBajo.status}'. Para abrir un nuevo pedido, sus notas abiertas deben estar al menos en estatus '${config.status_minimo_requerido}'.`
             };
         }
@@ -72,6 +76,7 @@ export async function evaluar_restricciones_pedido_cliente(cliente_id) {
         carrito: null,
         pedidos_abiertos,
         total_pedidos_abiertos,
+        restringir_datos_incompletos,
         mensaje: ""
     };
 }
@@ -97,7 +102,9 @@ export async function post(req, res, next) {
             const resultado = evaluar_datos_completos(cliente);
             datos_completos = resultado.completos;
             campos_faltantes = resultado.campos_faltantes;
-            cotizaciones_con_datos_incompletos = cliente.cotizaciones_con_datos_incompletos || 0;
+            cotizaciones_con_datos_incompletos = evaluacion.restringir_datos_incompletos
+                ? (cliente.cotizaciones_con_datos_incompletos || 0)
+                : 0;
             cotizaciones_disponibles = Math.max(0, LIMITE_COTIZACIONES_CON_DATOS_INCOMPLETOS - cotizaciones_con_datos_incompletos);
         }
 
@@ -112,7 +119,9 @@ export async function post(req, res, next) {
             campos_faltantes,
             cotizaciones_con_datos_incompletos,
             cotizaciones_disponibles,
-            bloqueado_por_datos_incompletos: datos_completos === false && cotizaciones_disponibles <= 0,
+            restringir_datos_incompletos: evaluacion.restringir_datos_incompletos,
+            bloqueado_por_datos_incompletos: evaluacion.restringir_datos_incompletos &&
+                datos_completos === false && cotizaciones_disponibles <= 0,
         });
     } catch (err) {
         console.log(err);

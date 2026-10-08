@@ -95,12 +95,12 @@
     <div class="siete espacio">
       <Region bind:region={cliente_selecto.region} />
 
-      {#if $usuario_db.rol === "administrador" || usuario_db.rol === "gerente"}
+      {#if $usuario_db.rol === "administrador"}
         <!-- content here -->
         <Agente bind:agente={cliente_selecto.agente} />
       {:else}
         Agente :
-        <b>{$usuario_db.nombre}</b>
+        <b>{cliente_selecto.agente.nombre || $usuario_db.nombre}</b>
       {/if}
     </div>
   </div>

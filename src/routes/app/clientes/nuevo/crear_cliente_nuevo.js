@@ -13,7 +13,7 @@ export function post(req, res, next) {
    //console.log(req.body);
     let usuario = req.user;
     let cliente_nuevo_tmp =req.body;
-    if(usuario.rol==='vendedor'){
+    if(usuario.rol !== "administrador"){
         cliente_nuevo_tmp.agente={
             id:usuario._id,
             nombre:usuario.nombre,

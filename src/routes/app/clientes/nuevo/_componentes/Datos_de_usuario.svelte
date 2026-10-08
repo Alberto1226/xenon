@@ -133,7 +133,7 @@
 
       <Region bind:region={nuevo_cliente.region} />
 
-      {#if $usuario_db.rol === 'administrador' || usuario_db.rol === 'gerente'}
+      {#if $usuario_db.rol === 'administrador'}
         <!-- content here -->
         <Agente bind:agente={nuevo_cliente.agente} />
       {:else}

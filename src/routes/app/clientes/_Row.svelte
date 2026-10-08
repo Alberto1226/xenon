@@ -1,5 +1,7 @@
 <script>
   export var cliente;
+  export var puede_editar_clientes = false;
+  export var restringir_pedidos_datos_incompletos = true;
   import {
     formato_precio,
     cliente_selecto,
@@ -284,8 +286,11 @@
     <br />
     {#if !cliente.datos_completos}
       <span style="color: red; font-size: 0.8rem;"
-        >Faltan datos ({cliente.cotizaciones_con_datos_incompletos || 0}/3 cotizaciones
-        usadas)</span
+        >{#if restringir_pedidos_datos_incompletos}
+          Faltan datos ({cliente.cotizaciones_con_datos_incompletos || 0}/3 cotizaciones usadas)
+        {:else}
+          Faltan datos
+        {/if}</span
       >
     {/if}
   </div>
@@ -334,7 +339,7 @@
                 <i class="material-icons">check</i>
               </Button>
             {/if}
-            {#if $usuario_db.rol == "administrador" || $usuario_db.edit}
+            {#if puede_editar_clientes}
               <Button
                 icon
                 dense
@@ -389,7 +394,7 @@
       <tr>
         <td>
           <ButtonGroup>
-            {#if $usuario_db.rol != "vendedor" && cliente.agente}
+            {#if $usuario_db.rol === "administrador" && cliente.agente}
               <!-- Edicion de agente -->
 
               <!-- AGENTE si -->
@@ -559,12 +564,14 @@
   <div slot="footer" class="footer" />
 </Dialog>
 
-<Dialogo_agente
-  on:refrescar_lista={refrescar_lista}
-  bind:visible={dialogo_agente}
-  bind:agente={cliente.agente}
-  bind:cliente
-/>
+{#if $usuario_db.rol === "administrador"}
+  <Dialogo_agente
+    on:refrescar_lista={refrescar_lista}
+    bind:visible={dialogo_agente}
+    bind:agente={cliente.agente}
+    bind:cliente
+  />
+{/if}
 
 <Dialogo_password
   bind:cliente

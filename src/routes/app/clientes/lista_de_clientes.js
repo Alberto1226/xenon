@@ -2,6 +2,7 @@
 //  Se EMPLEA EN LISTA DE ClienteS PRINCIPAL Y EN LISTAS PARA PRODUCIR PEDIDO NUEVO
 
 import { Cliente } from "../../../models/cliente";
+import { ConfiguracionPedidos } from "../../../models/configuracion_pedidos";
 import * as accesos from "../accesos"
 
 export async function post(req, res, next) {
@@ -21,15 +22,24 @@ export async function post(req, res, next) {
     //let query = buscando===''? {} :{nombre:{$regex : buscando,$options:"gmi" }};
 
 
-    if (buscando === '') {
-        res.send(await consulta(pagina_actual, usuario));
-        return;
-    }
-    else {
-
-        let query = await arreglo_de_buscando_separado_por_comas(buscando,usuario);
-       // console.log(query)
-        res.send(await consullta_con_texto(query, res, pagina_actual));
+    try {
+        const config = await ConfiguracionPedidos.findOne()
+            .select("restringir_pedidos_datos_incompletos")
+            .lean()
+            .exec();
+        const resultado = buscando === ''
+            ? await consulta(pagina_actual, usuario)
+            : await consullta_con_texto(
+                await arreglo_de_buscando_separado_por_comas(buscando, usuario),
+                res,
+                pagina_actual
+            );
+        resultado.restringir_pedidos_datos_incompletos =
+            !config || config.restringir_pedidos_datos_incompletos !== false;
+        return res.send(resultado);
+    } catch (err) {
+        console.error("Error al consultar clientes y la configuración de pedidos:", err);
+        return res.send({ ok: false, mensaje: "No se pudieron consultar los clientes." });
     }
 }
 
@@ -167,4 +177,3 @@ function consulta(pagina_actual, usuario) {
         }
     })
 }
-

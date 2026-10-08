@@ -61,6 +61,8 @@
     let limitePedidosAbiertos = 3;
     let statusMinimoRequerido = "Pagado";
     let aplicarReglaStatusMinimo = true;
+    let restringirPedidosDatosIncompletos = true;
+    let permitirEdicionClientesAgentes = false;
     let guardandoConfigPedidos = false;
     let opcionesStatus = ['Ninguno', 'Pedido', 'Ficha Pago', 'Pagado', 'Empaque'];
 
@@ -473,6 +475,8 @@
                     limitePedidosAbiertos = (res.config.limite_pedidos_abiertos !== undefined) ? res.config.limite_pedidos_abiertos : 3;
                     statusMinimoRequerido = res.config.status_minimo_requerido || "Pagado";
                     aplicarReglaStatusMinimo = (res.config.aplicar_regla_status_minimo !== undefined) ? res.config.aplicar_regla_status_minimo : true;
+                    restringirPedidosDatosIncompletos = res.config.restringir_pedidos_datos_incompletos !== false;
+                    permitirEdicionClientesAgentes = res.config.permitir_edicion_clientes_agentes === true;
                 }
                 resolve(res.ok);
             }).catch((err) => {
@@ -497,7 +501,9 @@
             dato: {
                 limite_pedidos_abiertos: limitePedidosAbiertos,
                 status_minimo_requerido: statusMinimoRequerido,
-                aplicar_regla_status_minimo: aplicarReglaStatusMinimo
+                aplicar_regla_status_minimo: aplicarReglaStatusMinimo,
+                restringir_pedidos_datos_incompletos: restringirPedidosDatosIncompletos,
+                permitir_edicion_clientes_agentes: permitirEdicionClientesAgentes
             }
         }).then((res) => {
             guardandoConfigPedidos = false;
@@ -1071,6 +1077,38 @@
                                 Activar regla de estatus mínimo obligatorio
                             </label>
                         </div>
+
+                        <div style="display: flex; align-items: flex-start; gap: 10px; margin-top: 5px;">
+                            <input
+                                type="checkbox"
+                                id="restringir_pedidos_datos_incompletos"
+                                bind:checked={restringirPedidosDatosIncompletos}
+                                style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px;"
+                            />
+                            <label for="restringir_pedidos_datos_incompletos" style="cursor: pointer; font-weight: 500; color: #333;">
+                                Limitar pedidos de clientes con datos incompletos
+                                <small style="display: block; color: #666; margin-top: 4px;">
+                                    Activa el límite de 3 pedidos con datos incompletos y muestra su conteo. El color y el aviso de datos faltantes se mantienen aunque esta opción esté desactivada.
+                                </small>
+                            </label>
+                        </div>
+
+                        {#if $usuario_db.rol === "administrador"}
+                            <div style="display: flex; align-items: flex-start; gap: 10px; margin-top: 5px;">
+                                <input
+                                    type="checkbox"
+                                    id="permitir_edicion_clientes_agentes"
+                                    bind:checked={permitirEdicionClientesAgentes}
+                                    style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px;"
+                                />
+                                <label for="permitir_edicion_clientes_agentes" style="cursor: pointer; font-weight: 500; color: #333;">
+                                    Permitir que los agentes editen sus propios clientes
+                                    <small style="display: block; color: #666; margin-top: 4px;">
+                                        Los agentes solo podrán editar clientes asignados a ellos. Gerentes podrán editar todos los clientes, pero únicamente el administrador podrá reasignar agentes.
+                                    </small>
+                                </label>
+                            </div>
+                        {/if}
 
                         <div style="margin-top: 12px;">
                             <button

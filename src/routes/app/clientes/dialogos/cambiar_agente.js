@@ -13,9 +13,9 @@ export function post(req, res, next) {
         return;
     }
 
-
-    if (accesos.tiene_permisos_gerenciales(req) === false && accesos.tiene_permisos_administrativos(req) === false) {
-        res.send({ ok: false, mensaje: "sesion expirada 2" })
+    // La reasignación modifica también los carritos del cliente y se reserva al administrador.
+    if (accesos.tiene_permisos_administrativos(req) === false) {
+        res.send({ ok: false, mensaje: "Solo el administrador puede reasignar clientes." })
         return;
     }
     const sessionPromise = mongoose.startSession();

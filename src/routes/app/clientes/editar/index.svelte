@@ -10,12 +10,29 @@
     //console.log()
     setTimeout(()=>{
       cliente_selecto = $editar_store.cliente;
+      verificar_permisos_edicion();
       // cliente_selecto.fecha_nacimiento = new Date(cliente_selecto.fecha_nacimiento);
       // console.log("index-----",cliente_selecto);
     },500)
   })
   const dispatch = createEventDispatcher();
   let guardando;
+  let puede_editar_cliente = false;
+  let permisos_verificados = false;
+
+  async function verificar_permisos_edicion() {
+    try {
+      const respuesta = await postData("app/clientes/permisos_edicion", {
+        cliente_id: $editar_store.cliente && $editar_store.cliente._id
+      });
+      puede_editar_cliente = respuesta.ok && respuesta.puede_editar;
+    } catch (err) {
+      console.error("No se pudieron consultar los permisos de edición:", err);
+      puede_editar_cliente = false;
+    } finally {
+      permisos_verificados = true;
+    }
+  }
   var cliente_selecto = {
      agente :{
         nombre :'',
@@ -79,6 +96,11 @@
   }
 
   function editar_en_DB() {
+    if (!puede_editar_cliente) {
+      $mensajes_app.push({ tipo: "error", mensaje: "No tienes permiso para editar este cliente." });
+      $mensajes_app = $mensajes_app;
+      return;
+    }
 
   // //console.log(cliente_selecto);
 
@@ -160,6 +182,11 @@
 <div class=" centrado titulo_formulario barra_superior">
 Editar {cliente_selecto.nombre}
 </div>
+{#if !permisos_verificados}
+  <p class="centrado">Verificando permisos...</p>
+{:else if !puede_editar_cliente}
+  <p class="centrado" role="alert">No tienes permiso para editar este cliente.</p>
+{:else}
 <Tabs>
   <TabList>
     <Tab>Datos de cliente</Tab>
@@ -184,8 +211,9 @@ Editar {cliente_selecto.nombre}
         <Button on:click={cancelar} color="darkorange">Cancelar</Button>
       </td>
       <td>
-        <Button raised on:click={editar_en_DB} color="primary"> <i class="material-icons">save</i> Guardar</Button>
+        <Button raised on:click={editar_en_DB} color="primary" disabled={!puede_editar_cliente}> <i class="material-icons">save</i> Guardar</Button>
       </td>
     </tr>
   </table>
 </div>
+{/if}

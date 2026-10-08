@@ -396,7 +396,7 @@
     {#if pedido.total_pedido > 0}
       <div class="pill no_select" class:pill_envio={pedido.status == "Envío"}>
         {pedido.status}
-        {#if ($usuario_db.rol == "administrador" || $usuario_db.rol == "vendedor" || $usuario_db.rol == "gerente") && !['Entregado', 'Finalizada'].includes(pedido.status) && !bloqueado_por_en_ruta}
+        {#if $usuario_db.rol == "administrador" && !['Entregado', 'Finalizada'].includes(pedido.status) && !bloqueado_por_en_ruta}
           <Button
             icon
             dense

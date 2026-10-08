@@ -237,6 +237,14 @@
                     }, 100);
                     procesando = false;
                     visible = false;
+                } else {
+                    procesando = false;
+                    mensaje_envio = "Envío (Descontar)";
+                    $mensajes_app.push({
+                        tipo: "error",
+                        mensaje: respuesta.mensaje || "No se pudo hacer el cambio a Entregado",
+                    });
+                    $mensajes_app = $mensajes_app;
                 }
             })
             .catch((err) => {
@@ -247,6 +255,7 @@
                 });
                 $mensajes_app = $mensajes_app;
                 procesando = false;
+                mensaje_envio = "Envío (Descontar)";
                 dispatch("cambio_a_status_envio");
             });
     }

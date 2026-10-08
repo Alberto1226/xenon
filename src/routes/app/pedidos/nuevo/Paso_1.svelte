@@ -53,6 +53,7 @@
   let cotizaciones_con_datos_incompletos = 0;
   let cotizaciones_disponibles = 3;
   let bloqueado_por_datos_incompletos = false;
+  let restringir_datos_incompletos = true;
   let pedidos_abiertos = [];
   let total_pedidos_abiertos = 0;
   $: cliente.direccion = direccion;
@@ -135,6 +136,7 @@
           campos_faltantes = res.campos_faltantes || [];
           cotizaciones_con_datos_incompletos = res.cotizaciones_con_datos_incompletos || 0;
           cotizaciones_disponibles = res.cotizaciones_disponibles;
+          restringir_datos_incompletos = res.restringir_datos_incompletos !== false;
           bloqueado_por_datos_incompletos = res.bloqueado_por_datos_incompletos;
         }
       })
@@ -504,9 +506,11 @@
       {#if !datos_completos && cliente.nombre != "" && !bloqueado_por_datos_incompletos}
         <span style="color:darkorange">
           El cliente <b>{cliente.nombre}</b> tiene información pendiente ({campos_faltantes.join(", ")}).
-          <span style="color: red; font-weight: bold;">
-            Te quedan {cotizaciones_disponibles} cotización(es) antes de requerir completarla.
-          </span>
+          {#if restringir_datos_incompletos}
+            <span style="color: red; font-weight: bold;">
+              Te quedan {cotizaciones_disponibles} cotización(es) antes de requerir completarla.
+            </span>
+          {/if}
         </span>
         <br />
       {/if}
@@ -601,6 +605,10 @@
           Continuar
           <i class="material-icons">chevron_right</i>
         </Button>
+      </div>
+    {:else if bloqueado_por_datos_incompletos}
+      <div class="rojo">
+        Completa los datos del cliente antes de continuar con el pedido.
       </div>
     {:else}
       <div class=" rojo">

@@ -61,7 +61,27 @@ var schema = new Schema({
         empresa: { type: String, default: '' },
         codigo_de_rastreo: { type: String, default: '' },
         notas: { type: String, default: '' },
-    }
+    },
+    facturacion: [
+        {
+            uuid: { type: String, default: "" },
+            serie: { type: String, default: "F" },
+            folio: { type: String, default: "" },
+            fecha_emision: { type: Date, default: Date.now },
+            total: { type: Number, default: 0 },
+            rfc_receptor: { type: String, default: "" },
+            razon_social_receptor: { type: String, default: "" },
+            regimen_fiscal_receptor: { type: String, default: "" },
+            uso_cfdi: { type: String, default: "G03" },
+            metodo_pago: { type: String, default: "PUE" },
+            forma_pago: { type: String, default: "01" },
+            tipo_cfdi: { type: String, default: "I" },
+            status: { type: String, default: "Vigente" },
+            fecha_cancelacion: { type: Date, default: null },
+            motivo_cancelacion: { type: String, default: "" },
+            uuid_sustitucion: { type: String, default: "" }
+        }
+    ]
 });
 
 

@@ -56,6 +56,13 @@ var schema = new Schema({
     para_venta_publico: { type: Boolean, default: true },
     precio: { type: Number, default: 0 },
     precio_compra: { type: Number, default: 0 },//    precio de compra del producto 
+    sat_clave_prod_serv: { type: String, default: "" },
+    sat_clave_unidad: { type: String, default: "" },
+    sat_objeto_impuesto: { type: String, enum: ["", "01", "02", "03", "04"], default: "" },
+    impuestos_venta: {
+        iva: { type: String, enum: ["", "16", "8", "0", "exento", "no_aplica"], default: "" },
+        ieps_tasa_porcentaje: { type: Number, default: 0 }
+    },
     recomendar_como_paqueteria: { type: Boolean, default: false },
     unidad: { type: String, default: '' },
     uid_previo: { type: String, default: '' },

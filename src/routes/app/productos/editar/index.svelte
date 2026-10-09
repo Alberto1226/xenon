@@ -1,6 +1,7 @@
 <script>
   //   EDITAR PRODUCTO
   import Marca from "./_componentes/Marca.svelte";
+  import SelectSat from "./_componentes/Select_sat.svelte";
   import Unidad from "./_componentes/Unidad_medida.svelte";
   // import Categoria from "./_componentes/Categoria.svelte";
   import Uploader from "./_componentes/upload_productos.svelte";
@@ -25,12 +26,17 @@
   import { onMount } from "svelte";
   import { lista_archivos_uploads } from "./_componentes/stores_admon";
   import { goto } from "@sapper/app";
+  import { validarConfiguracionFiscalProducto } from "../../../../services/validarConfiguracionFiscalProducto";
 
   const plantilla_producto = {
     codigo: "",
     nombre: "",
     precio: 0,
     precio_compra: 0,
+    sat_clave_prod_serv: "",
+    sat_clave_unidad: "",
+    sat_objeto_impuesto: "",
+    impuestos_venta: { iva: "", ieps_tasa_porcentaje: 0 },
     descripcion: "",
     marca: "",
     unidad: "Pieza",
@@ -46,10 +52,21 @@
 
   var nuevo_producto = JSON.parse(JSON.stringify(plantilla_producto));
 
+  // Se completa el mismo objeto del store (sin copiarlo): el bloque reactivo de abajo
+  // reasigna nuevo_producto en cada cambio, y una copia descartaría lo capturado en el formulario.
+  function normalizar_producto(producto) {
+    if (!producto) return producto;
+    producto.impuestos_venta = {
+      ...plantilla_producto.impuestos_venta,
+      ...(producto.impuestos_venta || {})
+    };
+    return producto;
+  }
+
   onMount(() => {
     setTimeout(() => {
       if ($editar_store.producto) {
-        nuevo_producto = $editar_store.producto;
+        nuevo_producto = normalizar_producto($editar_store.producto);
       } else {
         nuevo_producto = JSON.parse(JSON.stringify(plantilla_producto));
       }
@@ -57,7 +74,7 @@
   });
 
   $: if ($editar_store.producto) {
-    nuevo_producto = $editar_store.producto;
+    nuevo_producto = normalizar_producto($editar_store.producto);
   } else {
     nuevo_producto = nuevo_producto._id ? JSON.parse(JSON.stringify(plantilla_producto)) : nuevo_producto;
   }
@@ -86,6 +103,11 @@
     if (checar_formulario_falta_algo() == true) {
       return;
     }
+    const errorFiscal = validarConfiguracionFiscalProducto(nuevo_producto);
+    if (errorFiscal) {
+      mostrar_error(errorFiscal);
+      return;
+    }
     var data = JSON.parse(JSON.stringify(nuevo_producto));
     subiendo = true;
     data.archivos = $lista_archivos_uploads;
@@ -98,6 +120,11 @@
 
     postData(url, data)
       .then((res) => {
+        if (res && res.ok === false) {
+          subiendo = false;
+          mostrar_error(res.message || "No se pudo guardar el producto");
+          return;
+        }
         if (es_creacion) {
           mostrar_exito("Producto creado con éxito");
           var producto_tmp = res.producto;
@@ -337,6 +364,49 @@
               </td>
             </tr>
           </table>
+          <div class="datos-fiscales-producto">
+            <h4>Datos fiscales SAT para facturación</h4>
+            <p>Son independientes del costo e impuestos de importación del pedimento. Se requieren para timbrar conceptos de este producto.</p>
+            <div class="campo_sat">
+              Clave de producto o servicio (ClaveProdServ)
+              <SelectSat catalogo="producto" bind:valor={nuevo_producto.sat_clave_prod_serv} placeholder="Clave o descripción del producto" />
+            </div>
+            <div class="campo_sat">
+              Clave de unidad (ClaveUnidad)
+              <SelectSat catalogo="unidad" bind:valor={nuevo_producto.sat_clave_unidad} placeholder="Clave o nombre de la unidad (Ej. H87)" />
+            </div>
+            <label>
+              Objeto de impuesto (SAT)
+              <select bind:value={nuevo_producto.sat_objeto_impuesto}>
+                <option value="">Sin configurar</option>
+                <option value="01">01 - No objeto de impuesto</option>
+                <option value="02">02 - Sí objeto de impuesto</option>
+                <option value="03">03 - Sí objeto, no obligado al desglose</option>
+                <option value="04">04 - Sí objeto, no causa impuesto</option>
+              </select>
+            </label>
+            <label>
+              IVA cobrado en la venta
+              <select bind:value={nuevo_producto.impuestos_venta.iva}>
+                <option value="">Sin configurar</option>
+                <option value="16">Tasa 16%</option>
+                <option value="8">Tasa 8%</option>
+                <option value="0">Tasa 0%</option>
+                <option value="exento">Exento</option>
+                <option value="no_aplica">No aplica</option>
+              </select>
+            </label>
+            <label>
+              IEPS de venta (porcentaje, si aplica)
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.000001"
+                bind:value={nuevo_producto.impuestos_venta.ieps_tasa_porcentaje}
+              />
+            </label>
+          </div>
           <!-- <Categoria bind:categoria={nuevo_producto.categoria} /> -->
           <Checkbox {...props} bind:checked={nuevo_producto.para_venta_publico}>
             Para venta al público
@@ -574,4 +644,9 @@
     color: #94a3b8;
     margin-right: 8px;
   }
+  .datos-fiscales-producto { display: grid; gap: 10px; margin-top: 18px; padding: 14px; border: 1px solid #dbe3ed; border-radius: 6px; }
+  .datos-fiscales-producto h4, .datos-fiscales-producto p { margin: 0; }
+  .datos-fiscales-producto p { color: #64748b; font-size: 13px; }
+  .datos-fiscales-producto label, .datos-fiscales-producto .campo_sat { display: grid; gap: 4px; font-size: 13px; }
+  .datos-fiscales-producto input, .datos-fiscales-producto select { max-width: 420px; min-height: 36px; padding: 6px 8px; }
 </style>

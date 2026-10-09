@@ -70,6 +70,7 @@
         getColeccion();
         consultaPaises();
         obtenerConfiguracionPedidos();
+        obtenerConfiguracionFacturacion();
     });
 
     function Clean() {
@@ -466,6 +467,36 @@
         });
     }
 
+    // Configuración de facturación: por ahora solo define si se piden pedimentos por producto.
+    let requerirPedimentos = false;
+    let guardandoConfigFacturacion = false;
+
+    function obtenerConfiguracionFacturacion() {
+        postData("app/Catalogos/configuracion_facturacion", { tipo: "obtener" }).then((res) => {
+            if (res.ok && res.config) {
+                requerirPedimentos = res.config.requerir_pedimentos === true;
+            }
+        }).catch((err) => console.error("Error obteniendo configuracion de facturacion:", err));
+    }
+
+    function guardarConfiguracionFacturacion() {
+        guardandoConfigFacturacion = true;
+        postData("app/Catalogos/configuracion_facturacion", {
+            tipo: "guardar",
+            dato: { requerir_pedimentos: requerirPedimentos }
+        }).then((res) => {
+            guardandoConfigFacturacion = false;
+            $mensajes_app.push({
+                tipo: res.ok ? "exito" : "error",
+                mensaje: res.ok ? "Configuración de facturación guardada correctamente" : (res.mensaje || "Error al guardar la configuración"),
+            });
+            $mensajes_app = $mensajes_app;
+        }).catch((err) => {
+            guardandoConfigFacturacion = false;
+            console.error("Error guardando configuracion de facturacion:", err);
+        });
+    }
+
     function obtenerConfiguracionPedidos() {
         return new Promise((resolve) => {
             postData("app/Catalogos/configuracion_pedidos", {
@@ -579,6 +610,12 @@
                 on:click={() => (activeTab = "ConfiguracionPedidos")}
             >
                 Configuración Pedidos
+            </div>
+            <div
+                class="nav-item {activeTab === 'ConfiguracionFacturacion' ? 'active' : ''}"
+                on:click={() => (activeTab = "ConfiguracionFacturacion")}
+            >
+                Facturación
             </div>
         {/if}
     </div>
@@ -1119,6 +1156,39 @@
                                 {guardandoConfigPedidos ? "Guardando..." : "Guardar Configuración"}
                             </button>
                         </div>
+                    </div>
+                </div>
+            {/if}
+            {#if activeTab === "ConfiguracionFacturacion"}
+                <div>
+                    <h2>Configuración de Facturación</h2>
+                    <div style="display: flex; flex-direction: column; gap: 18px; max-width: 550px; background: #f8f9fa; padding: 24px; border-radius: 8px; border: 1px solid #e0e0e0; margin-top: 10px;">
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <input
+                                type="checkbox"
+                                id="requerir_pedimentos"
+                                bind:checked={requerirPedimentos}
+                                disabled={$usuario_db.rol !== "administrador"}
+                                style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px;"
+                            />
+                            <label for="requerir_pedimentos" style="cursor: pointer; font-weight: 500; color: #333;">
+                                Pedir pedimentos de los productos al facturar
+                                <small style="display: block; color: #666; margin-top: 4px;">
+                                    Desactivado: la factura se timbra sin pedimentos (sin InformacionAduanera) y no se pide origen del producto.
+                                </small>
+                            </label>
+                        </div>
+                        {#if $usuario_db.rol === "administrador"}
+                            <div>
+                                <button
+                                    disabled={guardandoConfigFacturacion}
+                                    on:click={guardarConfiguracionFacturacion}
+                                    style="background-color: #007bff; color: white; padding: 10px 24px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 15px;"
+                                >
+                                    {guardandoConfigFacturacion ? "Guardando..." : "Guardar Configuración"}
+                                </button>
+                            </div>
+                        {/if}
                     </div>
                 </div>
             {/if}

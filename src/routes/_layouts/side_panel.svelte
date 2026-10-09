@@ -130,12 +130,44 @@
       icono: "admin_panel_settings",
       roles: ["administrador"],
     },
-    /* {
+    {
       url: "/app/pedimentos",
       titulo: "Pedimentos",
       icono: "sailing",
       roles: ["administrador", "gerente"],
-    }, */
+    },
+    {
+      url: "/app/facturacion/perfil-fiscal",
+      titulo: "Facturación",
+      icono: "receipt_long",
+      roles: ["administrador", "gerente", "vendedor"],
+      subitems: [
+        {
+          titulo: "Perfil Fiscal",
+          url: "/app/facturacion/perfil-fiscal",
+          icono: "verified_user",
+          roles: ["administrador", "gerente"],
+        },
+        {
+          titulo: "Facturas Emitidas",
+          url: "/app/facturacion/facturas-emitidas",
+          icono: "receipt_long",
+          roles: ["administrador", "gerente", "vendedor"],
+        },
+        {
+          titulo: "Emitir Factura",
+          url: "/app/facturacion/emitir",
+          icono: "post_add",
+          roles: ["administrador", "gerente", "vendedor"],
+        },
+        {
+          titulo: "Complementos de Pago",
+          url: "/app/facturacion/pagos",
+          icono: "payments",
+          roles: ["administrador", "gerente"],
+        },
+      ],
+    },
     {
       url: "/app/rutas",
       titulo: "Rutas",
@@ -148,12 +180,12 @@
       icono: "qr_code",
       roles: ["administrador", "gerente"],
     },
-    /* {
+    {
       url: "/app/reportes/utilidades",
       titulo: "Utilidades",
       icono: "trending_up",
       roles: ["administrador"],
-    }, */
+    },
 
     {
       url: "/app/categorias",
@@ -202,6 +234,13 @@
           titulo: "Prueba Sobrecarga",
           url: "/app/dev_tools/sobrecarga",
           icono: "flash_on",
+          roles: ["administrador"],
+          solo_local: true,
+        },
+        {
+          titulo: "Importar catálogos SAT",
+          url: "/app/dev_tools/importar_sat",
+          icono: "cloud_download",
           roles: ["administrador"],
           solo_local: true,
         },
@@ -295,6 +334,22 @@
           break;
         case "/app/dev_tools/huerfanos":
           menu_actual = "dev-tools";
+          break;
+        case "/app/facturacion/perfil-fiscal":
+          $ui.ventana_visible = "Perfil Fiscal";
+          menu_actual = "facturacion";
+          break;
+        case "/app/facturacion/facturas-emitidas":
+          $ui.ventana_visible = "Facturas Emitidas";
+          menu_actual = "facturacion";
+          break;
+        case "/app/facturacion/emitir":
+          $ui.ventana_visible = "Emitir Factura";
+          menu_actual = "facturacion";
+          break;
+        case "/app/facturacion/pagos":
+          $ui.ventana_visible = "Complementos de Pago";
+          menu_actual = "facturacion";
           break;
         default:
           break;

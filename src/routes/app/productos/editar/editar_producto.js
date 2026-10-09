@@ -5,6 +5,9 @@ import * as fs from "fs";
 import { Producto } from "../../../../models/producto";
 import { devolver_producto_db } from './../../pedidos/editar/_server_cambiar_cantidad/devolver_producto_db';
 import mongoose from 'mongoose';
+import { limpiarIdsVacios } from "../../../../services/limpiarIdsVacios";
+import { validarPromocionProducto } from "../../../../services/validarPromocionProducto";
+import { validarConfiguracionFiscalProducto } from "../../../../services/validarConfiguracionFiscalProducto";
 
 //var ba64 = require("ba64")
 //if (id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -16,6 +19,13 @@ export async function post(req, res, next) {
     if (accesos.esta_logueado(req) === false) {
         res.send({ ok: false, mensaje: "sesion expirada" })
         return;
+    }
+    req.body.sat_clave_unidad = String(req.body.sat_clave_unidad || "").trim().toUpperCase();
+    limpiarIdsVacios(req.body, Producto.schema);
+    await validarPromocionProducto(req.body);
+    const errorFiscal = validarConfiguracionFiscalProducto(req.body || {});
+    if (errorFiscal) {
+        return res.send({ ok: false, message: errorFiscal });
     }
 
     var archivos = req.body.archivos;
@@ -252,4 +262,3 @@ export async function post(req, res, next) {
         cp(ok, terminacion, base_puro);
     }
 }
-

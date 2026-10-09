@@ -15,6 +15,10 @@
 
     let desplegado = false;
 
+    $: if (subitems && subitems.length > 0 && subitems.some(sub => sub.titulo === $ui.ventana_visible)) {
+        desplegado = true;
+    }
+
     function click_item() {
         if (subitems && subitems.length > 0) {
             desplegado = !desplegado;

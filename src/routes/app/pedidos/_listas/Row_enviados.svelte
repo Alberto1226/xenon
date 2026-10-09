@@ -7,6 +7,7 @@
     cargando_mensajes_app,
     postData,
     editar_store,
+    usuario_db,
   } from "./../../../stores";
   import { onMount, createEventDispatcher } from "svelte";
   import { Button, ButtonGroup, Snackbar } from "svelte-mui/src";
@@ -14,6 +15,7 @@
   import Paqueteria from "./Paqueteria.svelte";
   import { goto } from "@sapper/app";
   import Lista from "./Lista_emergente.svelte";
+  import PrepararFacturaModal from "./PrepararFacturaModal.svelte";
   export var pedido = {
     folio: "",
     fecha: "",
@@ -33,6 +35,7 @@
     activo: true,
   };
   let visible_cancelar = false;
+  let visible_preparar_factura = false;
 
   var fecha = "";
 
@@ -226,6 +229,7 @@
 </script>
 
 <Lista bind:visible={lista_visible} {pedido} />
+<PrepararFacturaModal bind:visible={visible_preparar_factura} {pedido} />
 
 <div class="grid-container row">
   <div class="uno">
@@ -371,6 +375,19 @@
             >
               <i class="material-icons">list</i>
             </Button>
+            {#if $usuario_db && $usuario_db.rol === "administrador" && pedido.lista && pedido.lista.length > 0}
+              <Button
+                icon
+                dense
+                color="green"
+                title="Preparar factura"
+                on:click={() => {
+                  visible_preparar_factura = true;
+                }}
+              >
+                <i class="material-icons">request_quote</i>
+              </Button>
+            {/if}
             <Button icon dense>
               <a
                 icon

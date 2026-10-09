@@ -42,6 +42,13 @@ var schema = new Schema({
     para_venta_publico: { type: Boolean, default: true },
     recomendar_como_paqueteria: { type: Boolean, default: false },
     precio: { type: Number, default: 0 },
+    sat_clave_prod_serv: { type: String, default: "" },
+    sat_clave_unidad: { type: String, default: "" },
+    sat_objeto_impuesto: { type: String, default: "" },
+    impuestos_venta: {
+        iva: { type: String, default: "" },
+        ieps_tasa_porcentaje: { type: Number, default: 0 }
+    },
     unidad: { type: String, default: 0 },
     master_box: { type: Number, default: 0 }
 });

@@ -45,7 +45,9 @@ var schema = new Schema({
         Seguridad: { type: Number, default: 0 },
         otros: [{
             concepto: { type: String, default: '' },
-            monto: { type: Number, default: 0 }
+            monto: { type: Number, default: 0 },
+            fecha_gasto: { type: Date, default: null },
+            observaciones: { type: String, default: '' }
         }]
     },
     productos: [{
@@ -63,6 +65,13 @@ var schema = new Schema({
         modelo: { type: String, default: '' },
         valor_aduana_partida_mxn: { type: Number, default: 0 },
         // -------------------------------
+        // Gastos exclusivos de esta partida (ej. re-etiquetado). Se prorratean solo entre sus piezas.
+        gastos_adicionales: [{
+            concepto: { type: String, default: '' },
+            monto: { type: Number, default: 0 },
+            fecha_gasto: { type: Date, default: null },
+            observaciones: { type: String, default: '' }
+        }],
         folios: [{ type: String }] // Lista de folios o números de serie recibidos
     }],
     status: { type: String, enum: ['transito', 'arribado'], default: 'transito' },

@@ -128,6 +128,28 @@
     }
   }
 
+  // Eliminar pedimentos solo se ofrece cuando se corre en localhost.
+  const esLocal = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+  async function eliminarPedimento(ped) {
+    if (!confirm(`¿Eliminar el pedimento ${ped.numero_pedimento}? Esta acción no se puede deshacer.`)) return;
+    loading = true;
+    try {
+      const res = await postData("app/pedimentos/eliminar", { id_pedimento: ped._id });
+      if (res.ok) {
+        mensaje_bueno("Pedimento eliminado.");
+        await cargarPedimentos();
+      } else {
+        mensaje_error(res.mensaje || "No se pudo eliminar.");
+      }
+    } catch (err) {
+      console.error(err);
+      mensaje_error("Error de conexión al eliminar.");
+    } finally {
+      loading = false;
+    }
+  }
+
   async function cargarProductos() {
     try {
       const res = await postData("app/productos/lista_de_todos_los_productos");
@@ -266,6 +288,127 @@
       valor_aduana_partida_mxn: 0
     };
     selectedProductName = "Selecciona un producto...";
+  }
+
+  // --- Gastos indirectos adicionales (generales del pedimento o propios de una partida) ---
+  // contexto: "nuevo" (alta) | "edicion"; partida: índice de la partida, o null si el gasto es general.
+  let gastoModal = { abierto: false, contexto: "nuevo", partida: null, indice: null, datos: {} };
+
+  function fechaHoyISO() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function pedimentoDeContexto(contexto) {
+    return contexto === "edicion" ? pedimentoEditar : nuevoPedimento;
+  }
+
+  function listaDeGastos(ped, partida) {
+    if (partida === null || partida === undefined) return ped.gastos_importacion.otros;
+    if (!ped.productos[partida].gastos_adicionales) ped.productos[partida].gastos_adicionales = [];
+    return ped.productos[partida].gastos_adicionales;
+  }
+
+  function abrirGastoModal(contexto, partida = null, indice = null) {
+    const ped = pedimentoDeContexto(contexto);
+    let datos = { concepto: "", monto: 0, fecha_gasto: fechaHoyISO(), observaciones: "" };
+    if (indice !== null) {
+      const g = listaDeGastos(ped, partida)[indice];
+      datos = {
+        concepto: g.concepto || "",
+        monto: g.monto || 0,
+        fecha_gasto: g.fecha_gasto ? String(g.fecha_gasto).slice(0, 10) : "",
+        observaciones: g.observaciones || ""
+      };
+    }
+    gastoModal = { abierto: true, contexto, partida, indice, datos };
+  }
+
+  function cerrarGastoModal() {
+    gastoModal = { ...gastoModal, abierto: false };
+  }
+
+  function guardarGasto() {
+    const d = gastoModal.datos;
+    const monto = parseFloat(d.monto);
+    if (!d.concepto || !d.concepto.trim()) {
+      mensaje_error("Escribe el concepto del gasto.");
+      return;
+    }
+    if (!(monto > 0)) {
+      mensaje_error("El monto debe ser mayor a cero.");
+      return;
+    }
+    const ped = pedimentoDeContexto(gastoModal.contexto);
+    const lista = listaDeGastos(ped, gastoModal.partida);
+    const gasto = {
+      concepto: d.concepto.trim(),
+      monto,
+      fecha_gasto: d.fecha_gasto || null,
+      observaciones: d.observaciones || ""
+    };
+    if (gastoModal.indice === null) lista.push(gasto);
+    else lista[gastoModal.indice] = gasto;
+    asignarPedimentoContexto(gastoModal.contexto);
+    cerrarGastoModal();
+  }
+
+  function quitarGasto(contexto, partida, indice) {
+    listaDeGastos(pedimentoDeContexto(contexto), partida).splice(indice, 1);
+    asignarPedimentoContexto(contexto);
+  }
+
+  // Reasigna para que Svelte detecte el cambio en las listas anidadas.
+  function asignarPedimentoContexto(contexto) {
+    if (contexto === "edicion") pedimentoEditar = pedimentoEditar;
+    else nuevoPedimento = nuevoPedimento;
+    // El modal de gastos de partida lee los datos por función; hay que invalidarlo.
+    gastosPartidaModal = gastosPartidaModal;
+  }
+
+  function sumarGastosPartidas(ped) {
+    return ((ped && ped.productos) || []).reduce((acc, p) => acc + sumarGastosLista(p.gastos_adicionales), 0);
+  }
+
+  function sumarGastosLista(lista) {
+    return (lista || []).reduce((acc, g) => acc + (parseFloat(g.monto) || 0), 0);
+  }
+
+  // --- Menú de acciones por partida y modal con sus gastos ---
+  // El menú se dibuja con posición fija para que la tabla con scroll no lo recorte.
+  let menuPartida = { abierto: false, contexto: "nuevo", partida: null, x: 0, y: 0 };
+  let gastosPartidaModal = { abierto: false, contexto: "nuevo", partida: null };
+
+  function abrirMenuPartida(evento, contexto, partida) {
+    evento.stopPropagation();
+    if (menuPartida.abierto && menuPartida.partida === partida && menuPartida.contexto === contexto) {
+      menuPartida = { ...menuPartida, abierto: false };
+      return;
+    }
+    const caja = evento.currentTarget.getBoundingClientRect();
+    const alto = 170;
+    const y = caja.bottom + alto > window.innerHeight ? caja.top - alto : caja.bottom + 4;
+    menuPartida = { abierto: true, contexto, partida, x: Math.max(8, caja.right - 230), y };
+  }
+
+  function cerrarMenuPartida() {
+    if (menuPartida.abierto) menuPartida = { ...menuPartida, abierto: false };
+  }
+
+  function gastosDePartida(contexto, partida) {
+    if (partida === null) return [];
+    const prod = pedimentoDeContexto(contexto).productos[partida];
+    return (prod && prod.gastos_adicionales) || [];
+  }
+
+  function accionMenu(accion) {
+    const { contexto, partida } = menuPartida;
+    cerrarMenuPartida();
+    if (accion === "agregar") abrirGastoModal(contexto, partida);
+    else if (accion === "ver") gastosPartidaModal = { abierto: true, contexto, partida };
+    else if (accion === "eliminar") {
+      if (contexto === "edicion") removerProductoDeListaEdicion(partida);
+      else removerProductoDeLista(partida);
+    }
   }
 
   function removerProductoDeLista(index) {
@@ -780,9 +923,12 @@
     if (!ped || !ped.gastos_importacion) return 0;
     const g = ped.gastos_importacion;
     const otros = g.otros ? g.otros.reduce((acc, curr) => acc + (curr.monto || 0), 0) : 0;
-    return (g.Impuesto_Aduanal || 0) + (g.Flete || 0) + (g.Agente_Aduanal || 0) + (g.Seguridad || 0) + otros;
+    const porPartida = (ped.productos || []).reduce((acc, p) => acc + sumarGastosLista(p.gastos_adicionales), 0);
+    return (g.Impuesto_Aduanal || 0) + (g.Flete || 0) + (g.Agente_Aduanal || 0) + (g.Seguridad || 0) + otros + porPartida;
   }
 </script>
+
+<svelte:window on:click={cerrarMenuPartida} />
 
 <svelte:head>
   <title>Pedimentos de Importación - Admin</title>
@@ -790,8 +936,8 @@
 
 <!-- Overlay y loader de carga -->
 {#if loading}
-  <div class="overlay" transition:fade={{ duration: 150 }}></div>
-  <div class="loader-container" transition:fade={{ duration: 150 }}>
+  <div class="overlay" transition:fade|local={{ duration: 150 }}></div>
+  <div class="loader-container" transition:fade|local={{ duration: 150 }}>
     <div class="spinner"></div>
     <div class="cargando-texto">Procesando operaciones...</div>
   </div>
@@ -900,6 +1046,12 @@
                           <i class="material-icons text-medium vertical-align-middle">done_all</i>
                         </span>
                       {/if}
+
+                      {#if esLocal}
+                        <button class="btn btn-action-red" on:click={() => eliminarPedimento(ped)} title="Eliminar pedimento (solo local)">
+                          <i class="material-icons text-medium">delete</i>
+                        </button>
+                      {/if}
                     </td>
                   </tr>
                 {/each}
@@ -956,8 +1108,16 @@
 
       <div class="secciones-verticales">
         <!-- 1. Datos Generales y Aduanales -->
-        <div class="card p-4 mb-4">
-          <h4 class="card-section-title mb-3">1. Datos Generales y Aduanales (SAT)</h4>
+        <div class="card p-4 mb-4 card-sec card-sec-azul">
+          <div class="sec-header sec-azul">
+            <span class="sec-icon"><i class="material-icons">description</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">1</span>
+              <h4>Datos generales y aduanales</h4>
+              <span class="sec-sub">Pedimento, aduana, proveedor y valores declarados ante el SAT</span>
+            </div>
+          </div>
+
           
           <div class="form-row">
             <div class="form-group fg-large">
@@ -1074,8 +1234,16 @@
         </div>
 
         <!-- 2. Gastos e Impuestos SAT -->
-        <div class="card p-4 mb-4">
-          <h4 class="card-section-title mb-3">2. Incrementables y Contribuciones SAT</h4>
+        <div class="card p-4 mb-4 card-sec card-sec-violeta">
+          <div class="sec-header sec-violeta">
+            <span class="sec-icon"><i class="material-icons">account_balance</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">2</span>
+              <h4>Incrementables y contribuciones SAT</h4>
+              <span class="sec-sub">Valores oficiales declarados; se cargan al prorrateo con un clic</span>
+            </div>
+          </div>
+
           
           <p class="text-small text-muted mb-3">Ingresa los valores declarados en el pedimento ante el SAT. Al finalizar, presiona el botón para cargarlos automáticamente al prorrateo de costos fiscales de importación.</p>
 
@@ -1157,7 +1325,23 @@
             </button>
           </div>
 
-          <h4 class="card-section-title mb-3 mt-4">C. Desglose de Gastos de Prorrateo (Costos Fiscales)</h4>
+        </div>
+
+        <!-- 3. Gastos indirectos de importación -->
+        <div class="card p-4 mb-4 card-sec card-sec-ambar">
+          <div class="sec-header sec-ambar">
+            <span class="sec-icon"><i class="material-icons">local_shipping</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">3</span>
+              <h4>Gastos indirectos de importación (MXN)</h4>
+              <span class="sec-sub">Costos fiscales que se prorratean entre las partidas</span>
+            </div>
+            <span class="sec-total" title="Incluye gastos generales y gastos por partida">
+              <small>Total indirectos</small>
+              <strong>{formatMoney(sumarGastosIndirectos(nuevoPedimento))}</strong>
+            </span>
+          </div>
+
           <div class="form-row">
             <div class="form-group">
               <label class="form-label font-bold">Impuesto Aduanal Prorrateo:</label>
@@ -1193,46 +1377,53 @@
             </div>
           </div>
 
-          <!-- Otros gastos dinámicos -->
-          <div class="mb-2 mt-3">
-            <div class="d-flex justify-content-between align-items-center mb-2" style="max-width: 600px;">
-              <label class="form-label font-bold mb-0">Otros Gastos:</label>
-              <button class="btn btn-secondary btn-sm" on:click={agregarOtrosGastos}>
-                <i class="material-icons text-small">add</i> Agregar Concepto
+          <!-- Gastos indirectos adicionales -->
+          <div class="gastos-adicionales mt-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <strong>Gastos indirectos adicionales e inesperados</strong>
+                <div class="text-muted text-small">Maniobras, almacenajes, demoras, licencias o fletes secundarios. Se reparten entre todos los productos.</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" on:click={() => abrirGastoModal("nuevo")}>
+                <i class="material-icons text-small">add</i> Agregar gasto adicional
               </button>
             </div>
-
-            {#each nuevoPedimento.gastos_importacion.otros as otro, index}
-              <div class="row align-items-center mb-2" style="max-width: 600px;" transition:fade={{ duration: 100 }}>
-                <div class="col-7">
-                  <input 
-                    type="text" 
-                    placeholder="Concepto (ej. Prevalidación)" 
-                    class="form-control form-control-sm" 
-                    bind:value={otro.concepto}
-                  />
-                </div>
-                <div class="col-4">
-                  <input 
-                    type="number" 
-                    placeholder="Monto MXN" 
-                    class="form-control form-control-sm" 
-                    bind:value={otro.monto}
-                  />
-                </div>
-                <div class="col-1 text-center">
-                  <button class="btn btn-danger-icon" on:click={() => removerOtrosGastos(index)}>
-                    <i class="material-icons">delete</i>
-                  </button>
-                </div>
-              </div>
-            {/each}
+            {#if nuevoPedimento.gastos_importacion.otros.length === 0}
+              <div class="text-muted text-small">No hay gastos adicionales registrados.</div>
+            {:else}
+              <table class="table table-sm">
+                <thead><tr><th>Concepto</th><th class="text-end">Monto (MXN)</th><th>Fecha</th><th>Notas</th><th class="text-center">Acciones</th></tr></thead>
+                <tbody>
+                  {#each nuevoPedimento.gastos_importacion.otros as otro, index}
+                    <tr>
+                      <td>{otro.concepto}</td>
+                      <td class="text-end font-mono">{formatMoney(otro.monto)}</td>
+                      <td>{otro.fecha_gasto ? String(otro.fecha_gasto).slice(0, 10) : ""}</td>
+                      <td class="text-muted text-small">{otro.observaciones || ""}</td>
+                      <td class="text-center">
+                        <button class="btn btn-sm" on:click={() => abrirGastoModal("nuevo", null, index)} title="Editar"><i class="material-icons text-small">edit</i></button>
+                        <button class="btn btn-danger-icon" on:click={() => quitarGasto("nuevo", null, index)} title="Eliminar"><i class="material-icons">delete</i></button>
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+              <div class="text-end text-small">Subtotal gastos adicionales: <strong class="font-mono">{formatMoney(sumarGastosLista(nuevoPedimento.gastos_importacion.otros))}</strong></div>
+            {/if}
           </div>
         </div>
 
-        <!-- 3. Productos en el Cargamento -->
-        <div class="card p-4 mb-4">
-          <h4 class="card-section-title mb-3">3. Productos en el Cargamento (Partidas)</h4>
+        <!-- 4. Productos en el Cargamento -->
+        <div class="card p-4 mb-4 card-sec card-sec-verde">
+          <div class="sec-header sec-verde">
+            <span class="sec-icon"><i class="material-icons">inventory_2</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">4</span>
+              <h4>Productos en el cargamento (partidas)</h4>
+              <span class="sec-sub">Agrega las partidas; el botón de cada fila registra gastos propios de esa partida</span>
+            </div>
+          </div>
+
 
           <!-- Inputs para agregar producto -->
           <div class="form-row">
@@ -1245,7 +1436,7 @@
               </div>
 
               {#if showProductDropdown}
-                <div class="custom-dropdown-content" transition:fade={{ duration: 100 }}>
+                <div class="custom-dropdown-content" transition:fade|local={{ duration: 100 }}>
                   <input 
                     type="text" 
                     class="form-control mb-2" 
@@ -1406,7 +1597,7 @@
                       <th class="text-end" style="width: 160px;">Imp. Pagado (MXN)</th>
                       <th class="text-end" style="width: 150px;">Val. Aduana (MXN)</th>
                       <th class="text-end" style="width: 140px;">Total (USD)</th>
-                      <th class="text-center" style="width: 60px;">Acción</th>
+                      <th class="text-center" style="width: 110px;">Acción</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1463,8 +1654,9 @@
                           ${(prod.cantidad * prod.precio_compra_usd).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </td>
                         <td class="text-center">
-                          <button class="btn btn-action-red btn-sm" on:click={() => removerProductoDeLista(index)} title="Eliminar partida">
-                            <i class="material-icons text-medium">close</i>
+                          <button class="btn-acciones" on:click={(e) => abrirMenuPartida(e, "nuevo", index)} title="Acciones de la partida">
+                            Acciones <i class="material-icons">arrow_drop_down</i>
+                            {#if sumarGastosLista(prod.gastos_adicionales) > 0}<span class="badge-gastos">{(prod.gastos_adicionales || []).length}</span>{/if}
                           </button>
                         </td>
                       </tr>
@@ -1560,6 +1752,14 @@
               <span class="label">Seguridad:</span>
               <span class="value">{formatMoney(pedimentoSeleccionado.gastos_importacion.Seguridad)}</span>
             </div>
+            <div class="detalle-row mini">
+              <span class="label">Otros indirectos:</span>
+              <span class="value">{formatMoney(sumarGastosLista(pedimentoSeleccionado.gastos_importacion.otros))}</span>
+            </div>
+            <div class="detalle-row mini">
+              <span class="label">Gastos por partida:</span>
+              <span class="value">{formatMoney(sumarGastosPartidas(pedimentoSeleccionado))}</span>
+            </div>
           </div>
         </div>
 
@@ -1583,7 +1783,7 @@
           </div>
 
           {#if metodologiaSeleccionada === 'fijo'}
-            <div class="mb-4" transition:fade={{ duration: 100 }}>
+            <div class="mb-4" transition:fade|local={{ duration: 100 }}>
               <label class="form-label font-bold">Porcentaje de incremento fijo (%):</label>
               <input 
                 type="number" 
@@ -1602,7 +1802,10 @@
             {:else if metodologiaSeleccionada === 'mixto'}
               <strong>Información:</strong> Los impuestos aduanales y honorarios se distribuyen según el precio (Ad-Valorem) mientras que el flete y la seguridad se dividen equitativamente por pieza física.
             {:else if metodologiaSeleccionada === 'fijo'}
-              <strong>Información:</strong> Se le añadirá un porcentaje fijo manual al precio de compra base convertido a pesos. No se utiliza el valor de gastos indirectos capturado.
+              <strong>Información:</strong> Se le añadirá un porcentaje fijo manual al precio de compra base convertido a pesos. No se utilizan los gastos indirectos generales; los gastos adicionales propios de cada partida sí se suman a su costo.
+            {/if}
+            {#if sumarGastosPartidas(pedimentoSeleccionado) > 0}
+              <div class="mt-2"><strong>Gastos por partida:</strong> los gastos adicionales registrados en cada producto ({formatMoney(sumarGastosPartidas(pedimentoSeleccionado))}) no se prorratean: se dividen entre las piezas de esa partida y se suman a su costo fiscal unitario, con cualquier metodología.</div>
             {/if}
           </div>
 
@@ -1626,6 +1829,7 @@
                 <th>Cantidad</th>
                 <th>Costo USD Unitario</th>
                 <th>Costo Base MXN</th>
+                <th>Gasto adicional / pza</th>
                 <th>Costo Fiscal Unitario MXN</th>
                 <th>Costo de Importación Total</th>
               </tr>
@@ -1641,6 +1845,14 @@
                   <td>{item.cantidad} {item.unidad_medida}</td>
                   <td>${item.precio_compra_usd.toFixed(2)} USD</td>
                   <td>{formatMoney(item.precio_compra_usd * pedimentoSeleccionado.tipo_cambio)}</td>
+                  <td>
+                    {#if sumarGastosLista(item.gastos_adicionales) > 0}
+                      <span class="text-warning font-bold">+{formatMoney(sumarGastosLista(item.gastos_adicionales) / (item.cantidad || 1))}</span>
+                      <div class="text-muted text-small">{formatMoney(sumarGastosLista(item.gastos_adicionales))} en {item.gastos_adicionales.length} gasto(s)</div>
+                    {:else}
+                      -
+                    {/if}
+                  </td>
                   <td>
                     {#if item.costo_fiscal_unitario_mxn > 0}
                       <span class="costo-fiscal-destacado">{formatMoney(item.costo_fiscal_unitario_mxn)}</span>
@@ -1664,6 +1876,107 @@
     {/if}
   </div>
 </div>
+
+<!-- Menú desplegable de acciones de una partida -->
+{#if menuPartida.abierto}
+  <div class="menu-acciones" style="left: {menuPartida.x}px; top: {menuPartida.y}px;" on:click|stopPropagation>
+    <button on:click={() => accionMenu("agregar")}>
+      <i class="material-icons">post_add</i> Agregar gasto adicional
+    </button>
+    {#if gastosDePartida(menuPartida.contexto, menuPartida.partida).length > 0}
+      <button on:click={() => accionMenu("ver")}>
+        <i class="material-icons">receipt_long</i> Ver gastos ({gastosDePartida(menuPartida.contexto, menuPartida.partida).length})
+      </button>
+    {/if}
+    {#if menuPartida.contexto === "nuevo" || $usuario_db.rol === "administrador"}
+      <button class="peligro" on:click={() => accionMenu("eliminar")}>
+        <i class="material-icons">delete</i> Eliminar partida
+      </button>
+    {/if}
+  </div>
+{/if}
+
+<!-- Modal con los gastos adicionales de una partida -->
+{#if gastosPartidaModal.abierto}
+  <div class="modal-arribo-backdrop modal-capa-alta" on:click={() => (gastosPartidaModal = { ...gastosPartidaModal, abierto: false })}>
+    <div class="modal-arribo-container" style="max-width: 760px;" on:click|stopPropagation>
+      <div class="modal-arribo-header">
+        <div>
+          <h3>Gastos adicionales de la partida</h3>
+          <span class="pedimento-numero-badge">{pedimentoDeContexto(gastosPartidaModal.contexto).productos[gastosPartidaModal.partida].nombre || "Partida"}</span>
+        </div>
+        <button class="btn-close-modal" on:click={() => (gastosPartidaModal = { ...gastosPartidaModal, abierto: false })} aria-label="Cerrar modal">&times;</button>
+      </div>
+      <div class="modal-arribo-body">
+        {#if gastosDePartida(gastosPartidaModal.contexto, gastosPartidaModal.partida).length === 0}
+          <div class="text-muted text-center p-3">Esta partida ya no tiene gastos adicionales.</div>
+        {:else}
+          <table class="table table-sm">
+            <thead><tr><th>Concepto</th><th class="text-end">Monto (MXN)</th><th>Fecha</th><th>Notas</th><th class="text-center">Acciones</th></tr></thead>
+            <tbody>
+              {#each gastosDePartida(gastosPartidaModal.contexto, gastosPartidaModal.partida) as g, i}
+                <tr>
+                  <td>{g.concepto}</td>
+                  <td class="text-end font-mono">{formatMoney(g.monto)}</td>
+                  <td>{g.fecha_gasto ? String(g.fecha_gasto).slice(0, 10) : ""}</td>
+                  <td class="text-muted text-small">{g.observaciones || ""}</td>
+                  <td class="text-center">
+                    <button class="btn btn-sm" title="Editar" on:click={() => abrirGastoModal(gastosPartidaModal.contexto, gastosPartidaModal.partida, i)}><i class="material-icons text-small">edit</i></button>
+                    <button class="btn btn-danger-icon" title="Eliminar" on:click={() => quitarGasto(gastosPartidaModal.contexto, gastosPartidaModal.partida, i)}><i class="material-icons">delete</i></button>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+          <div class="text-end text-small">Total de la partida: <strong class="font-mono">{formatMoney(sumarGastosLista(gastosDePartida(gastosPartidaModal.contexto, gastosPartidaModal.partida)))}</strong></div>
+        {/if}
+      </div>
+      <div class="modal-arribo-footer">
+        <button class="btn btn-secondary-custom" on:click={() => abrirGastoModal(gastosPartidaModal.contexto, gastosPartidaModal.partida)}>+ Agregar gasto</button>
+        <button class="btn btn-primary-custom" on:click={() => (gastosPartidaModal = { ...gastosPartidaModal, abierto: false })}>Cerrar</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Modal de gasto adicional (general o por partida) -->
+{#if gastoModal.abierto}
+  <div class="modal-arribo-backdrop modal-capa-alta modal-capa-tope" on:click={cerrarGastoModal}>
+    <div class="modal-arribo-container" style="max-width: 520px;" on:click|stopPropagation>
+      <div class="modal-arribo-header">
+        <div>
+          <h3>{gastoModal.indice === null ? "Registrar" : "Editar"} gasto adicional</h3>
+          <span class="pedimento-numero-badge">
+            {#if gastoModal.partida === null}
+              Se reparte entre todos los productos
+            {:else}
+              Solo para: {pedimentoDeContexto(gastoModal.contexto).productos[gastoModal.partida].nombre || "la partida"}
+            {/if}
+          </span>
+        </div>
+        <button class="btn-close-modal" on:click={cerrarGastoModal} aria-label="Cerrar modal">&times;</button>
+      </div>
+      <div class="modal-arribo-body">
+        <label class="form-label font-bold">Concepto
+          <input type="text" class="form-control" placeholder="Ej. Re-etiquetado, maniobras, almacenaje" bind:value={gastoModal.datos.concepto} />
+        </label>
+        <label class="form-label font-bold mt-2">Monto (MXN)
+          <input type="number" min="0" step="0.01" class="form-control" bind:value={gastoModal.datos.monto} />
+        </label>
+        <label class="form-label font-bold mt-2">Fecha del gasto
+          <input type="date" class="form-control" bind:value={gastoModal.datos.fecha_gasto} />
+        </label>
+        <label class="form-label font-bold mt-2">Notas / observaciones
+          <textarea class="form-control" rows="2" bind:value={gastoModal.datos.observaciones}></textarea>
+        </label>
+      </div>
+      <div class="modal-arribo-footer">
+        <button class="btn btn-secondary-custom" on:click={cerrarGastoModal}>Cancelar</button>
+        <button class="btn btn-primary-custom" on:click={guardarGasto}>Guardar gasto</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- Modal de Arribo y Captura de Folios -->
 {#if showArriboModal && pedimentoArribo}
@@ -1854,7 +2167,14 @@
         <div class="secciones-verticales">
           <!-- 1. Datos Generales y Aduanales -->
           <div class="card p-4 mb-4">
-            <h5 class="font-bold text-dark mb-3">1. Datos Generales y Aduanales (SAT)</h5>
+            <div class="sec-header sec-azul">
+            <span class="sec-icon"><i class="material-icons">description</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">1</span>
+              <h4>Datos generales y aduanales</h4>
+              <span class="sec-sub">Pedimento, aduana, proveedor y valores SAT</span>
+            </div>
+          </div>
             
             <div class="form-row">
               <div class="form-group fg-large">
@@ -1981,7 +2301,14 @@
 
           <!-- 2. Incrementables y Contribuciones SAT -->
           <div class="card p-4 mb-4">
-            <h5 class="font-bold text-dark mb-3">2. Incrementables y Contribuciones SAT</h5>
+            <div class="sec-header sec-violeta">
+            <span class="sec-icon"><i class="material-icons">account_balance</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">2</span>
+              <h4>Incrementables y contribuciones SAT</h4>
+              <span class="sec-sub">Valores oficiales y gastos indirectos</span>
+            </div>
+          </div>
             
             <h6 class="font-bold text-dark text-small mb-2">A. Incrementables Oficiales SAT (MXN)</h6>
             <div class="form-row mb-4">
@@ -2089,33 +2416,23 @@
               </div>
             </div>
 
-            <!-- Otros Gastos Indirectos -->
+            <!-- Gastos indirectos adicionales -->
             <div class="mt-3">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label font-bold text-small mb-0">Otros Gastos Indirectos:</label>
-                <button class="btn btn-secondary-custom btn-sm" on:click={agregarOtrosGastosEdicion}>
-                  + Agregar Concepto
+                <label class="form-label font-bold text-small mb-0">Gastos indirectos adicionales (se reparten entre todos los productos):</label>
+                <button class="btn btn-secondary-custom btn-sm" on:click={() => abrirGastoModal("edicion")}>
+                  + Agregar gasto adicional
                 </button>
               </div>
               {#each pedimentoEditar.gastos_importacion.otros as otro, index}
-                <div class="form-row mb-2 align-items-center" transition:fade={{ duration: 100 }}>
+                <div class="form-row mb-2 align-items-center">
                   <div class="form-group fg-large">
-                    <input 
-                      type="text" 
-                      class="form-control form-control-sm" 
-                      placeholder="Concepto (ej. Maniobras, Almacenaje)" 
-                      bind:value={otro.concepto}
-                    />
+                    <strong>{otro.concepto}</strong>
+                    <span class="text-muted text-small">{otro.fecha_gasto ? String(otro.fecha_gasto).slice(0, 10) : ""} {otro.observaciones || ""}</span>
                   </div>
-                  <div class="form-group fg-medium">
-                    <input 
-                      type="number" 
-                      class="form-control form-control-sm" 
-                      placeholder="Monto (MXN)" 
-                      bind:value={otro.monto}
-                    />
-                  </div>
-                  <button class="btn-remove-row mt-1" on:click={() => removerOtrosGastosEdicion(index)} title="Eliminar">&times;</button>
+                  <div class="form-group fg-medium font-mono">{formatMoney(otro.monto)}</div>
+                  <button class="btn btn-sm" on:click={() => abrirGastoModal("edicion", null, index)} title="Editar"><i class="material-icons text-small">edit</i></button>
+                  <button class="btn-remove-row mt-1" on:click={() => quitarGasto("edicion", null, index)} title="Eliminar">&times;</button>
                 </div>
               {/each}
             </div>
@@ -2123,7 +2440,14 @@
 
           <!-- 3. Partidas de Productos -->
           <div class="card p-4">
-            <h5 class="font-bold text-dark mb-3">3. Partidas de Productos del Pedimento</h5>
+            <div class="sec-header sec-verde">
+            <span class="sec-icon"><i class="material-icons">inventory_2</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">3</span>
+              <h4>Partidas del pedimento</h4>
+              <span class="sec-sub">Productos, cantidades, costos y gastos por partida</span>
+            </div>
+          </div>
 
             <!-- Agregar Productos (Solo Administrador) -->
             {#if $usuario_db.rol === 'administrador'}
@@ -2224,9 +2548,7 @@
                     <th class="text-center" style="width: 100px;">Cantidad</th>
                     <th class="text-center" style="width: 130px;">Costo Compra (USD)</th>
                     <th class="text-center">Costo Fiscal MXN</th>
-                    {#if $usuario_db.rol === 'administrador'}
-                      <th class="text-center">Acciones</th>
-                    {/if}
+                    <th class="text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2257,13 +2579,12 @@
                       <td class="text-center text-muted font-bold">
                         {item.costo_fiscal_unitario_mxn > 0 ? formatMoney(item.costo_fiscal_unitario_mxn) : 'Sin calcular'}
                       </td>
-                      {#if $usuario_db.rol === 'administrador'}
-                        <td class="text-center">
-                          <button class="btn btn-action-red" on:click={() => removerProductoDeListaEdicion(index)} title="Eliminar partida">
-                            <i class="material-icons text-medium">delete</i>
-                          </button>
-                        </td>
-                      {/if}
+                      <td class="text-center">
+                        <button class="btn-acciones" on:click={(e) => abrirMenuPartida(e, "edicion", index)} title="Acciones de la partida">
+                          Acciones <i class="material-icons">arrow_drop_down</i>
+                          {#if sumarGastosLista(item.gastos_adicionales) > 0}<span class="badge-gastos">{(item.gastos_adicionales || []).length}</span>{/if}
+                        </button>
+                      </td>
                     </tr>
                   {/each}
                 </tbody>
@@ -2303,8 +2624,19 @@
 
       <div class="modal-arribo-body" style="max-height: 75vh; overflow-y: auto; padding: 24px;">
         <p class="text-small text-muted mb-4">
-          El objetivo del prorrateo es distribuir los <strong>Gastos Indirectos Totales (Flete + Seguros + Impuesto Aduanal + Agente + Seguridad)</strong> entre cada producto para determinar su <strong>Costo Fiscal Unitario Real en Pesos (MXN)</strong>.
+          El objetivo del prorrateo es distribuir los <strong>Gastos Indirectos Totales (Flete + Seguros + Impuesto Aduanal + Agente + Seguridad + Otros indirectos)</strong> entre cada producto para determinar su <strong>Costo Fiscal Unitario Real en Pesos (MXN)</strong>.
         </p>
+
+        <div class="card p-3 mb-3 border-start border-4 border-danger" style="background: #fffbeb;">
+          <h5 class="font-bold mb-2" style="color: #b45309;">Gastos adicionales por partida (aplican a cualquier opción)</h5>
+          <p class="text-small text-secondary mb-2">
+            Los gastos registrados en un producto específico (por ejemplo, re-etiquetado) no se reparten entre las demás partidas. Se dividen entre las piezas de esa partida y se suman a su costo ya prorrateado. Los gastos generales ("Otros indirectos") sí entran al prorrateo de la opción elegida.
+          </p>
+          <div class="p-2 bg-white rounded font-mono text-small border">
+            <div><strong>Gasto Adicional por Pieza</strong> = Suma de gastos de la partida / Cantidad de la partida</div>
+            <div><strong>Costo Fiscal Unitario Final</strong> = Costo Fiscal Unitario (opción A, B, C o D) + Gasto Adicional por Pieza</div>
+          </div>
+        </div>
 
         <!-- Fórmula A -->
         <div class="card p-3 mb-3 border-start border-4 border-primary" style="background: #f8fafc;">
@@ -2361,6 +2693,7 @@
     </div>
   </div>
 {/if}
+
 
 <style>
   /* Estilos mejorados para la Lista de Partidas */
@@ -2643,6 +2976,16 @@
   .btn-action-green:hover {
     background-color: #16a085;
     color: white;
+  }
+
+  .btn-action-red {
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    margin-left: 8px;
+  }
+  .btn-action-red:hover {
+    background: #fecaca;
   }
 
   .btn-action-orange {
@@ -2941,6 +3284,10 @@
   }
 
   /* MODAL DE ARRIBO CON FOLIOS (FASE 4) */
+  /* Modales de gastos: deben quedar sobre el modal de edición (9999). */
+  .modal-arribo-backdrop.modal-capa-alta { z-index: 10001; }
+  .modal-arribo-backdrop.modal-capa-tope { z-index: 10002; }
+
   .modal-arribo-backdrop {
     position: fixed;
     top: 0;
@@ -3386,4 +3733,117 @@
     color: #64748b;
     font-weight: bold;
   }
+
+  /* Secciones del formulario de pedimento: número, ícono y color por sección */
+  .card-sec { border-left: 5px solid var(--sec-color, #3498db); }
+  .card-sec-azul { --sec-color: #2563eb; --sec-fondo: #dbeafe; }
+  .card-sec-violeta { --sec-color: #7c3aed; --sec-fondo: #ede9fe; }
+  .card-sec-ambar { --sec-color: #d97706; --sec-fondo: #fef3c7; }
+  .card-sec-verde { --sec-color: #059669; --sec-fondo: #d1fae5; }
+
+  .sec-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .sec-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #e2e8f0;
+    color: #334155;
+  }
+  .sec-icon .material-icons { font-size: 24px; }
+  .sec-titulo { display: flex; flex-direction: column; flex: 1; position: relative; padding-left: 0; }
+  .sec-titulo h4 { margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a; letter-spacing: 0.01em; }
+  .sec-sub { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
+  .sec-num { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--sec-color, #64748b); }
+  .sec-num::before { content: "Sección "; }
+  .sec-azul .sec-icon { background: #dbeafe; color: #2563eb; }
+  .sec-violeta .sec-icon { background: #ede9fe; color: #7c3aed; }
+  .sec-ambar .sec-icon { background: #fef3c7; color: #d97706; }
+  .sec-verde .sec-icon { background: #d1fae5; color: #059669; }
+  .sec-total {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: #0f172a;
+    color: #fde68a;
+  }
+  .sec-total small { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; }
+  .sec-total strong { font-family: monospace; font-size: 1.05rem; }
+
+  .gastos-adicionales {
+    margin-top: 20px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: #fffbeb;
+    border: 1px dashed #f59e0b;
+  }
+
+  .btn-acciones {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px 6px 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-acciones:hover { background: #e2e8f0; }
+  .btn-acciones .material-icons { font-size: 20px; }
+  .badge-gastos {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    border-radius: 9px;
+    background: #d97706;
+    color: #fff;
+    font-size: 0.68rem;
+    text-align: center;
+  }
+  .menu-acciones {
+    position: fixed;
+    z-index: 10000;
+    width: 230px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+    padding: 6px;
+  }
+  .menu-acciones button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #1e293b;
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+  }
+  .menu-acciones button:hover { background: #f1f5f9; }
+  .menu-acciones button.peligro { color: #dc2626; }
+  .menu-acciones .material-icons { font-size: 20px; }
 </style>

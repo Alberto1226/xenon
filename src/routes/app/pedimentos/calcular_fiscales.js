@@ -84,6 +84,12 @@ export async function post(req, res, next) {
                 return;
             }
 
+            // Los gastos propios de la partida no se reparten entre el resto: solo afectan a sus piezas.
+            const gastosPartida = (item.gastos_adicionales || []).reduce((acc, g) => acc + (parseFloat(g.monto) || 0), 0);
+            if (gastosPartida > 0 && item.cantidad > 0) {
+                costoFiscalUnitario += gastosPartida / item.cantidad;
+            }
+
             // Redondear a 2 decimales para evitar problemas de coma flotante
             costoFiscalUnitario = Math.round(costoFiscalUnitario * 100) / 100;
 

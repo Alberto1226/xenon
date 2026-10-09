@@ -4,6 +4,7 @@
   import { ui, usuarios ,postData } from "./../../stores";
   import Row from "./_Row.svelte";
   import Heading from "./_Heading_tablar.svelte";
+  import Paginacion from "./../componentes/paginacion/index.svelte";
   import {onMount} from 'svelte';
   export var buscando='';
   onMount(()=>{
@@ -18,13 +19,20 @@
   let lista =[];
   var viendo_carritos_reservados =false;
   $: indice_final = indice_inicio + limite_lista;
-  var total_paginas = $usuarios.lista.length + limite_lista -1 / limite_lista ;
-  //$: total_paginas = Math.round($usuarios.lista.length / limite_lista) - ($usuarios.lista.length % limite_lista >5 ?1:0);
+  var total_paginas = 1;
+  var total_registros = 0;
+  var ha_cambiado_pagina_actual = false;
 
-  $: if(buscando.length ===0){
+  $: if (ha_cambiado_pagina_actual == true) {
+    ha_cambiado_pagina_actual = false;
     obtener_usuarios();
   }
-$: if(buscando.length >0){
+  //$: total_paginas = Math.round($usuarios.lista.length / limite_lista) - ($usuarios.lista.length % limite_lista >5 ?1:0);
+
+  // Al cambiar la búsqueda se vuelve a la primera página.
+  $: {
+    buscando;
+    pagina_actual = 1;
     obtener_usuarios();
   }
 function obtener_usuarios() {
@@ -35,7 +43,8 @@ function obtener_usuarios() {
         $usuarios.lista_actualizada = new Date(); //  cuando se actualizo la lista completa por ultima vez
         $usuarios = $usuarios;
         lista= $usuarios.lista;
-        total_paginas= Math.ceil($usuarios.lista.length/limite_lista);
+        total_registros = res.numero_total || 0;
+        total_paginas = Math.max(1, Math.ceil((res.numero_total || 0) / limite_lista));
         // console.log("ar");
       }
     })
@@ -49,15 +58,14 @@ function obtener_usuarios() {
   function siguiente(params) {
     if (pagina_actual < total_paginas) {
       pagina_actual++;
-      indice_inicio += limite_lista;
+      obtener_usuarios();
     }
   }
 
   function anterior(params) {
     if (pagina_actual > 1) {
       pagina_actual--;
-      indice_inicio -= limite_lista;
-      if (indice_inicio <= 0) indice_inicio = 0;
+      obtener_usuarios();
     }
   }
 
@@ -96,18 +104,11 @@ function obtener_usuarios() {
 </div>
 
 <div style="width: 100%; position: absolute;bottom: 30px;">
-  <div class="centrado " style="width: 200px;margin: 0 auto; display:none">
-
-    <Button on:click={anterior}>
-      <i class="material-icons">keyboard_arrow_left</i>
-    </Button>
-    {pagina_actual} / {total_paginas}
-    <Button disabled={pagina_actual == total_paginas} on:click={siguiente}>
-      <i class="material-icons">keyboard_arrow_right</i>
-    </Button>
-
+  <div class="centrado" style="width: fit-content; margin: 0 auto;">
+    <Paginacion
+      bind:total_paginas
+      bind:ha_cambiado_pagina_actual
+      bind:pagina_actual />
   </div>
-
+  <div style="position: absolute; right: 30px; bottom: 0;">Usuarios : {total_registros}</div>
 </div>
-
-

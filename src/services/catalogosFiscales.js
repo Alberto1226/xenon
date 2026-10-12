@@ -68,3 +68,127 @@ export function esCombinacionFiscalValida(tipoPersona, usoCfdi, regimenFiscal) {
     const catalogos = obtenerCatalogosFiscales(tipoPersona, usoCfdi);
     return catalogos.regimenes.some(regimen => regimen.clave === regimenFiscal);
 }
+
+export function sanitizarTextoSat(texto) {
+    if (!texto) return "";
+    let s = String(texto);
+
+    // Reemplazos comunes de acentuación / eñes dañadas por encoding ISO-8859-1 en la API del PAC
+    s = s
+        .replace(/rec\?proc/gi, "recíproc")
+        .replace(/presi\?n/gi, "presión")
+        .replace(/mill\?n/gi, "millón")
+        .replace(/bill\?n/gi, "billón")
+        .replace(/atm\?sfera/gi, "atmósfera")
+        .replace(/gal\?n/gi, "galón")
+        .replace(/n\?mero/gi, "número")
+        .replace(/A\?o/g, "Año")
+        .replace(/a\?o/g, "año")
+        .replace(/D\?a/g, "Día")
+        .replace(/d\?a/g, "día")
+        .replace(/Cent\?metro/g, "Centímetro")
+        .replace(/cent\?metro/g, "centímetro")
+        .replace(/Dec\?metro/g, "Decímetro")
+        .replace(/dec\?metro/g, "decímetro")
+        .replace(/Mil\?metro/g, "Milímetro")
+        .replace(/mil\?metro/g, "milímetro")
+        .replace(/Kil\?metro/g, "Kilómetro")
+        .replace(/kil\?metro/g, "kilómetro")
+        .replace(/petr\?leo/gi, "petróleo")
+        .replace(/qu\?mic/gi, "químic")
+        .replace(/l\?quid/gi, "líquid")
+        .replace(/f\?sic/gi, "físic")
+        .replace(/part\?cula/gi, "partícula")
+        .replace(/m\?ltipl/gi, "múltipl")
+        .replace(/art\?culo/gi, "artículo")
+        .replace(/c\?bic/gi, "cúbic")
+        .replace(/est\?ndar/gi, "estándar")
+        .replace(/femt\?metro/gi, "femtómetro")
+        .replace(/hect\?metro/gi, "hectómetro")
+        .replace(/s\?mbolo/gi, "símbolo")
+        .replace(/ox\?geno/gi, "oxígeno")
+        .replace(/hidr\?geno/gi, "hidrógeno")
+        .replace(/carb\?n/gi, "carbón")
+        .replace(/veh\?culo/gi, "vehículo")
+        .replace(/calor\?a/gi, "caloría")
+        .replace(/energ\?a/gi, "energía")
+        .replace(/el\?ctric/gi, "eléctric")
+        .replace(/magn\?tic/gi, "magnétic")
+        .replace(/mec\?nic/gi, "mecánic")
+        .replace(/ac\?stic/gi, "acústic")
+        .replace(/m\?dico/gi, "médico")
+        .replace(/m\?dica/gi, "médica")
+        .replace(/quir\?rgic/gi, "quirúrgic")
+        .replace(/t\?cnic/gi, "técnic")
+        .replace(/pr\?ctic/gi, "práctic")
+        .replace(/pl\?stic/gi, "plástic")
+        .replace(/met\?lic/gi, "metálic")
+        .replace(/cer\?mic/gi, "cerámic")
+        .replace(/org\?nic/gi, "orgánic")
+        .replace(/inorg\?nic/gi, "inorgánic")
+        .replace(/gen\?ric/gi, "genéric")
+        .replace(/espec\?fic/gi, "específic")
+        .replace(/autom\?tic/gi, "automátic")
+        .replace(/electr\?nic/gi, "electrónic")
+        .replace(/fot\?n/gi, "fotón")
+        .replace(/electr\?n/gi, "electrón")
+        .replace(/radiaci\?n/gi, "radiación")
+        .replace(/inyecci\?n/gi, "inyección")
+        .replace(/conexi\?n/gi, "conexión")
+        .replace(/transmisi\?n/gi, "transmisión")
+        .replace(/emisi\?n/gi, "emisión")
+        .replace(/calefacci\?n/gi, "calefacción")
+        .replace(/refrigeraci\?n/gi, "refrigeración")
+        .replace(/ventilaci\?n/gi, "ventilación")
+        .replace(/iluminaci\?n/gi, "iluminación")
+        .replace(/comunicaci\?n/gi, "comunicación")
+        .replace(/computaci\?n/gi, "computación")
+        .replace(/administraci\?n/gi, "administración")
+        .replace(/distribuci\?n/gi, "distribución")
+        .replace(/fabricaci\?n/gi, "fabricación")
+        .replace(/reparaci\?n/gi, "reparación")
+        .replace(/instalaci\?n/gi, "instalación")
+        .replace(/construcci\?n/gi, "construcción")
+        .replace(/edici\?n/gi, "edición")
+        .replace(/protecci\?n/gi, "protección")
+        .replace(/direcci\?n/gi, "dirección")
+        .replace(/fracci\?n/gi, "fracción")
+        .replace(/secci\?n/gi, "sección")
+        .replace(/acci\?n/gi, "acción")
+        .replace(/operaci\?n/gi, "operación")
+        .replace(/atenci\?n/gi, "atención")
+        .replace(/informaci\?n/gi, "información")
+        .replace(/adici\?n/gi, "adición")
+        .replace(/soluci\?n/gi, "solución")
+        .replace(/aleaci\?n/gi, "aleación")
+        .replace(/fusi\?n/gi, "fusión")
+        .replace(/divisi\?n/gi, "división")
+        .replace(/visi\?n/gi, "visión")
+        .replace(/versi\?n/gi, "versión")
+        .replace(/funci\?n/gi, "función")
+        .replace(/sesi\?n/gi, "sesión")
+        .replace(/opci\?n/gi, "opción")
+        .replace(/naci\?n/gi, "nación")
+        .replace(/m\?/g, "m²")
+        .replace(/\?C\b/g, "°C")
+        .replace(/\?F\b/g, "°F")
+        .replace(/\?K\b/g, "°K");
+
+    // Limpieza general de terminaciones de palabras en ...ci?n, ...si?n, ...xi?n, etc.
+    s = s.replace(/(\w+)(ci|si|xi|gi|ni|vi|ll|dr|tr|b|t|g)\?n\b/gi, (match, prefix, stem) => {
+        const isUpper = match === match.toUpperCase();
+        const base = stem.toLowerCase();
+        if (isUpper) {
+            return prefix + base.toUpperCase() + "ÓN";
+        }
+        return prefix + base + "ón";
+    });
+
+    // Limpieza de comillas dobles simuladas con ?palabra?
+    s = s.replace(/\?([a-zA-Z0-9_\-\s]+)\?/g, '«$1»');
+
+    // Quitar saltos de línea y espacios duplicados
+    s = s.replace(/[\r\n]+/g, " ").replace(/\s{2,}/g, " ").trim();
+
+    return s;
+}

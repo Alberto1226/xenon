@@ -82,6 +82,7 @@
   var subiendo = false;
   var subido = false;
   var ancho_side_panel = 250;
+  let tab_activa = "general";
 
   let props = {
     color: "primary",
@@ -313,340 +314,741 @@
 </script>
 
 <div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}>
-  <div class="grid-container">
+  <div class="modulo-tabs-wrapper">
     {#if $usuario_db.rol != "diseñador"}
-      <div class="area_info_general margen caja" style="overflow: auto;">
-        <div class="subtitulo">Información general</div>
-        <div class="contenido_caja">
-          <Textfield
-            outlined
-            id="codigo_input"
-            bind:value={nuevo_producto.codigo}
-            placeholder="Código*"
-            message="Código*"
-            type="text"
-          />
+      <!-- Navegación de Pestañas -->
+      <div class="tabs-nav-container">
+        <div class="tabs-nav">
+          <button
+            type="button"
+            class="tab-btn"
+            class:activo={tab_activa === "general"}
+            on:click={() => (tab_activa = "general")}
+          >
+            <i class="material-icons">inventory_2</i>
+            <span>Información General</span>
+          </button>
 
-          <Textfield
-            outlined
-            id="codigo_de_barras_input"
-            bind:value={nuevo_producto.codigo_de_barras}
-            placeholder="Código de barras"
-            message="Código de barras"
-            type="text"
-          />
+          <button
+            type="button"
+            class="tab-btn"
+            class:activo={tab_activa === "fiscal"}
+            on:click={() => (tab_activa = "fiscal")}
+          >
+            <i class="material-icons">receipt_long</i>
+            <span>Fiscal SAT</span>
+            <span class="badge-cfdi">CFDI 4.0</span>
+          </button>
 
-          <Textfield
-            outlined
-            bind:value={nuevo_producto.nombre}
-            placeholder="Nombre*"
-            message={`Nombre* (${30 - nuevo_producto.nombre.length} caracteres restantes)`}
-            type="text"
-            maxlength="30"
-          />
+          <button
+            type="button"
+            class="tab-btn"
+            class:activo={tab_activa === "precios"}
+            on:click={() => (tab_activa = "precios")}
+          >
+            <i class="material-icons">monetization_on</i>
+            <span>Precios e Inventario</span>
+          </button>
 
-          <Textfield
-            outlined
-            bind:value={nuevo_producto.descripcion}
-            placeholder="Descripción"
-            message={`Descripción* (${60 - nuevo_producto.descripcion.length} caracteres restantes)`}
-            type="text"
-            maxlength="30"
-          />
+          <button
+            type="button"
+            class="tab-btn"
+            class:activo={tab_activa === "multimedia"}
+            on:click={() => (tab_activa = "multimedia")}
+          >
+            <i class="material-icons">photo_library</i>
+            <span>Ficha e Imágenes</span>
+          </button>
+        </div>
+      </div>
 
-          <table>
-            <tr>
-              <td style="width: 50%;">
-                <Marca bind:marca={nuevo_producto.marca} />
-              </td>
-              <td style="width: 50%;">
-                <Unidad bind:unidad={nuevo_producto.unidad} />
-              </td>
-            </tr>
-          </table>
-          <div class="datos-fiscales-producto">
-            <h4>Datos fiscales SAT para facturación</h4>
-            <p>Son independientes del costo e impuestos de importación del pedimento. Se requieren para timbrar conceptos de este producto.</p>
-            <div class="campo_sat">
-              Clave de producto o servicio (ClaveProdServ)
-              <SelectSat catalogo="producto" bind:valor={nuevo_producto.sat_clave_prod_serv} placeholder="Clave o descripción del producto" />
+      <!-- Contenido de las Pestañas -->
+      <div class="tab-contenido-cuerpo">
+        <!-- PESTAÑA 1: INFORMACIÓN GENERAL -->
+        {#if tab_activa === "general"}
+          <div class="panel-tab" in:fly={{ y: 8, duration: 250 }}>
+            <div class="grid-2-col">
+              <div class="campo">
+                <label class="etiqueta-campo" for="codigo_input">
+                  <span>Código (SKU) <span class="req">*</span></span>
+                </label>
+                <Textfield
+                  outlined
+                  id="codigo_input"
+                  bind:value={nuevo_producto.codigo}
+                  placeholder="Ej. LL-11R22.5"
+                  type="text"
+                />
+              </div>
+
+              <div class="campo">
+                <label class="etiqueta-campo" for="codigo_de_barras_input">
+                  <span>Código de barras</span>
+                </label>
+                <Textfield
+                  outlined
+                  id="codigo_de_barras_input"
+                  bind:value={nuevo_producto.codigo_de_barras}
+                  placeholder="Código EAN / UPC"
+                  type="text"
+                />
+              </div>
             </div>
-            <div class="campo_sat">
-              Clave de unidad (ClaveUnidad)
-              <SelectSat catalogo="unidad" bind:valor={nuevo_producto.sat_clave_unidad} placeholder="Clave o nombre de la unidad (Ej. H87)" />
-            </div>
-            <label>
-              Objeto de impuesto (SAT)
-              <select bind:value={nuevo_producto.sat_objeto_impuesto}>
-                <option value="">Sin configurar</option>
-                <option value="01">01 - No objeto de impuesto</option>
-                <option value="02">02 - Sí objeto de impuesto</option>
-                <option value="03">03 - Sí objeto, no obligado al desglose</option>
-                <option value="04">04 - Sí objeto, no causa impuesto</option>
-              </select>
-            </label>
-            <label>
-              IVA cobrado en la venta
-              <select bind:value={nuevo_producto.impuestos_venta.iva}>
-                <option value="">Sin configurar</option>
-                <option value="16">Tasa 16%</option>
-                <option value="8">Tasa 8%</option>
-                <option value="0">Tasa 0%</option>
-                <option value="exento">Exento</option>
-                <option value="no_aplica">No aplica</option>
-              </select>
-            </label>
-            <label>
-              IEPS de venta (porcentaje, si aplica)
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.000001"
-                bind:value={nuevo_producto.impuestos_venta.ieps_tasa_porcentaje}
+
+            <div class="campo">
+              <label class="etiqueta-campo">
+                <span>Nombre del producto <span class="req">*</span></span>
+                <span class="contador">
+                  {30 - (nuevo_producto.nombre ? nuevo_producto.nombre.length : 0)} caract. restantes
+                </span>
+              </label>
+              <Textfield
+                outlined
+                bind:value={nuevo_producto.nombre}
+                placeholder="Nombre comercial del producto"
+                type="text"
+                maxlength="30"
               />
-            </label>
+            </div>
+
+            <div class="campo">
+              <label class="etiqueta-campo">
+                <span>Descripción comercial <span class="req">*</span></span>
+                <span class="contador">
+                  {60 - (nuevo_producto.descripcion ? nuevo_producto.descripcion.length : 0)} caract. restantes
+                </span>
+              </label>
+              <Textfield
+                outlined
+                bind:value={nuevo_producto.descripcion}
+                placeholder="Descripción o especificación comercial"
+                type="text"
+                maxlength="60"
+              />
+            </div>
+
+            <div class="grid-2-col" style="margin-top: 8px;">
+              <div class="campo">
+                <label class="etiqueta-campo"><span>Marca</span></label>
+                <Marca bind:marca={nuevo_producto.marca} />
+              </div>
+
+              <div class="campo">
+                <label class="etiqueta-campo"><span>Unidad de medida</span></label>
+                <Unidad bind:unidad={nuevo_producto.unidad} />
+              </div>
+            </div>
+
+            <div class="opciones-comerciales">
+              <div class="opcion-chk">
+                <Checkbox {...props} bind:checked={nuevo_producto.para_venta_publico}>
+                  <span class="texto-chk">Para venta al público</span>
+                </Checkbox>
+              </div>
+              <div class="opcion-chk">
+                <Checkbox {...props} bind:checked={nuevo_producto.recomendar_como_paqueteria}>
+                  <i class="material-icons vertical-alineado icono-paq">local_shipping</i>
+                  <span class="texto-chk">Recomendar como paquetería</span>
+                </Checkbox>
+              </div>
+            </div>
           </div>
-          <!-- <Categoria bind:categoria={nuevo_producto.categoria} /> -->
-          <Checkbox {...props} bind:checked={nuevo_producto.para_venta_publico}>
-            Para venta al público
-          </Checkbox>
-        </div>
-      </div>
-      <div class="area_carac_tecnicas margen caja">
-        <div class="subtitulo">Características técnicas</div>
-        <div class="contenido_caja">
-          <Caracteristicas_tecnicas
-            bind:caracteristicas_tecnicas={nuevo_producto.caracteristicas_tecnicas}
-          />
-        </div>
-      </div>
-      <div class="area_precios margen caja">
-        <div class="subtitulo">Precios</div>
-        <div class="contenido_caja">
-          <table style="width: 99%;">
-            <tr>
-              <td>
-                <span class="indice_row">$</span>
-              </td>
-              <td>
-                {#if $usuario_db.rol === "administrador"}
-                  <Textfield
-                    outlined
-                    bind:value={nuevo_producto.precio}
-                    placeholder="Precio público*"
-                    message="Precio público*"
-                    type="number"
-                  />
-                {/if}
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <span class="indice_row">$</span>
-              </td>
-              <td>
-                {#if $usuario_db.rol === "administrador"}
-                  <Textfield
-                    outlined
-                    bind:value={nuevo_producto.precio_compra}
-                    placeholder="Precio Compra*"
-                    message="Precio Compra*"
-                    type="number"
-                  />
-                {/if}
-              </td>
-            </tr>
-          </table>
+        {/if}
 
-          <Checkbox
-            {...props}
-            bind:checked={nuevo_producto.recomendar_como_paqueteria}
-          >
-            <i class="material-icons vertical-alineado">local_shipping</i> Recomendar
-            como paquetería
-          </Checkbox>
-          <Checkbox
-            {...props}
-            bind:checked={nuevo_producto.aplicar_descuento_distribuidor}
-          >
-            Aplicar descuento distribuidor
-          </Checkbox>
-          <Precios bind:precio_publico={nuevo_producto.precio} />
-        </div>
-      </div>
-      <div class="existencias margen caja">
-        <div class="subtitulo">Existencias</div>
-        <div class="contenido_caja">
-          {#if $usuario_db.rol === "administrador"}
-            <table>
-              <tr>
-                <td colspan="2">
+        <!-- PESTAÑA 2: FISCAL SAT (CFDI 4.0) -->
+        {#if tab_activa === "fiscal"}
+          <div class="panel-tab" in:fly={{ y: 8, duration: 250 }}>
+            <div class="banner-sat">
+              <i class="material-icons icono-sat">verified</i>
+              <div>
+                <strong>Configuración Fiscal SAT para Facturación (CFDI 4.0)</strong>
+                <p>
+                  Estos datos son obligatorios para timbrar conceptos de venta de este producto. Son independientes de pedimentos y costos de importación.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid-2-col" style="margin-top: 18px;">
+              <div class="campo">
+                <label class="etiqueta-campo">
+                  <span>Clave de Producto/Servicio (ClaveProdServ)</span>
+                </label>
+                <SelectSat
+                  catalogo="producto"
+                  bind:valor={nuevo_producto.sat_clave_prod_serv}
+                  placeholder="Clave de 8 dígitos o buscar por nombre..."
+                />
+              </div>
+
+              <div class="campo">
+                <label class="etiqueta-campo">
+                  <span>Clave de Unidad SAT (ClaveUnidad)</span>
+                </label>
+                <SelectSat
+                  catalogo="unidad"
+                  bind:valor={nuevo_producto.sat_clave_unidad}
+                  placeholder="Clave (Ej. H87) o buscar por nombre..."
+                />
+              </div>
+            </div>
+
+            <div class="grid-3-col" style="margin-top: 18px;">
+              <div class="campo">
+                <label class="etiqueta-campo"><span>Objeto de Impuesto (SAT)</span></label>
+                <select class="control-select" bind:value={nuevo_producto.sat_objeto_impuesto}>
+                  <option value="">Sin configurar</option>
+                  <option value="01">01 - No objeto de impuesto</option>
+                  <option value="02">02 - Sí objeto de impuesto</option>
+                  <option value="03">03 - Sí objeto, no obligado al desglose</option>
+                  <option value="04">04 - Sí objeto, no causa impuesto</option>
+                </select>
+              </div>
+
+              <div class="campo">
+                <label class="etiqueta-campo"><span>IVA en Venta</span></label>
+                <select class="control-select" bind:value={nuevo_producto.impuestos_venta.iva}>
+                  <option value="">Sin configurar</option>
+                  <option value="16">Tasa 16%</option>
+                  <option value="8">Tasa 8%</option>
+                  <option value="0">Tasa 0%</option>
+                  <option value="exento">Exento</option>
+                  <option value="no_aplica">No aplica</option>
+                </select>
+              </div>
+
+              <div class="campo">
+                <label class="etiqueta-campo"><span>IEPS Venta (%)</span></label>
+                <input
+                  class="control-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.000001"
+                  placeholder="0.00"
+                  bind:value={nuevo_producto.impuestos_venta.ieps_tasa_porcentaje}
+                />
+              </div>
+            </div>
+          </div>
+        {/if}
+
+        <!-- PESTAÑA 3: PRECIOS E INVENTARIO -->
+        {#if tab_activa === "precios"}
+          <div class="panel-tab" in:fly={{ y: 8, duration: 250 }}>
+            <div class="grid-2-col-secciones">
+              <!-- Sección Precios y Descuentos -->
+              <div class="tarjeta-interior">
+                <div class="sub-encabezado">
+                  <i class="material-icons">payments</i>
+                  <span>Precios y Descuentos</span>
+                </div>
+
+                {#if $usuario_db.rol === "administrador"}
+                  <div class="grid-2-col" style="margin-bottom: 16px;">
+                    <div class="campo">
+                      <label class="etiqueta-campo"><span>Precio Público <span class="req">*</span></span></label>
+                      <div class="precio-row">
+                        <span class="signo-moneda">$</span>
+                        <div style="flex-grow: 1;">
+                          <Textfield
+                            outlined
+                            bind:value={nuevo_producto.precio}
+                            placeholder="0.00"
+                            type="number"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="campo">
+                      <label class="etiqueta-campo"><span>Precio Compra <span class="req">*</span></span></label>
+                      <div class="precio-row">
+                        <span class="signo-moneda">$</span>
+                        <div style="flex-grow: 1;">
+                          <Textfield
+                            outlined
+                            bind:value={nuevo_producto.precio_compra}
+                            placeholder="0.00"
+                            type="number"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {/if}
+
+                <div style="margin-bottom: 14px;">
+                  <Checkbox {...props} bind:checked={nuevo_producto.aplicar_descuento_distribuidor}>
+                    <span class="texto-chk">Aplicar escala de descuento a distribuidores</span>
+                  </Checkbox>
+                </div>
+
+                <Precios bind:precio_publico={nuevo_producto.precio} />
+              </div>
+
+              <!-- Sección Inventario & Empaque -->
+              <div class="tarjeta-interior">
+                <div class="sub-encabezado">
+                  <i class="material-icons">warehouse</i>
+                  <span>Control de Inventario y Empaque</span>
+                </div>
+
+                {#if $usuario_db.rol === "administrador"}
+                  <div class="grid-3-col" style="margin-bottom: 16px;">
+                    <div class="campo">
+                      <label class="etiqueta-campo"><span>Existencia Actual <span class="req">*</span></span></label>
+                      <Textfield
+                        outlined
+                        bind:value={nuevo_producto.existencia.actual}
+                        placeholder="0"
+                        type="number"
+                      />
+                    </div>
+
+                    <div class="campo">
+                      <label class="etiqueta-campo"><span>Stock Mínimo</span></label>
+                      <Textfield
+                        outlined
+                        bind:value={nuevo_producto.existencia.minimo}
+                        placeholder="0"
+                        type="number"
+                      />
+                    </div>
+
+                    <div class="campo">
+                      <label class="etiqueta-campo"><span>Stock Máximo</span></label>
+                      <Textfield
+                        outlined
+                        bind:value={nuevo_producto.existencia.maximo}
+                        placeholder="0"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                {/if}
+
+                <div class="campo">
+                  <label class="etiqueta-campo">
+                    <span>Master Box (Unidades por caja)</span>
+                    <span class="contador">Base: {nuevo_producto.unidad || "unidad"}</span>
+                  </label>
                   <Textfield
                     outlined
-                    bind:value={nuevo_producto.existencia.actual}
-                    placeholder="Existencia Actual*"
-                    message="Existencia Actual*"
+                    bind:value={nuevo_producto.master_box}
+                    placeholder="Unidades por empaque"
                     type="number"
                   />
-                </td>
-              </tr>
-              <tr>
-                <td style="width: 50%;">
-                  <Textfield
-                    outlined
-                    bind:value={nuevo_producto.existencia.minimo}
-                    placeholder="Mínimo"
-                    message="Mínimo"
-                    type="number"
-                  />
-                </td>
-                <td style="width: 50%;">
-                  <Textfield
-                    outlined
-                    bind:value={nuevo_producto.existencia.maximo}
-                    placeholder="Máximo"
-                    message="Máximo"
-                    type="number"
-                  />
-                </td>
-              </tr>
-            </table>
-          {/if}
-        </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {/if}
+
+        <!-- PESTAÑA 4: FICHA E IMÁGENES -->
+        {#if tab_activa === "multimedia"}
+          <div class="panel-tab" in:fly={{ y: 8, duration: 250 }}>
+            <div class="grid-2-col-secciones">
+              <div class="tarjeta-interior">
+                <div class="sub-encabezado">
+                  <i class="material-icons">tune</i>
+                  <span>Características Técnicas</span>
+                </div>
+                <Caracteristicas_tecnicas
+                  bind:caracteristicas_tecnicas={nuevo_producto.caracteristicas_tecnicas}
+                />
+              </div>
+
+              <div class="tarjeta-interior">
+                <div class="sub-encabezado">
+                  <i class="material-icons">photo_library</i>
+                  <span>Galería de Imágenes</span>
+                </div>
+                <Uploader
+                  bind:galeria_imagenes_original={nuevo_producto.galeria_imagenes}
+                />
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
-      <div class="masterbox margen caja">
-        <div class="subtitulo">Master Box</div>
-        <div class="contenido_caja">
-          <Textfield
-            outlined
-            bind:value={nuevo_producto.master_box}
-            placeholder="Unidades por caja"
-            message={"Unidades por caja (en base a: " + (nuevo_producto.unidad || "unidad") + ")"}
-            type="number"
-          />
-        </div>
-      </div>
-      <div class="imagenes margen caja">
-        <div class="subtitulo">Imágenes</div>
-        <div class="contenido_caja">
+    {:else}
+      <!-- Rol Diseñador -->
+      <div class="tab-contenido-cuerpo" style="max-width: 800px; margin: 20px auto;">
+        <div class="panel-tab">
+          <div class="sub-encabezado">
+            <i class="material-icons">photo_library</i>
+            <span>Galería de Imágenes</span>
+          </div>
           <Uploader
             bind:galeria_imagenes_original={nuevo_producto.galeria_imagenes}
           />
         </div>
       </div>
     {/if}
-
-    <!-- <Button on:click={MandarImagenApiPuente($lista_archivos_uploads)}>
-      <i class="material-icons">arrow_back</i> Enviar Imagen Prueba
-    </Button> -->
-
-    {#if $usuario_db.rol == "diseñador"}
-      <div class="imagenes margen caja">
-        <div class="subtitulo">Imágenes</div>
-        <div class="contenido_caja">
-          <Uploader
-            bind:galeria_imagenes_original={nuevo_producto.galeria_imagenes}
-          />
-        </div>
-      </div>
-    {/if}
-
   </div>
 
+  <!-- Footer con botones de acción acoplado fijamente al fondo de la vista -->
   <div class="footer-acciones">
-    <Button on:click={cancelar} outlined color="primary" style="margin-right: 12px;">
-      <i class="material-icons" style="margin-right: 6px;">close</i> Cancelar
-    </Button>
-    <Button color="primary" raised on:click={subir}>
-      <i class="material-icons" style="margin-right: 6px;">save</i> Guardar
-    </Button>
+    <div class="footer-resumen">
+      {#if nuevo_producto.codigo || nuevo_producto.nombre}
+        <span class="badge-resumen-sku">{nuevo_producto.codigo || "SIN CÓDIGO"}</span>
+        <span class="resumen-nombre">{nuevo_producto.nombre || ""}</span>
+      {/if}
+    </div>
+    <div class="footer-botones">
+      <Button on:click={cancelar} outlined color="primary" style="margin-right: 12px;">
+        <i class="material-icons" style="margin-right: 6px;">close</i> Cancelar
+      </Button>
+      <Button color="primary" raised on:click={subir}>
+        <i class="material-icons" style="margin-right: 6px;">save</i> Guardar Producto
+      </Button>
+    </div>
   </div>
 </div>
 
 <style>
   .contenedor_ventana {
-    height: calc(100vh - 85px) !important;
-    max-height: calc(100vh - 85px) !important;
-    overflow-y: auto;
+    height: 100% !important;
+    max-height: 100% !important;
     display: flex;
     flex-direction: column;
     position: relative;
-    scrollbar-width: thin;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
-    background: transparent !important;
+    box-sizing: border-box;
+    background: #f1f5f9 !important;
     border: none !important;
-    border-radius: 0 !important;
-  }
-
-  .grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 20px;
-    padding: 20px;
-    flex-grow: 1;
-  }
-
-  .margen {
-    margin: 5px;
-  }
-
-  .subtitulo {
-    background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
-    color: #cbd5e1;
-    font-weight: 700;
-    font-size: 0.9em;
-    text-align: center;
-    padding: 8px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-
-  .caja {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
     overflow: hidden;
-    transition: border-color 0.3s ease;
   }
 
-  .caja:hover {
-    border-color: rgba(59, 130, 246, 0.3);
+  .modulo-tabs-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px 20px 24px;
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    scrollbar-width: thin;
   }
 
-  .contenido_caja {
-    padding: 16px;
+  .tabs-nav-container {
+    background: transparent;
+  }
+
+  .tabs-nav {
+    display: flex;
+    gap: 4px;
+    background: #e2e8f0;
+    padding: 6px 8px 0 8px;
+    border: 1px solid #cbd5e1;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border: none;
+    background: transparent;
+    color: #475569;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    border-top: 3px solid transparent;
+  }
+
+  .tab-btn i {
+    font-size: 19px;
+  }
+
+  .tab-btn:hover {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.6);
+  }
+
+  .tab-btn.activo {
+    color: #0284c7;
+    background: #ffffff;
+    font-weight: 700;
+    border-top: 3px solid #0284c7;
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.03);
+  }
+
+  .badge-cfdi {
+    background: #e0f2fe;
+    color: #0284c7;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    margin-left: 2px;
+  }
+
+  .tab-contenido-cuerpo {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    overflow: visible;
+  }
+
+  .panel-tab {
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
+  .grid-2-col {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  @media (max-width: 650px) {
+    .grid-2-col {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .grid-3-col {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  @media (max-width: 780px) {
+    .grid-3-col {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .grid-2-col-secciones {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 950px) {
+    .grid-2-col-secciones {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .tarjeta-interior {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px;
+    box-sizing: border-box;
+  }
+
+  .sub-encabezado {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .sub-encabezado i {
+    color: #0284c7;
+    font-size: 20px;
+  }
+
+  .campo {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+
+  .etiqueta-campo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+    letter-spacing: 0.2px;
+  }
+
+  .etiqueta-campo .req {
+    color: #ef4444;
+    font-weight: bold;
+    margin-left: 2px;
+  }
+
+  .contador {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: normal;
+  }
+
+  .opciones-comerciales {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 24px;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+
+  .opcion-chk {
+    display: flex;
+    align-items: center;
+  }
+
+  .texto-chk {
+    font-size: 13.5px;
+    color: #1e293b;
+    font-weight: 500;
+  }
+
+  .icono-paq {
+    color: #0284c7;
+    font-size: 18px;
+    margin-right: 4px;
+  }
+
+  .banner-sat {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+  }
+
+  .icono-sat {
+    color: #0284c7;
+    font-size: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .banner-sat strong {
+    color: #0369a1;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .banner-sat p {
+    margin: 0;
+    color: #0c4a6e;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .precio-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .signo-moneda {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0284c7;
+  }
+
+  .control-select,
+  .control-input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 42px;
+    padding: 8px 12px;
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13.5px;
+    transition: all 0.2s ease;
+  }
+
+  .control-select:focus,
+  .control-input:focus {
+    outline: none;
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
   }
 
   .footer-acciones {
-    position: sticky;
-    bottom: 0;
-    background: #0b1320;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 16px 24px;
+    flex-shrink: 0;
+    width: 100%;
+    background: #ffffff;
+    border-top: 1px solid #cbd5e1;
+    padding: 12px 28px;
     display: flex;
-    justify-content: flex-end;
-    z-index: 100;
-    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.2);
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+    z-index: 10;
+  }
+
+  .footer-resumen {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .badge-resumen-sku {
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    white-space: nowrap;
+  }
+
+  .resumen-nombre {
+    font-size: 13px;
+    color: #334155;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 400px;
+  }
+
+  .footer-botones {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
   }
 
   .vertical-alineado {
     vertical-align: middle;
-    margin-right: 4px;
   }
-
-  .indice_row {
-    font-size: 1.2em;
-    color: #94a3b8;
-    margin-right: 8px;
-  }
-  .datos-fiscales-producto { display: grid; gap: 10px; margin-top: 18px; padding: 14px; border: 1px solid #dbe3ed; border-radius: 6px; }
-  .datos-fiscales-producto h4, .datos-fiscales-producto p { margin: 0; }
-  .datos-fiscales-producto p { color: #64748b; font-size: 13px; }
-  .datos-fiscales-producto label, .datos-fiscales-producto .campo_sat { display: grid; gap: 4px; font-size: 13px; }
-  .datos-fiscales-producto input, .datos-fiscales-producto select { max-width: 420px; min-height: 36px; padding: 6px 8px; }
 </style>

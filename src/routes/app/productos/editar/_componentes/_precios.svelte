@@ -1,90 +1,110 @@
 <script>
-export var precio_publico=0;
-import {formato_precio} from "./../../../../stores";
+  export var precio_publico = 0;
+  import { formato_precio } from "./../../../../stores";
 
-let lista_descuentos = [];
-// De 0 al 50 de 5 en 5
-for (let i = 0; i <= 50; i += 5) {
-    lista_descuentos.push(i);
-}
-// Del 50 al 60 de 1 en 1
-for (let i = 51; i <= 60; i++) {
-    lista_descuentos.push(i);
-}
+  const lista_descuentos = [
+    0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
+    51, 52, 53, 54, 55, 56, 57, 58, 59, 60
+  ];
 
-// Calculamos los precios dinámicamente según cambia precio_publico
-let precios_calculados = [];
-$: precios_calculados = lista_descuentos.map(p => {
-    return {
-        porcentaje: p,
-        precio_final: precio_publico - (precio_publico * (p / 100))
-    };
-});
-
-function obtener_color_descuento(p) {
-    if (p === 0) return 'rgb(120, 120, 120)';
-    if (p <= 20) return 'rgb(0, 150, 136)'; // Verde azulado
-    if (p <= 40) return 'orange'; // Naranja
-    if (p <= 50) return 'rgb(0, 51, 145)'; // Azul
-    if (p <= 55) return 'rgb(66, 66, 66)'; // Gris oscuro
-    return 'rgb(107, 0, 23)'; // Rojo vino
-}
+  let indice_descuento = 0;
+  $: descuento_seleccionado = lista_descuentos[indice_descuento] || 0;
+  $: precio_con_descuento = (Number(precio_publico) || 0) * (1 - descuento_seleccionado / 100);
 </script>
+
 <style>
-.contenedor-tabla {
-    max-height: 250px;
-    overflow-y: auto;
-    border: 1px solid #ededed;
+  .control-descuento {
+    padding: 14px 16px;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 4px;
-}
-thead{
-    font-size: .9em;
+    background: #f8fafc;
+  }
+
+  .resumen-descuento {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .etiqueta-descuento {
+    color: #475569;
+    font-size: 13px;
     font-weight: 600;
-    color:rgb(153, 153, 153);
-    text-align: center;
-    position: sticky;
-    top: 0;
-    background-color: white;
-    z-index: 1;
-}
-.col_2{
-    border-radius: 5px;
-    height: 3.2vh;
-    width: 50%;
-    text-align: center;
-    font-size: .9em;
-}
-.col_3{
-    width: 50%;
-    text-align: right;
-    padding-right: 15px;
-}
-.tag_desc {
-    color: white;
-    text-align: center;
-    border-radius: 7px;
-    padding: 2px 8px;
-    font-size: 0.95em;
-    font-weight: 500;
+  }
+
+  .valor-descuento {
     display: inline-block;
-}
+    margin-left: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #0284c7;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .precio-final {
+    color: #0f172a;
+    font-size: 18px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .barra-descuento {
+    width: 100%;
+    margin: 2px 0 0;
+    accent-color: #0284c7;
+    cursor: pointer;
+  }
+
+  .marcas-descuento {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  .ayuda-descuento {
+    margin: 8px 0 0;
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  @media (max-width: 500px) {
+    .resumen-descuento {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
 </style>
-<div class="contenedor-tabla">
-<table style="width:100%;text-align:left;">
-<thead>
-    <td>Descuento</td>
-    <td style="text-align: right; padding-right: 15px;">Precio</td>
-</thead>
-{#each precios_calculados as item}
-<tr>
-    <td class="col_2"> 
-        <span class="tag_desc" style="background-color: {obtener_color_descuento(item.porcentaje)}">
-            {item.porcentaje}%
-        </span> 
-    </td>
-    <td class="col_3"><span class="indice_row">$</span> {formato_precio(item.precio_final)}</td>
-</tr>
-{/each}
-</table>
+
+<div class="control-descuento">
+  <div class="resumen-descuento">
+    <div class="etiqueta-descuento">
+      Descuento
+      <span class="valor-descuento">{descuento_seleccionado}%</span>
+    </div>
+    <div class="precio-final">
+      Precio con descuento: $ {formato_precio(precio_con_descuento)}
+    </div>
+  </div>
+  <input
+    class="barra-descuento"
+    type="range"
+    min="0"
+    max={lista_descuentos.length - 1}
+    step="1"
+    bind:value={indice_descuento}
+    aria-label="Porcentaje de descuento"
+    aria-valuetext="{descuento_seleccionado}% de descuento"
+  />
+  <div class="marcas-descuento">
+    <span>0%</span>
+    <span>50%</span>
+    <span>60%</span>
+  </div>
+  <p class="ayuda-descuento">De 0% a 50% avanza de 5 en 5; después, de 1 en 1.</p>
 </div>

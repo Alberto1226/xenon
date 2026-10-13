@@ -80,7 +80,8 @@ export async function post(req, res, next) {
             }
 
             const nuevo_cliente = filtrarCamposEditablesCliente(req.body.cliMod);
-            if (req.user.rol === "administrador" && req.body.cliMod && req.body.cliMod.agente) {
+            if (req.user.rol === "administrador" && req.body.cliMod && req.body.cliMod.agente && req.body.cliMod.agente.id) {
+                // El admin seleccionó un agente válido: verificar que exista en BD
                 const agente = await Usuario.findById(req.body.cliMod.agente.id).select("nombre correo").lean().exec();
                 if (!agente) {
                     return res.send({ ok: false, mensaje: "El agente seleccionado no existe." });
@@ -91,12 +92,8 @@ export async function post(req, res, next) {
                     correo: agente.correo
                 };
             } else {
-                // Ningún rol distinto al administrador puede cambiar la asignación recibida.
-                nuevo_cliente.agente = clienteExistente.agente;
-            }
-
-            if (!nuevo_cliente.agente || !nuevo_cliente.agente.id) {
-                return res.send({ ok: false, mensaje: "El agente del cliente no está asignado." });
+                // Sin selección de agente: conservar el agente que ya tenía el cliente
+                // No se incluye en $set: el agente existente queda intacto (el objeto anidado de Mongoose no es un valor plano)
             }
 
             const clienteActualizado = {

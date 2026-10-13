@@ -43,6 +43,11 @@ if (!process.env.DB) {
 	process.env.DB = "xenon-y-mas-app"
 	console.log("Ahora su db sera " + FgBlue + process.env.DB + Reset);
 }
+// API de CoreCFDI (descarga de CFDI del SAT). La empresa, el email y la contraseña se piden en pantalla.
+if (!process.env.CORECFDI_BASE_URL) {
+	process.env.CORECFDI_BASE_URL = "http://corecfdi.test/api/v1";
+}
+console.log("CoreCFDI en =" + FgBlue + process.env.CORECFDI_BASE_URL + Reset);
 console.log("DB usada =" + FgBlue + devolver_nombre_db() + " , osea :" + process.env.DB + Reset);
 console.log(FgBlue + '#---------------------------------------------------------------------------------------------------------------------------------#' + Reset);
 //if(!dev) process.env.PORT = 3004;

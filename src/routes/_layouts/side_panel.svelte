@@ -169,6 +169,38 @@
       ],
     },
     {
+      url: "/app/facturacion/sat-descargas",
+      titulo: "Core CFDI",
+      icono: "cloud_sync",
+      roles: ["administrador", "gerente"],
+      subitems: [
+        {
+          titulo: "Configuración y Descarga",
+          url: "/app/facturacion/sat-descargas",
+          icono: "cloud_download",
+          roles: ["administrador", "gerente"],
+        },
+        {
+          titulo: "Cuentas por Pagar",
+          url: "/app/facturacion/cuentas-por-pagar",
+          icono: "account_balance_wallet",
+          roles: ["administrador", "gerente"],
+        },
+        {
+          titulo: "Cuentas por Cobrar",
+          url: "/app/facturacion/cuentas-por-cobrar",
+          icono: "request_quote",
+          roles: ["administrador", "gerente"],
+        },
+        {
+          titulo: "Facturas Recibidas",
+          url: "/app/facturacion/facturas-recibidas",
+          icono: "move_to_inbox",
+          roles: ["administrador", "gerente"],
+        },
+      ],
+    },
+    {
       url: "/app/rutas",
       titulo: "Rutas",
       icono: "alt_route",
@@ -350,6 +382,22 @@
         case "/app/facturacion/pagos":
           $ui.ventana_visible = "Complementos de Pago";
           menu_actual = "facturacion";
+          break;
+        case "/app/facturacion/facturas-recibidas":
+          $ui.ventana_visible = "Facturas Recibidas";
+          menu_actual = "corecfdi";
+          break;
+        case "/app/facturacion/cuentas-por-cobrar":
+          $ui.ventana_visible = "Cuentas por Cobrar";
+          menu_actual = "corecfdi";
+          break;
+        case "/app/facturacion/cuentas-por-pagar":
+          $ui.ventana_visible = "Cuentas por Pagar";
+          menu_actual = "corecfdi";
+          break;
+        case "/app/facturacion/sat-descargas":
+          $ui.ventana_visible = "Configuración y Descarga";
+          menu_actual = "corecfdi";
           break;
         default:
           break;

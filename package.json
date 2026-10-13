@@ -9,7 +9,8 @@
     "start": "node __sapper__/build",
     "cy:run": "cypress run",
     "cy:open": "cypress open",
-    "test": "run-p --race dev cy:run"
+    "test": "run-p --race dev cy:run",
+    "test:corecfdi": "node --test test/corecfdi/"
   },
   "dependencies": {
     "ba64": "^3.0.9",

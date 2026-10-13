@@ -82,7 +82,7 @@
   var subiendo = false;
   var subido = false;
   var ancho_side_panel = 250;
-  let tab_activa = "general";
+
 
   let props = {
     color: "primary",
@@ -314,109 +314,62 @@
 </script>
 
 <div class="contenedor_ventana" in:fly={{ x: 10, duration: 500 }}>
-  <div class="modulo-tabs-wrapper">
+  <div class="modulo-secciones-wrapper">
     {#if $usuario_db.rol != "diseñador"}
-      <!-- Navegación de Pestañas -->
-      <div class="tabs-nav-container">
-        <div class="tabs-nav">
-          <button
-            type="button"
-            class="tab-btn"
-            class:activo={tab_activa === "general"}
-            on:click={() => (tab_activa = "general")}
-          >
-            <i class="material-icons">inventory_2</i>
-            <span>Información General</span>
-          </button>
+      <div class="secciones-verticales">
 
-          <button
-            type="button"
-            class="tab-btn"
-            class:activo={tab_activa === "fiscal"}
-            on:click={() => (tab_activa = "fiscal")}
-          >
-            <i class="material-icons">receipt_long</i>
-            <span>Fiscal SAT</span>
-            <span class="badge-cfdi">CFDI 4.0</span>
-          </button>
-
-          <button
-            type="button"
-            class="tab-btn"
-            class:activo={tab_activa === "precios"}
-            on:click={() => (tab_activa = "precios")}
-          >
-            <i class="material-icons">monetization_on</i>
-            <span>Precios e Inventario</span>
-          </button>
-
-          <button
-            type="button"
-            class="tab-btn"
-            class:activo={tab_activa === "multimedia"}
-            on:click={() => (tab_activa = "multimedia")}
-          >
-            <i class="material-icons">photo_library</i>
-            <span>Ficha e Imágenes</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Contenido de las Pestañas -->
-      <div class="tab-contenido-cuerpo">
-        <!-- PESTAÑA 1: INFORMACIÓN GENERAL -->
-        {#if tab_activa === "general"}
-          <div class="panel-tab" in:fly={{ y: 8, duration: 250 }}>
-            <div class="grid-2-col">
-              <div class="campo">
-                <label class="etiqueta-campo" for="codigo_input">
-                  <span>Código (SKU) <span class="req">*</span></span>
-                </label>
-                <Textfield
-                  outlined
-                  id="codigo_input"
-                  bind:value={nuevo_producto.codigo}
-                  placeholder="Ej. LL-11R22.5"
-                  type="text"
-                />
-              </div>
-
-              <div class="campo">
-                <label class="etiqueta-campo" for="codigo_de_barras_input">
-                  <span>Código de barras</span>
-                </label>
-                <Textfield
-                  outlined
-                  id="codigo_de_barras_input"
-                  bind:value={nuevo_producto.codigo_de_barras}
-                  placeholder="Código EAN / UPC"
-                  type="text"
-                />
-              </div>
+        <!-- SECCIÓN 1: INFORMACIÓN GENERAL -->
+        <div class="card-sec card-sec-azul">
+          <div class="sec-header sec-azul">
+            <span class="sec-icon"><i class="material-icons">inventory_2</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">1</span>
+              <h4>Identificación General</h4>
+              <span class="sec-sub">Código, nombre, descripción, marca y unidad del producto</span>
             </div>
+          </div>
 
-            <div class="campo">
-              <label class="etiqueta-campo">
-                <span>Nombre del producto <span class="req">*</span></span>
-                <span class="contador">
-                  {30 - (nuevo_producto.nombre ? nuevo_producto.nombre.length : 0)} caract. restantes
-                </span>
+          <div class="sec-body">
+          <div class="form-row">
+            <div class="form-group fg-medium">
+              <label class="form-label">Código (SKU) <span class="req">*</span></label>
+              <Textfield
+                outlined
+                id="codigo_input"
+                bind:value={nuevo_producto.codigo}
+                placeholder="Ej. LL-11R22.5"
+                type="text"
+              />
+            </div>
+            <div class="form-group fg-medium">
+              <label class="form-label">Código de barras</label>
+              <Textfield
+                outlined
+                bind:value={nuevo_producto.codigo_de_barras}
+                placeholder="EAN / UPC"
+                type="text"
+              />
+            </div>
+          </div>
+
+          <div class="form-row mt-3">
+            <div class="form-group fg-large">
+              <label class="form-label">
+                Nombre del producto <span class="req">*</span>
+                <span class="contador">{30 - (nuevo_producto.nombre ? nuevo_producto.nombre.length : 0)} caract.</span>
               </label>
               <Textfield
                 outlined
                 bind:value={nuevo_producto.nombre}
-                placeholder="Nombre comercial del producto"
+                placeholder="Nombre comercial"
                 type="text"
                 maxlength="30"
               />
             </div>
-
-            <div class="campo">
-              <label class="etiqueta-campo">
-                <span>Descripción comercial <span class="req">*</span></span>
-                <span class="contador">
-                  {60 - (nuevo_producto.descripcion ? nuevo_producto.descripcion.length : 0)} caract. restantes
-                </span>
+            <div class="form-group fg-large">
+              <label class="form-label">
+                Descripción comercial <span class="req">*</span>
+                <span class="contador">{60 - (nuevo_producto.descripcion ? nuevo_producto.descripcion.length : 0)} caract.</span>
               </label>
               <Textfield
                 outlined
@@ -426,268 +379,254 @@
                 maxlength="60"
               />
             </div>
+          </div>
 
-            <div class="grid-2-col" style="margin-top: 8px;">
-              <div class="campo">
-                <label class="etiqueta-campo"><span>Marca</span></label>
-                <Marca bind:marca={nuevo_producto.marca} />
-              </div>
-
-              <div class="campo">
-                <label class="etiqueta-campo"><span>Unidad de medida</span></label>
-                <Unidad bind:unidad={nuevo_producto.unidad} />
-              </div>
+          <div class="form-row mt-3">
+            <div class="form-group fg-medium">
+              <label class="form-label">Marca</label>
+              <Marca bind:marca={nuevo_producto.marca} />
             </div>
-
-            <div class="opciones-comerciales">
-              <div class="opcion-chk">
-                <Checkbox {...props} bind:checked={nuevo_producto.para_venta_publico}>
-                  <span class="texto-chk">Para venta al público</span>
-                </Checkbox>
-              </div>
-              <div class="opcion-chk">
-                <Checkbox {...props} bind:checked={nuevo_producto.recomendar_como_paqueteria}>
-                  <i class="material-icons vertical-alineado icono-paq">local_shipping</i>
-                  <span class="texto-chk">Recomendar como paquetería</span>
-                </Checkbox>
-              </div>
+            <div class="form-group fg-medium">
+              <label class="form-label">Unidad de medida</label>
+              <Unidad bind:unidad={nuevo_producto.unidad} />
             </div>
           </div>
-        {/if}
 
-        <!-- PESTAÑA 2: FISCAL SAT (CFDI 4.0) -->
-        {#if tab_activa === "fiscal"}
-          <div class="panel-tab" in:fly={{ y: 8, duration: 250 }}>
-            <div class="banner-sat">
-              <i class="material-icons icono-sat">verified</i>
-              <div>
-                <strong>Configuración Fiscal SAT para Facturación (CFDI 4.0)</strong>
-                <p>
-                  Estos datos son obligatorios para timbrar conceptos de venta de este producto. Son independientes de pedimentos y costos de importación.
-                </p>
-              </div>
+          <div class="opciones-comerciales mt-3">
+            <div class="opcion-chk">
+              <Checkbox {...props} bind:checked={nuevo_producto.para_venta_publico}>
+                <span class="texto-chk">Para venta al público</span>
+              </Checkbox>
             </div>
-
-            <div class="grid-2-col" style="margin-top: 18px;">
-              <div class="campo">
-                <label class="etiqueta-campo">
-                  <span>Clave de Producto/Servicio (ClaveProdServ)</span>
-                </label>
-                <SelectSat
-                  catalogo="producto"
-                  bind:valor={nuevo_producto.sat_clave_prod_serv}
-                  placeholder="Clave de 8 dígitos o buscar por nombre..."
-                />
-              </div>
-
-              <div class="campo">
-                <label class="etiqueta-campo">
-                  <span>Clave de Unidad SAT (ClaveUnidad)</span>
-                </label>
-                <SelectSat
-                  catalogo="unidad"
-                  bind:valor={nuevo_producto.sat_clave_unidad}
-                  placeholder="Clave (Ej. H87) o buscar por nombre..."
-                />
-              </div>
-            </div>
-
-            <div class="grid-3-col" style="margin-top: 18px;">
-              <div class="campo">
-                <label class="etiqueta-campo"><span>Objeto de Impuesto (SAT)</span></label>
-                <select class="control-select" bind:value={nuevo_producto.sat_objeto_impuesto}>
-                  <option value="">Sin configurar</option>
-                  <option value="01">01 - No objeto de impuesto</option>
-                  <option value="02">02 - Sí objeto de impuesto</option>
-                  <option value="03">03 - Sí objeto, no obligado al desglose</option>
-                  <option value="04">04 - Sí objeto, no causa impuesto</option>
-                </select>
-              </div>
-
-              <div class="campo">
-                <label class="etiqueta-campo"><span>IVA en Venta</span></label>
-                <select class="control-select" bind:value={nuevo_producto.impuestos_venta.iva}>
-                  <option value="">Sin configurar</option>
-                  <option value="16">Tasa 16%</option>
-                  <option value="8">Tasa 8%</option>
-                  <option value="0">Tasa 0%</option>
-                  <option value="exento">Exento</option>
-                  <option value="no_aplica">No aplica</option>
-                </select>
-              </div>
-
-              <div class="campo">
-                <label class="etiqueta-campo"><span>IEPS Venta (%)</span></label>
-                <input
-                  class="control-input"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.000001"
-                  placeholder="0.00"
-                  bind:value={nuevo_producto.impuestos_venta.ieps_tasa_porcentaje}
-                />
-              </div>
+            <div class="opcion-chk">
+              <Checkbox {...props} bind:checked={nuevo_producto.recomendar_como_paqueteria}>
+                <i class="material-icons vertical-alineado icono-paq">local_shipping</i>
+                <span class="texto-chk">Recomendar como paquetería</span>
+              </Checkbox>
             </div>
           </div>
-        {/if}
+          </div><!-- /sec-body -->
+        </div>
 
-        <!-- PESTAÑA 3: PRECIOS E INVENTARIO -->
-        {#if tab_activa === "precios"}
-          <div class="panel-tab" in:fly={{ y: 8, duration: 250 }}>
-            <div class="grid-2-col-secciones">
-              <!-- Sección Precios y Descuentos -->
-              <div class="tarjeta-interior">
-                <div class="sub-encabezado">
-                  <i class="material-icons">payments</i>
-                  <span>Precios y Descuentos</span>
-                </div>
+        <!-- SECCIÓN 2: CONFIGURACIÓN FISCAL SAT -->
+        <div class="card-sec card-sec-violeta">
+          <div class="sec-header sec-violeta">
+            <span class="sec-icon"><i class="material-icons">receipt_long</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">2</span>
+              <h4>Configuración Fiscal SAT</h4>
+              <span class="sec-sub">Claves y tasas para facturación CFDI 4.0</span>
+            </div>
+            <span class="badge-cfdi">CFDI 4.0</span>
+          </div>
 
-                {#if $usuario_db.rol === "administrador"}
-                  <div class="grid-2-col" style="margin-bottom: 16px;">
-                    <div class="campo">
-                      <label class="etiqueta-campo"><span>Precio Público <span class="req">*</span></span></label>
-                      <div class="precio-row">
-                        <span class="signo-moneda">$</span>
-                        <div style="flex-grow: 1;">
-                          <Textfield
-                            outlined
-                            bind:value={nuevo_producto.precio}
-                            placeholder="0.00"
-                            type="number"
-                          />
-                        </div>
-                      </div>
-                    </div>
+          <div class="sec-body">
+          <div class="banner-sat">
+            <i class="material-icons icono-sat">verified</i>
+            <div>
+              <strong>Datos obligatorios para facturación electrónica</strong>
+              <p>Independientes de pedimentos y costos de importación.</p>
+            </div>
+          </div>
 
-                    <div class="campo">
-                      <label class="etiqueta-campo"><span>Precio Compra <span class="req">*</span></span></label>
-                      <div class="precio-row">
-                        <span class="signo-moneda">$</span>
-                        <div style="flex-grow: 1;">
-                          <Textfield
-                            outlined
-                            bind:value={nuevo_producto.precio_compra}
-                            placeholder="0.00"
-                            type="number"
-                          />
-                        </div>
+          <div class="form-row mt-3">
+            <div class="form-group fg-large">
+              <label class="form-label">Clave Producto/Servicio (ClaveProdServ)</label>
+              <SelectSat
+                catalogo="producto"
+                bind:valor={nuevo_producto.sat_clave_prod_serv}
+                placeholder="Clave de 8 dígitos o buscar por nombre..."
+              />
+            </div>
+            <div class="form-group fg-large">
+              <label class="form-label">Clave de Unidad SAT (ClaveUnidad)</label>
+              <SelectSat
+                catalogo="unidad"
+                bind:valor={nuevo_producto.sat_clave_unidad}
+                placeholder="Clave (Ej. H87) o buscar por nombre..."
+              />
+            </div>
+          </div>
+
+          <div class="form-row mt-3">
+            <div class="form-group fg-medium">
+              <label class="form-label">Objeto de Impuesto (SAT)</label>
+              <select class="control-select" bind:value={nuevo_producto.sat_objeto_impuesto}>
+                <option value="">Sin configurar</option>
+                <option value="01">01 - No objeto de impuesto</option>
+                <option value="02">02 - Sí objeto de impuesto</option>
+                <option value="03">03 - Sí objeto, no obligado al desglose</option>
+                <option value="04">04 - Sí objeto, no causa impuesto</option>
+              </select>
+            </div>
+            <div class="form-group fg-small">
+              <label class="form-label">IVA en Venta</label>
+              <select class="control-select" bind:value={nuevo_producto.impuestos_venta.iva}>
+                <option value="">Sin configurar</option>
+                <option value="16">Tasa 16%</option>
+                <option value="8">Tasa 8%</option>
+                <option value="0">Tasa 0%</option>
+                <option value="exento">Exento</option>
+                <option value="no_aplica">No aplica</option>
+              </select>
+            </div>
+            <div class="form-group fg-small">
+              <label class="form-label">IEPS Venta (%)</label>
+              <input
+                class="control-input"
+                type="number"
+                min="0" max="100" step="0.000001"
+                placeholder="0.00"
+                bind:value={nuevo_producto.impuestos_venta.ieps_tasa_porcentaje}
+              />
+            </div>
+          </div>
+          </div><!-- /sec-body -->
+        </div>
+
+        <!-- SECCIÓN 3: PRECIOS E INVENTARIO -->
+        <div class="card-sec card-sec-ambar">
+          <div class="sec-header sec-ambar">
+            <span class="sec-icon"><i class="material-icons">monetization_on</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">3</span>
+              <h4>Precios e Inventario</h4>
+              <span class="sec-sub">Precio público, compra, existencias y Master Box</span>
+            </div>
+          </div>
+
+          <div class="sec-body">
+          <div class="grid-2-col-secciones">
+            <!-- Precios y Descuentos -->
+            <div class="tarjeta-interior">
+              <div class="sub-encabezado">
+                <i class="material-icons">payments</i>
+                <span>Precios y Descuentos</span>
+              </div>
+
+              {#if $usuario_db.rol === "administrador"}
+                <div class="form-row" style="margin-bottom: 16px;">
+                  <div class="form-group fg-medium">
+                    <label class="form-label">Precio Público <span class="req">*</span></label>
+                    <div class="precio-row">
+                      <span class="signo-moneda">$</span>
+                      <div style="flex-grow: 1;">
+                        <Textfield outlined bind:value={nuevo_producto.precio} placeholder="0.00" type="number" />
                       </div>
                     </div>
                   </div>
-                {/if}
-
-                <div style="margin-bottom: 14px;">
-                  <Checkbox {...props} bind:checked={nuevo_producto.aplicar_descuento_distribuidor}>
-                    <span class="texto-chk">Aplicar escala de descuento a distribuidores</span>
-                  </Checkbox>
-                </div>
-
-                <Precios bind:precio_publico={nuevo_producto.precio} />
-              </div>
-
-              <!-- Sección Inventario & Empaque -->
-              <div class="tarjeta-interior">
-                <div class="sub-encabezado">
-                  <i class="material-icons">warehouse</i>
-                  <span>Control de Inventario y Empaque</span>
-                </div>
-
-                {#if $usuario_db.rol === "administrador"}
-                  <div class="grid-3-col" style="margin-bottom: 16px;">
-                    <div class="campo">
-                      <label class="etiqueta-campo"><span>Existencia Actual <span class="req">*</span></span></label>
-                      <Textfield
-                        outlined
-                        bind:value={nuevo_producto.existencia.actual}
-                        placeholder="0"
-                        type="number"
-                      />
-                    </div>
-
-                    <div class="campo">
-                      <label class="etiqueta-campo"><span>Stock Mínimo</span></label>
-                      <Textfield
-                        outlined
-                        bind:value={nuevo_producto.existencia.minimo}
-                        placeholder="0"
-                        type="number"
-                      />
-                    </div>
-
-                    <div class="campo">
-                      <label class="etiqueta-campo"><span>Stock Máximo</span></label>
-                      <Textfield
-                        outlined
-                        bind:value={nuevo_producto.existencia.maximo}
-                        placeholder="0"
-                        type="number"
-                      />
+                  <div class="form-group fg-medium">
+                    <label class="form-label">Precio Compra <span class="req">*</span></label>
+                    <div class="precio-row">
+                      <span class="signo-moneda">$</span>
+                      <div style="flex-grow: 1;">
+                        <Textfield outlined bind:value={nuevo_producto.precio_compra} placeholder="0.00" type="number" />
+                      </div>
                     </div>
                   </div>
-                {/if}
-
-                <div class="campo">
-                  <label class="etiqueta-campo">
-                    <span>Master Box (Unidades por caja)</span>
-                    <span class="contador">Base: {nuevo_producto.unidad || "unidad"}</span>
-                  </label>
-                  <Textfield
-                    outlined
-                    bind:value={nuevo_producto.master_box}
-                    placeholder="Unidades por empaque"
-                    type="number"
-                  />
                 </div>
+              {/if}
+
+              <div style="margin-bottom: 14px;">
+                <Checkbox {...props} bind:checked={nuevo_producto.aplicar_descuento_distribuidor}>
+                  <span class="texto-chk">Aplicar escala de descuento a distribuidores</span>
+                </Checkbox>
+              </div>
+              <Precios bind:precio_publico={nuevo_producto.precio} />
+            </div>
+
+            <!-- Inventario & Empaque -->
+            <div class="tarjeta-interior">
+              <div class="sub-encabezado">
+                <i class="material-icons">warehouse</i>
+                <span>Control de Inventario y Empaque</span>
+              </div>
+
+              {#if $usuario_db.rol === "administrador"}
+                <div class="form-row" style="margin-bottom: 16px;">
+                  <div class="form-group fg-small">
+                    <label class="form-label">Existencia Actual <span class="req">*</span></label>
+                    <Textfield outlined bind:value={nuevo_producto.existencia.actual} placeholder="0" type="number" />
+                  </div>
+                  <div class="form-group fg-small">
+                    <label class="form-label">Stock Mínimo</label>
+                    <Textfield outlined bind:value={nuevo_producto.existencia.minimo} placeholder="0" type="number" />
+                  </div>
+                  <div class="form-group fg-small">
+                    <label class="form-label">Stock Máximo</label>
+                    <Textfield outlined bind:value={nuevo_producto.existencia.maximo} placeholder="0" type="number" />
+                  </div>
+                </div>
+              {/if}
+
+              <div class="form-group">
+                <label class="form-label">
+                  Master Box (unidades por caja)
+                  <span class="contador">Base: {nuevo_producto.unidad || "unidad"}</span>
+                </label>
+                <Textfield outlined bind:value={nuevo_producto.master_box} placeholder="Unidades por empaque" type="number" />
               </div>
             </div>
           </div>
-        {/if}
+          </div><!-- /sec-body -->
+        </div>
 
-        <!-- PESTAÑA 4: FICHA E IMÁGENES -->
-        {#if tab_activa === "multimedia"}
-          <div class="panel-tab" in:fly={{ y: 8, duration: 250 }}>
-            <div class="grid-2-col-secciones">
-              <div class="tarjeta-interior">
-                <div class="sub-encabezado">
-                  <i class="material-icons">tune</i>
-                  <span>Características Técnicas</span>
-                </div>
-                <Caracteristicas_tecnicas
-                  bind:caracteristicas_tecnicas={nuevo_producto.caracteristicas_tecnicas}
-                />
-              </div>
-
-              <div class="tarjeta-interior">
-                <div class="sub-encabezado">
-                  <i class="material-icons">photo_library</i>
-                  <span>Galería de Imágenes</span>
-                </div>
-                <Uploader
-                  bind:galeria_imagenes_original={nuevo_producto.galeria_imagenes}
-                />
-              </div>
+        <!-- SECCIÓN 4: FICHA TÉCNICA E IMÁGENES -->
+        <div class="card-sec card-sec-verde">
+          <div class="sec-header sec-verde">
+            <span class="sec-icon"><i class="material-icons">photo_library</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">4</span>
+              <h4>Ficha Técnica e Imágenes</h4>
+              <span class="sec-sub">Especificaciones técnicas y galería de imágenes del producto</span>
             </div>
           </div>
-        {/if}
+
+          <div class="sec-body">
+          <div class="grid-2-col-secciones">
+            <div class="tarjeta-interior">
+              <div class="sub-encabezado">
+                <i class="material-icons">tune</i>
+                <span>Características Técnicas</span>
+              </div>
+              <Caracteristicas_tecnicas
+                bind:caracteristicas_tecnicas={nuevo_producto.caracteristicas_tecnicas}
+              />
+            </div>
+
+            <div class="tarjeta-interior">
+              <div class="sub-encabezado">
+                <i class="material-icons">photo_library</i>
+                <span>Galería de Imágenes</span>
+              </div>
+              <Uploader
+                bind:galeria_imagenes_original={nuevo_producto.galeria_imagenes}
+              />
+            </div>
+          </div>
+          </div><!-- /sec-body -->
+        </div>
+
       </div>
     {:else}
-      <!-- Rol Diseñador -->
-      <div class="tab-contenido-cuerpo" style="max-width: 800px; margin: 20px auto;">
-        <div class="panel-tab">
-          <div class="sub-encabezado">
-            <i class="material-icons">photo_library</i>
-            <span>Galería de Imágenes</span>
+      <!-- Rol Diseñador: sólo imágenes -->
+      <div class="secciones-verticales">
+        <div class="card-sec card-sec-verde">
+          <div class="sec-header sec-verde">
+            <span class="sec-icon"><i class="material-icons">photo_library</i></span>
+            <div class="sec-titulo">
+              <span class="sec-num">1</span>
+              <h4>Galería de Imágenes</h4>
+              <span class="sec-sub">Sube y gestiona las imágenes del producto</span>
+            </div>
           </div>
-          <Uploader
-            bind:galeria_imagenes_original={nuevo_producto.galeria_imagenes}
-          />
+          <Uploader bind:galeria_imagenes_original={nuevo_producto.galeria_imagenes} />
         </div>
       </div>
     {/if}
   </div>
 
-  <!-- Footer con botones de acción acoplado fijamente al fondo de la vista -->
+  <!-- Footer fijo con botones de acción -->
   <div class="footer-acciones">
     <div class="footer-resumen">
       {#if nuevo_producto.codigo || nuevo_producto.nombre}
@@ -722,10 +661,10 @@
     overflow: hidden;
   }
 
-  .modulo-tabs-wrapper {
+  .modulo-secciones-wrapper {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 24px 20px 24px;
+    padding: 20px 24px 24px 24px;
     max-width: 1280px;
     width: 100%;
     margin: 0 auto;
@@ -733,58 +672,133 @@
     scrollbar-width: thin;
   }
 
-  .tabs-nav-container {
-    background: transparent;
-  }
-
-  .tabs-nav {
+  /* ── SECCIONES VERTICALES (patrón pedimentos) ── */
+  .secciones-verticales {
     display: flex;
-    gap: 4px;
-    background: #e2e8f0;
-    padding: 6px 8px 0 8px;
-    border: 1px solid #cbd5e1;
-    border-bottom: none;
-    border-radius: 10px 10px 0 0;
-    overflow-x: auto;
-    scrollbar-width: none;
+    flex-direction: column;
+    gap: 20px;
   }
 
-  .tabs-nav::-webkit-scrollbar {
-    display: none;
+  .card-sec {
+    background: #ffffff;
+    border-radius: 12px;
+    border-left: 5px solid var(--sec-color, #3498db);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    overflow: visible;
   }
 
-  .tab-btn {
+  .card-sec-azul    { --sec-color: #2563eb; --sec-fondo: #dbeafe; --sec-texto: #1e40af; }
+  .card-sec-violeta { --sec-color: #7c3aed; --sec-fondo: #ede9fe; --sec-texto: #5b21b6; }
+  .card-sec-ambar   { --sec-color: #d97706; --sec-fondo: #fef3c7; --sec-texto: #92400e; }
+  .card-sec-verde   { --sec-color: #059669; --sec-fondo: #d1fae5; --sec-texto: #064e3b; }
+
+  .sec-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 11px 20px;
-    border: none;
-    background: transparent;
-    color: #475569;
-    font-size: 13.5px;
-    font-weight: 600;
-    cursor: pointer;
-    border-radius: 8px 8px 0 0;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    border-top: 3px solid transparent;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    background: var(--sec-fondo);
+    border-radius: 7px 7px 0 0;
   }
 
-  .tab-btn i {
-    font-size: 19px;
+  .sec-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: var(--sec-color);
+    color: #ffffff;
+    flex-shrink: 0;
   }
 
-  .tab-btn:hover {
-    color: #0f172a;
-    background: rgba(255, 255, 255, 0.6);
+  .sec-icon i { font-size: 20px; }
+
+  .sec-titulo {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
-  .tab-btn.activo {
-    color: #0284c7;
-    background: #ffffff;
+  .sec-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--sec-color);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .sec-titulo h4 {
+    margin: 0;
+    font-size: 14.5px;
     font-weight: 700;
-    border-top: 3px solid #0284c7;
-    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.03);
+    color: var(--sec-texto);
+  }
+
+  .sec-sub {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 400;
+  }
+
+  .sec-body {
+    padding: 20px 22px;
+  }
+
+  /* ── FORM ROWS ── */
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .fg-small  { flex: 1 1 120px; max-width: 200px; }
+  .fg-medium { flex: 1 1 200px; }
+  .fg-large  { flex: 1 1 280px; }
+
+  @media (max-width: 650px) {
+    .fg-small, .fg-medium, .fg-large { flex: 1 1 100%; max-width: 100%; }
+  }
+
+  .form-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+  }
+
+  .mt-3 { margin-top: 16px; }
+
+  .req {
+    color: #ef4444;
+    font-weight: bold;
+    margin-left: 2px;
+  }
+
+  .contador {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: normal;
   }
 
   .badge-cfdi {
@@ -792,61 +806,78 @@
     color: #0284c7;
     font-size: 11px;
     font-weight: 700;
-    padding: 2px 7px;
+    padding: 2px 8px;
     border-radius: 9999px;
-    margin-left: 2px;
+    margin-left: auto;
+    flex-shrink: 0;
   }
 
-  .tab-contenido-cuerpo {
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 0 0 12px 12px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-    overflow: visible;
+  .opciones-comerciales {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 24px;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
   }
 
-  .panel-tab {
-    padding: 24px;
-    box-sizing: border-box;
+  .opcion-chk { display: flex; align-items: center; }
+
+  .texto-chk {
+    font-size: 13.5px;
+    color: #1e293b;
+    font-weight: 500;
   }
 
-  .grid-2-col {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-    align-items: start;
+  .icono-paq {
+    color: #0284c7;
+    font-size: 18px;
+    margin-right: 4px;
   }
 
-  @media (max-width: 650px) {
-    .grid-2-col {
-      grid-template-columns: 1fr;
-    }
+  .banner-sat {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    margin-bottom: 16px;
   }
 
-  .grid-3-col {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    align-items: start;
+  .icono-sat {
+    color: #0284c7;
+    font-size: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
   }
 
-  @media (max-width: 780px) {
-    .grid-3-col {
-      grid-template-columns: 1fr;
-    }
+  .banner-sat strong {
+    color: #0369a1;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .banner-sat p {
+    margin: 0;
+    color: #0c4a6e;
+    font-size: 13px;
+    line-height: 1.45;
   }
 
   .grid-2-col-secciones {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px;
+    gap: 20px;
     align-items: start;
   }
 
   @media (max-width: 950px) {
-    .grid-2-col-secciones {
-      grid-template-columns: 1fr;
-    }
+    .grid-2-col-secciones { grid-template-columns: 1fr; }
   }
 
   .tarjeta-interior {
@@ -861,7 +892,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 700;
     color: #1e293b;
     text-transform: uppercase;
@@ -891,79 +922,6 @@
     font-weight: 600;
     color: #334155;
     margin-bottom: 6px;
-    letter-spacing: 0.2px;
-  }
-
-  .etiqueta-campo .req {
-    color: #ef4444;
-    font-weight: bold;
-    margin-left: 2px;
-  }
-
-  .contador {
-    font-size: 11px;
-    color: #64748b;
-    font-weight: normal;
-  }
-
-  .opciones-comerciales {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 24px;
-    padding: 12px 16px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    margin-top: 8px;
-  }
-
-  .opcion-chk {
-    display: flex;
-    align-items: center;
-  }
-
-  .texto-chk {
-    font-size: 13.5px;
-    color: #1e293b;
-    font-weight: 500;
-  }
-
-  .icono-paq {
-    color: #0284c7;
-    font-size: 18px;
-    margin-right: 4px;
-  }
-
-  .banner-sat {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px 18px;
-    background: #f0f9ff;
-    border: 1px solid #bae6fd;
-    border-radius: 8px;
-  }
-
-  .icono-sat {
-    color: #0284c7;
-    font-size: 24px;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  .banner-sat strong {
-    color: #0369a1;
-    font-size: 14px;
-    display: block;
-    margin-bottom: 4px;
-  }
-
-  .banner-sat p {
-    margin: 0;
-    color: #0c4a6e;
-    font-size: 13px;
-    line-height: 1.45;
   }
 
   .precio-row {
@@ -1000,6 +958,7 @@
     box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
   }
 
+  /* ── FOOTER FIJO ── */
   .footer-acciones {
     flex-shrink: 0;
     width: 100%;
@@ -1048,7 +1007,5 @@
     flex-shrink: 0;
   }
 
-  .vertical-alineado {
-    vertical-align: middle;
-  }
+  .vertical-alineado { vertical-align: middle; }
 </style>

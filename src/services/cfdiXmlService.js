@@ -116,7 +116,7 @@ export function prepararConceptosCFDI(pedido, preparacion) {
             throw new Error(`El desglose fiscal del producto ${producto.nombre || indice + 1} requiere revisión.`);
         }
 
-        if (clasificacion.origen === "importado" && !/^\d{15}$/.test(String(clasificacion.numero_pedimento || ""))) {
+        if (clasificacion.origen === "importado" && !/^\d{15}$/.test(String(clasificacion.numero_pedimento || "").replace(/\D/g, ""))) {
             throw new Error(`El pedimento del producto ${producto.nombre || indice + 1} no tiene los 15 dígitos requeridos.`);
         }
 
@@ -218,7 +218,7 @@ export function construirCFDI40({ pedido, preparacion, emisor, serie, folio, fec
         }
 
         const infoAduanera = clasificacion.origen === "importado"
-            ? `<cfdi:InformacionAduanera NumeroPedimento="${escaparXml(clasificacion.numero_pedimento.replace(/(\d{2})(\d{2})(\d{4})(\d{7})/, "$1  $2  $3  $4"))}"/>`
+            ? `<cfdi:InformacionAduanera NumeroPedimento="${escaparXml(String(clasificacion.numero_pedimento).replace(/\D/g, "").replace(/(\d{2})(\d{2})(\d{4})(\d{7})/, "$1  $2  $3  $4"))}"/>`
             : "";
         const impuestos = traslados.length > 0
             ? `<cfdi:Impuestos><cfdi:Traslados>${traslados.join("")}</cfdi:Traslados></cfdi:Impuestos>`
@@ -226,7 +226,7 @@ export function construirCFDI40({ pedido, preparacion, emisor, serie, folio, fec
         const identificacion = producto.codigo
             ? ` NoIdentificacion="${escaparXml(producto.codigo)}"`
             : "";
-        return `<cfdi:Concepto ClaveProdServ="${escaparXml(producto.sat_clave_prod_serv)}"${identificacion} Cantidad="${formatoTasa(cantidad)}" ClaveUnidad="${escaparXml(String(producto.sat_clave_unidad).toUpperCase())}" Descripcion="${escaparXml(producto.nombre || "Producto")}" ValorUnitario="${formatoTasa(valorUnitario)}" Importe="${formatoImporte(base)}" ObjetoImp="${escaparXml(objetoImpuesto)}">${infoAduanera}${impuestos}</cfdi:Concepto>`;
+        return `<cfdi:Concepto ClaveProdServ="${escaparXml(producto.sat_clave_prod_serv)}"${identificacion} Cantidad="${formatoTasa(cantidad)}" ClaveUnidad="${escaparXml(String(producto.sat_clave_unidad).toUpperCase())}" Descripcion="${escaparXml(producto.nombre || "Producto")}" ValorUnitario="${formatoTasa(valorUnitario)}" Importe="${formatoImporte(base)}" ObjetoImp="${escaparXml(objetoImpuesto)}">${impuestos}${infoAduanera}</cfdi:Concepto>`;
     }).join("");
 
     const agrupados = [];

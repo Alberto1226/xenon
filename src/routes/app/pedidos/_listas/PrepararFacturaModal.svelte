@@ -71,11 +71,12 @@
         : {
             rfc: datosFiscales.rfc || direccion.rfc || "",
             nombre: datosFiscales.razon_social || datosFiscales.nombre || (cliente && cliente.nombre) || "",
-            codigo_postal: direccion.cp || "",
+            codigo_postal: String(direccion.cp || "").trim(),
             tipo_persona: direccion.tipo_persona || datosFiscales.tipo_persona || "",
             regimen_fiscal: direccion.rfiscal || datosFiscales.rfiscal || "",
             uso_cfdi: direccion.cfdi || datosFiscales.cfdi || ""
           };
+      if (!receptor.codigo_postal) receptor.codigo_postal = String(direccion.cp || "").trim();
       if (!receptor.tipo_persona) {
         receptor.tipo_persona = receptor.rfc.length === 12 ? "MORAL" : (receptor.rfc.length === 13 ? "FISICA" : "");
       }

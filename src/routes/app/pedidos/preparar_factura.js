@@ -26,7 +26,7 @@ export async function post(req, res, next) {
             : null;
         const configuracion = await ConfiguracionFiscal.findOne().select("ambiente").lean().exec();
         const configFacturacion = await ConfiguracionFacturacion.findOne().select("requerir_pedimentos").lean().exec();
-        const requerirPedimentos = !!(configFacturacion && configFacturacion.requerir_pedimentos);
+        const requerirPedimentos = true; // Origen y pedimento siempre se solicitan; InformacionAduanera solo aplica a productos importados.
         const productoIds = (pedido.lista || [])
             .map(item => item.producto && item.producto._id)
             .filter(Boolean);
@@ -47,7 +47,7 @@ export async function post(req, res, next) {
         const direccionFiscal = cliente && Array.isArray(cliente.direcciones_asociadas)
             ? cliente.direcciones_asociadas.find(direccion =>
                 ["fiscal", "facturacion"].includes(String(direccion.tipo || "").toLowerCase())
-            ) || {}
+            ) || cliente.direcciones_asociadas.find(direccion => /^\d{5}$/.test(String(direccion.cp || "").trim())) || cliente.direcciones_asociadas[0] || {}
             : {};
 
         res.send({

@@ -60,7 +60,7 @@ export async function post(req, res, next) {
         const productosPorId = new Map(productosActuales.map(producto => [String(producto._id), producto]));
 
         const configFacturacion = await ConfiguracionFacturacion.findOne().select("requerir_pedimentos").lean().exec();
-        const requerirPedimentos = !!(configFacturacion && configFacturacion.requerir_pedimentos);
+        const requerirPedimentos = true; // Origen y pedimento siempre se solicitan; InformacionAduanera solo aplica a productos importados.
 
         const conceptosGuardados = [];
         for (let indice = 0; indice < pedido.lista.length; indice++) {

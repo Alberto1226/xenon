@@ -104,7 +104,7 @@ export async function post(req, res, next) {
     try {
         const config = await ConfiguracionFiscal.findOne().exec();
         const configFacturacion = await ConfiguracionFacturacion.findOne().select("requerir_pedimentos").lean().exec();
-        const requerirPedimentos = !!(configFacturacion && configFacturacion.requerir_pedimentos);
+        const requerirPedimentos = true; // Origen y pedimento siempre se solicitan; InformacionAduanera solo aplica a productos importados.
         if (!config || !["sandbox", "produccion"].includes(config.ambiente)) {
             return responder(res, { ok: false, mensaje: "Configura un ambiente CUCC válido antes de emitir." });
         }

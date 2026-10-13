@@ -1212,7 +1212,6 @@
                         aria-label="Floating label select example"
                         bind:value={cliente.agente.id}
                         on:change={actualizarAgente}
-                        required
                     >
                         <option value="" selected>Seleccione un Agente</option>
                         {#each listaAgente as item}

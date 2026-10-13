@@ -45,10 +45,10 @@ export async function post(req, res, next) {
             // }
             let cliente_Acomodado = AcomodarCliente(req.body.cliente, req.body.direccion, req.user, req.body.accion);
 
-            if (!cliente_Acomodado.agente || !cliente_Acomodado.agente.id) {
-                res.send({ ok: false, mensaje: "El agente es obligatorio" });
-                return;
-            }
+            // if (!cliente_Acomodado.agente || !cliente_Acomodado.agente.id) {
+            //     res.send({ ok: false, mensaje: "El agente es obligatorio" });
+            //     return;
+            // }
 
             cliente_Acomodado.datos_completos = evaluar_datos_completos(cliente_Acomodado, req.body.direccion).completos;
 

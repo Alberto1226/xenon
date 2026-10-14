@@ -2,6 +2,7 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 import { Producto_Schema } from './producto_schema';
+import { preparacionFacturaDef, facturacionDef } from './factura_pedido_schema';
 
 
 var schema = new Schema({
@@ -47,6 +48,8 @@ var schema = new Schema({
     status: { type: String, default: 'Cancelado' },
     razon: { type: String, default: '' },
     fecha_de_cancelacion: { type: Date, default: new Date() },
+    preparacion_factura: preparacionFacturaDef,
+    facturacion: facturacionDef
 });
 
 

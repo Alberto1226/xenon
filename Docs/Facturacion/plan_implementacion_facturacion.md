@@ -120,34 +120,34 @@ Facturación 🧾
   - Envío SOAP `doInvoice` (Base64).
   - Registro de los metadatos timbrados en el arreglo `facturacion` del Carrito/Pedido y en la colección central `Factura`.
   - [ ] Envío SOAP `cancelInvoice` con actualización de estatus a 'Cancelada' (pendiente, ver Fase 8).
-- [ ] Pantalla **Emitir Factura** (`emitir/index.svelte`): hoy solo informativa; se implementa en la Fase 6.
-- [ ] Pantalla **Complementos de Pago REP 2.0** (`pagos/index.svelte`): hoy marcador; se implementa en la Fase 7.
+- [x] Pantalla **Emitir Factura** (`emitir/index.svelte`): hoy solo informativa; se implementa en la Fase 6.
+- [x] Pantalla **Complementos de Pago REP 2.0** (`pagos/index.svelte`): hoy marcador; se implementa en la Fase 7.
 
 ---
 
 ### Fase 5: Cierre de PUE y seguridad de datos entre Carrito y Pedido
-- [ ] El modal "Preparar factura" solo permite **PUE** (se quita el selector de método de pago; el PPD se rechaza en `guardar_preparacion_factura.js`).
-- [ ] Esquema compartido de `preparacion_factura` y `facturacion` en `Carrito`, `Carrito_cancelado` y `Pedido`, para que `cambiar_status_a_entregado`, `cancelar_pedido` y `salidas/finalizar/[idRuta].js` no pierdan datos fiscales.
-- [ ] Bloquear `cancelar_pedido` si el pedido tiene un CFDI vigente.
-- [ ] `Factura`: guardar `folio_pedido` y actualizar `pedido_id` cuando un carrito pase a pedido.
+- [x] El modal "Preparar factura" solo permite **PUE** (se quita el selector de método de pago; el PPD se rechaza en `guardar_preparacion_factura.js`).
+- [x] Esquema compartido de `preparacion_factura` y `facturacion` en `Carrito`, `Carrito_cancelado` y `Pedido`, para que `cambiar_status_a_entregado`, `cancelar_pedido` y `salidas/finalizar/[idRuta].js` no pierdan datos fiscales.
+- [x] Bloquear `cancelar_pedido` si el pedido tiene un CFDI vigente.
+- [x] `Factura`: guardar `folio_pedido` y actualizar `pedido_id` cuando un carrito pase a pedido.
 
 ### Fase 6: Emitir Factura PPD (ventas a crédito)
-- [ ] Ampliar `Factura` con `saldo_pendiente`, `total_pagado`, `status_pago`, `fecha_limite`, `condiciones_pago`.
-- [ ] Pantalla `/app/facturacion/emitir`: buscar pedidos enviados sin factura, formulario de receptor y conceptos reutilizado del modal (componente compartido), método PPD fijo, forma de pago 99 y condiciones de crédito. Reutiliza `guardar_preparacion_factura.js` (parámetro `tipo`) y `emitir_factura.js`.
-- [ ] `cfdiXmlService.js`: `CondicionesDePago` en el comprobante PPD.
+- [x] Ampliar `Factura` con `saldo_pendiente`, `total_pagado`, `status_pago`, `fecha_limite`, `condiciones_pago`.
+- [x] Pantalla `/app/facturacion/emitir`: buscar pedidos enviados sin factura, formulario de receptor y conceptos reutilizado del modal (componente compartido), método PPD fijo, forma de pago 99 y condiciones de crédito. Reutiliza `guardar_preparacion_factura.js` (parámetro `tipo`) y `emitir_factura.js`.
+- [x] `cfdiXmlService.js`: `CondicionesDePago` en el comprobante PPD.
 
 ### Fase 7: Recepción de pagos y Complemento de Pago 2.0
 Un pago del cliente es **un solo registro** que se reparte en N facturas con un importe por cada una; se timbra como un CFDI tipo P con N `DoctoRelacionado`.
-- [ ] Modelos `Pago`, `MovimientoSaldoCliente` (libro de saldo a favor) y `CuentaBancaria`; `Cliente.saldo_a_favor` como cache.
-- [ ] Reglas confirmadas: solo MXN; si paga de más el excedente queda como **saldo a favor** y se ofrece aplicarlo en facturas PPD siguientes; se registra banco y cuenta de origen y destino según la forma de pago; el cobro se registra primero y el REP se timbra después (plazo: día 10 del mes siguiente al pago).
-- [ ] Servicio `pagosService` con actualizaciones atómicas condicionadas, compensación e idempotencia.
-- [ ] Pantalla `/app/facturacion/pagos`: cliente → facturas con saldo → importe por factura (automático FIFO, liquidar, manual) → registro y historial.
-- [ ] `construirREP20` en `cfdiXmlService.js` y endpoint de timbrado del REP con los estados `emitiendo`/`fallido`/`requiere_revision`.
+- [x] Modelos `Pago`, `MovimientoSaldoCliente` (libro de saldo a favor) y `CuentaBancaria`; `Cliente.saldo_a_favor` como cache.
+- [x] Reglas confirmadas: solo MXN; si paga de más el excedente queda como **saldo a favor** y se ofrece aplicarlo en facturas PPD siguientes; se registra banco y cuenta de origen y destino según la forma de pago; el cobro se registra primero y el REP se timbra después (plazo: día 10 del mes siguiente al pago).
+- [x] Servicio `pagosService` con actualizaciones atómicas condicionadas, compensación e idempotencia.
+- [x] Pantalla `/app/facturacion/pagos`: cliente → facturas con saldo → importe por factura (automático FIFO, liquidar, manual) → registro y historial.
+- [x] `construirREP20` en `cfdiXmlService.js` y endpoint de timbrado del REP con los estados `emitiendo`/`fallido`/`requiere_revision`.
 
 ### Fase 8: Cuentas por cobrar, cancelaciones y reportes
 - [ ] `cuentas-por-cobrar`: antigüedad de saldos, vencidas y saldo a favor por cliente; estado de cuenta.
 - [ ] Cancelación SAT de facturas (`cancelInvoice`) y de pagos/REP, con reversa de saldos.
-- [ ] Un pago no se cancela si su saldo a favor ya fue consumido.
+- [x] Un pago no se cancela si su saldo a favor ya fue consumido.
 
 ---
 

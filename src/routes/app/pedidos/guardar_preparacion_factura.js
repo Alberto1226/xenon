@@ -11,6 +11,8 @@ const formasPago = new Set([
     "17", "23", "24", "25", "26", "27", "28", "29", "30", "31", "99"
 ]);
 const metodosPago = new Set(["PUE", "PPD"]);
+const formasPagoPue = new Set([...formasPago].filter(forma => forma !== "99"));
+const MAX_DIAS_CREDITO = 365;
 
 function textoValido(valor, longitudMaxima) {
     return typeof valor === "string" && valor.trim().length > 0 && valor.trim().length <= longitudMaxima;
@@ -26,7 +28,19 @@ export async function post(req, res, next) {
 
     try {
         const { pedido_id, receptor, metodo_pago, forma_pago, conceptos } = req.body;
-        if (!receptor || !Array.isArray(conceptos) || !metodosPago.has(metodo_pago) || !formasPago.has(forma_pago)) {
+        // El tipo determina el flujo: PUE desde Pedidos y PPD (crédito) desde Facturación → Emitir factura.
+        const tipo = req.body.tipo === "PPD" ? "PPD" : "PUE";
+        if (metodo_pago !== tipo) {
+            return res.send({ ok: false, mensaje: tipo === "PUE"
+                ? "Las facturas PPD se emiten desde Facturación → Emitir factura."
+                : "Este flujo solo emite facturas PPD." });
+        }
+        const diasCredito = Math.floor(Number(req.body.dias_credito));
+        if (tipo === "PPD" && (!Number.isFinite(diasCredito) || diasCredito < 1 || diasCredito > MAX_DIAS_CREDITO)) {
+            return res.send({ ok: false, mensaje: `Indica los días de crédito (1 a ${MAX_DIAS_CREDITO}).` });
+        }
+        const formaPagoValida = tipo === "PPD" ? forma_pago === "99" : formasPagoPue.has(forma_pago);
+        if (!receptor || !Array.isArray(conceptos) || !metodosPago.has(metodo_pago) || !formaPagoValida) {
             return res.send({ ok: false, mensaje: "Completa los datos fiscales y de pago requeridos" });
         }
         if (
@@ -134,8 +148,11 @@ export async function post(req, res, next) {
                 regimen_fiscal: receptor.regimen_fiscal.trim(),
                 uso_cfdi: receptor.uso_cfdi.trim()
             },
+            tipo,
             metodo_pago,
             forma_pago,
+            dias_credito: tipo === "PPD" ? diasCredito : 0,
+            condiciones_pago: tipo === "PPD" ? String(req.body.condiciones_pago || "").trim().slice(0, 200) : "",
             factura_uuid: "",
             error_emision: "",
             conceptos: conceptosGuardados,

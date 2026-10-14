@@ -1,33 +1,16 @@
 import { ConfiguracionFacturacion } from "../../../models/configuracion_facturacion";
 import { ConfiguracionFiscal } from "../../../models/configuracion_fiscal";
 import { Factura } from "../../../models/factura";
-import { FolioConfig } from "../../../models/folio_config";
 import { Pedido } from "../../../models/pedido";
 import { Pedimento } from "../../../models/pedimento";
 import { construirCFDI40 } from "../../../services/cfdiXmlService";
 import { decryptText } from "../../../services/cryptoService";
 import { timbrarConCUCC } from "../../../services/cuccPacService";
+import { reservarFolioFiscal } from "../../../services/folioFiscalService";
 import * as accesos from "../accesos";
 
 function responder(res, datos) {
     return res.send(datos);
-}
-
-async function reservarFolio(serie) {
-    await FolioConfig.findOneAndUpdate(
-        { serie },
-        { $setOnInsert: { serie, folio_siguiente: 1 } },
-        { upsert: true, new: true }
-    ).exec();
-    const config = await FolioConfig.findOneAndUpdate(
-        { serie },
-        { $inc: { folio_siguiente: 1 } },
-        { new: false }
-    ).exec();
-    if (!config) {
-        throw new Error("No se pudo reservar un folio fiscal.");
-    }
-    return String(config.folio_siguiente);
 }
 
 async function agregarNumerosPedimento(pedido, preparacion, requerirPedimentos) {
@@ -137,7 +120,7 @@ export async function post(req, res, next) {
 
         const preparacion = await agregarNumerosPedimento(pedido, pedido.preparacion_factura, requerirPedimentos);
         const serie = "F";
-        const folio = await reservarFolio(serie);
+        const folio = await reservarFolioFiscal(serie);
         const comprobante = construirCFDI40({
             pedido,
             preparacion,
@@ -193,11 +176,25 @@ export async function post(req, res, next) {
             });
         }
 
+        const esPPD = preparacion.metodo_pago === "PPD";
+        const fechaEmision = new Date();
+        const datosCredito = esPPD ? {
+            condiciones_pago: preparacion.condiciones_pago || "",
+            dias_credito: preparacion.dias_credito || 0,
+            fecha_limite: new Date(fechaEmision.getTime() + (preparacion.dias_credito || 0) * 86400000),
+            saldo_pendiente: comprobante.total,
+            total_pagado: 0,
+            status_pago: "pendiente"
+        } : {};
+
         const facturaDatos = {
             uuid: resultadoPAC.uuid,
             serie,
             folio,
             pedido_id: pedido._id,
+            folio_pedido: pedido.folio,
+            cliente_id: pedido.cliente && pedido.cliente.id ? pedido.cliente.id : null,
+            traslados: comprobante.traslados,
             receptor: {
                 rfc: preparacion.receptor.rfc,
                 nombre: preparacion.receptor.nombre,
@@ -213,6 +210,7 @@ export async function post(req, res, next) {
             forma_pago: preparacion.metodo_pago === "PPD" ? "99" : preparacion.forma_pago,
             status: "Vigente",
             fecha_emision: new Date(),
+            ...datosCredito,
             usuario: {
                 id: req.user._id,
                 nombre: req.user.nombre || ""

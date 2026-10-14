@@ -7,6 +7,8 @@ var schema = new Schema({
     folio: { type: String, default: "" },
     pedido_id: { type: Schema.Types.ObjectId, default: null },
     carrito_id: { type: Schema.Types.ObjectId, default: null },
+    folio_pedido: { type: Number, default: 0, index: true },
+    cliente_id: { type: Schema.Types.ObjectId, default: null, index: true },
     receptor: {
         rfc: { type: String, default: "" },
         nombre: { type: String, default: "" },
@@ -23,6 +25,29 @@ var schema = new Schema({
     metodo_pago: { type: String, default: "PUE" },
     forma_pago: { type: String, default: "01" },
     status: { type: String, default: "Vigente" }, // Vigente | Cancelada
+    // Desglose de traslados del CFDI, base para los impuestos proporcionales del REP.
+    traslados: [{
+        impuesto: { type: String, default: "" },
+        factor: { type: String, default: "" },
+        tasa: { type: Number, default: null },
+        base: { type: Number, default: 0 },
+        importe: { type: Number, default: 0 }
+    }],
+    // Solo las facturas PPD llevan saldo; las PUE nacen en cero y no aparecen en cobranza.
+    condiciones_pago: { type: String, default: "" },
+    dias_credito: { type: Number, default: 0 },
+    fecha_limite: { type: Date, default: null },
+    saldo_pendiente: { type: Number, default: 0 },
+    total_pagado: { type: Number, default: 0 },
+    status_pago: { type: String, enum: ["", "pendiente", "parcial", "pagada"], default: "" },
+    parcialidades: [{
+        pago_id: { type: Schema.Types.ObjectId, ref: 'Pago' },
+        num_parcialidad: { type: Number, default: 1 },
+        importe: { type: Number, default: 0 },
+        saldo_anterior: { type: Number, default: 0 },
+        saldo_insoluto: { type: Number, default: 0 },
+        fecha: { type: Date, default: Date.now }
+    }],
     fecha_emision: { type: Date, default: Date.now },
     fecha_cancelacion: { type: Date, default: null },
     motivo_cancelacion: { type: String, default: "" },

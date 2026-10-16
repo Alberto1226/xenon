@@ -18,6 +18,8 @@ import { crearCoreCfdiCliente } from "./cliente.js";
 import { crearCoreCfdiSat } from "./sat.js";
 import { crearCoreCfdiFacturas } from "./facturas.js";
 import { crearCoreCfdiTesoreria } from "./tesoreria.js";
+import { crearCoreCfdiReportes } from "./reportes.js";
+import { crearCoreCfdiBoveda } from "./boveda.js";
 import { crearAlmacenTokensMongo, crearAlmacenSolicitudesMongo, crearLockMongo, leerSesionGuardada } from "./almacenMongo";
 
 const httpFetch = (url, opciones) => globalThis.fetch(url, opciones);
@@ -43,7 +45,9 @@ function armarServicios(usuario, tenant) {
     const CoreCfdiSat = crearCoreCfdiSat({ cliente, almacen: crearAlmacenSolicitudesMongo(() => tenant), lock, ambito: tenant });
     const CoreCfdiFacturas = crearCoreCfdiFacturas({ cliente });
     const CoreCfdiTesoreria = crearCoreCfdiTesoreria({ cliente, ambito: tenant });
-    return { tenant, CoreCfdiAuth, CoreCfdiSat, CoreCfdiFacturas, CoreCfdiTesoreria };
+    const CoreCfdiReportes = crearCoreCfdiReportes({ cliente, ambito: tenant });
+    const CoreCfdiBoveda = crearCoreCfdiBoveda({ cliente, ambito: tenant });
+    return { tenant, CoreCfdiAuth, CoreCfdiSat, CoreCfdiFacturas, CoreCfdiTesoreria, CoreCfdiReportes, CoreCfdiBoveda };
 }
 
 /**

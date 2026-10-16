@@ -198,6 +198,12 @@
           icono: "move_to_inbox",
           roles: ["administrador", "gerente"],
         },
+        {
+          titulo: "Balanza de Ingresos y Egresos",
+          url: "/app/facturacion/balanza",
+          icono: "balance",
+          roles: ["administrador", "gerente"],
+        },
       ],
     },
     {
@@ -393,6 +399,10 @@
           break;
         case "/app/facturacion/cuentas-por-pagar":
           $ui.ventana_visible = "Cuentas por Pagar";
+          menu_actual = "corecfdi";
+          break;
+        case "/app/facturacion/balanza":
+          $ui.ventana_visible = "Balanza de Ingresos y Egresos";
           menu_actual = "corecfdi";
           break;
         case "/app/facturacion/sat-descargas":

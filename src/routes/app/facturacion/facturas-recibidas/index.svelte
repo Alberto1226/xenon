@@ -2,6 +2,7 @@
   import { onDestroy } from "svelte";
   import { postData, mensajes_app } from "../../../stores";
   import SesionCoreCfdi from "../_SesionCoreCfdi.svelte";
+  import BovedaFiscal from "../_BovedaFiscal.svelte";
 
   // La API permite 60 peticiones por minuto para toda la integración: la búsqueda espera a que se deje de escribir.
   const ESPERA_BUSQUEDA_MS = 500;
@@ -30,6 +31,7 @@
   let expandidas = {};
   let temporizador_busqueda = null;
   let consulta_actual = 0;
+  let boveda_id = null;
 
   // Nada se consulta hasta que el usuario tiene sesión en CoreCFDI.
   function al_iniciar_sesion() {
@@ -253,6 +255,7 @@
                 </td>
                 <td><span class={"badge " + clase_estado(factura.estado)}>{factura.estado}</span></td>
                 <td class="acciones">
+                  <button class="enlace" on:click={() => (boveda_id = factura.id)}>Bóveda Fiscal</button>
                   {#if factura.satUrl}
                     <a href={factura.satUrl} target="_blank" rel="noopener noreferrer">Verificar en SAT</a>
                   {/if}
@@ -312,6 +315,10 @@
       </div>
     {/if}
   </div>
+  <!-- Keyed each: al cambiar de factura el panel se vuelve a crear. -->
+  {#each boveda_id === null ? [] : [boveda_id] as id (id)}
+    <BovedaFiscal {id} origen="recibida" on:cerrar={() => (boveda_id = null)} on:sesion={() => { boveda_id = null; sesion_activa = false; }} />
+  {/each}
   </SesionCoreCfdi>
 </div>
 

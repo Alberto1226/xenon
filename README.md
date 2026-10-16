@@ -27,6 +27,15 @@ cuenta de CoreCFDI necesita permiso de escritura para cargar la FIEL y solicitar
 - **Cuentas por Cobrar** y **Cuentas por Pagar** (`src/services/corecfdi/tesoreria.js`) son solo de
   consulta. Requieren que la empresa tenga contratado el módulo Tesorería en CoreCFDI y que la
   cuenta tenga el permiso `ver tesoreria`.
+- **Balanza de Ingresos y Egresos** (`src/services/corecfdi/reportes.js`) es solo de consulta: lo
+  facturado por mes según los CFDI vigentes descargados, no flujo de efectivo. La cuenta necesita
+  el permiso `ver reportes`.
+- **Bóveda Fiscal** (`src/services/corecfdi/boveda.js`): expediente de un CFDI (pagos REP, saldo,
+  EFOS, bitácora, adjuntos e historial, más el semáforo fiscal y el ciclo de vida del CFDI, que se
+  calculan aquí en `bovedaVista.js` porque CoreCFDI no tiene endpoint para ellos), desde la acción "Bóveda Fiscal" de Facturas Recibidas y
+  Cuentas por Cobrar / por Pagar. Consultar requiere `ver facturacion`; comentar y subir,
+  `crear facturacion`; eliminar adjuntos, `eliminar facturacion`. Los archivos pasan por
+  `/app/facturacion/boveda-archivo`: el navegador nunca llama a CoreCFDI directo.
 - Documentación de la API: `Docs/corecfdi/`.
 - Pruebas (usan respuestas simuladas; no llaman a CoreCFDI ni al SAT): `npm run test:corecfdi`.
   Requieren Node 20 o superior.

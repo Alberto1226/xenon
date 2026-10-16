@@ -32,6 +32,8 @@ async function leerJson(response) {
  *
  * No interpreta 401/403/422: devuelve { status, data } y el que llama decide.
  * `body` puede ser una función para reconstruir el cuerpo en cada intento (multipart).
+ * Con `binario`, una respuesta 2xx no se lee como JSON: llega en `archivo` como
+ * { buffer, contentType, contentDisposition }. Los errores sí se leen como JSON.
  * El log solo lleva endpoint, status y duración (más `logExtra`); nunca headers ni cuerpo.
  */
 export async function enviar(opciones) {
@@ -49,7 +51,8 @@ export async function enviar(opciones) {
         noReintentarSi = null,
         logger = console,
         sleep = dormir,
-        logExtra = null
+        logExtra = null,
+        binario = false
     } = opciones;
 
     let intentosDeFallo = 0;
@@ -62,6 +65,7 @@ export async function enviar(opciones) {
         let response = null;
         let errorDeRed = null;
         let data = null;
+        let archivo = null;
 
         try {
             response = await fetchImpl(url, {
@@ -70,7 +74,15 @@ export async function enviar(opciones) {
                 body: typeof body === "function" ? body() : body,
                 signal: controller.signal
             });
-            data = await leerJson(response);
+            if (binario && response.status >= 200 && response.status < 300) {
+                archivo = {
+                    buffer: Buffer.from(await response.arrayBuffer()),
+                    contentType: response.headers.get("content-type") || null,
+                    contentDisposition: response.headers.get("content-disposition") || null
+                };
+            } else {
+                data = await leerJson(response);
+            }
         } catch (err) {
             errorDeRed = err;
         } finally {
@@ -117,6 +129,6 @@ export async function enviar(opciones) {
             }
         }
 
-        return { status: response.status, data };
+        return { status: response.status, data, archivo };
     }
 }

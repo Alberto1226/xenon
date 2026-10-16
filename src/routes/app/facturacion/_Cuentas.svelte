@@ -5,6 +5,7 @@
   import { onDestroy } from "svelte";
   import { postData, mensajes_app } from "../../stores";
   import SesionCoreCfdi from "./_SesionCoreCfdi.svelte";
+  import BovedaFiscal from "./_BovedaFiscal.svelte";
   import { RANGOS_ANTIGUEDAD, filtrarCuentas, resumirCuentas, ordenarCuentas, monedasDe, paginar } from "../../../services/corecfdi/tesoreriaVista.js";
 
   export let tipo = "cobrar";
@@ -35,6 +36,7 @@
   let fecha_fin = "";
   let pagina = 1;
   let expandidas = {};
+  let boveda_id = null;
   let temporizador_busqueda = null;
 
   onDestroy(() => clearTimeout(temporizador_busqueda));
@@ -335,7 +337,8 @@
                     <td>{fecha_legible(factura.fechaVencimiento)}<small>{factura.diasCredito} días de crédito</small></td>
                     <td>{plazo(factura)}</td>
                     <td><span class={"badge " + clase_estatus(factura.estatus)}>{titulo_estatus(factura.estatus)}</span></td>
-                    <td>
+                    <td class="acciones">
+                      <button class="enlace" on:click={() => (boveda_id = factura.id)}>Bóveda Fiscal</button>
                       {#if factura.pagos.length > 0}
                         <button class="enlace" on:click={() => alternar_pagos(factura)}>
                           {expandidas[factura.id] ? "Ocultar abonos" : `Abonos (${factura.pagos.length})`}
@@ -389,6 +392,10 @@
         {/if}
       </div>
     {/if}
+  <!-- Keyed each: al cambiar de factura el panel se vuelve a crear. -->
+  {#each boveda_id === null ? [] : [boveda_id] as id (id)}
+    <BovedaFiscal {id} origen={es_cobrar ? "emitida" : "recibida"} on:cerrar={() => (boveda_id = null)} on:sesion={() => { boveda_id = null; sesion_activa = false; }} />
+  {/each}
   </SesionCoreCfdi>
 </div>
 
@@ -449,6 +456,8 @@
   .estatus_liquidado { background: #dbeafe; color: #1e40af; }
   .estatus_desconocido { background: #f1f5f9; color: #334155; }
   .enlace { color: #1d4ed8; background: none; border: none; padding: 0; font-size: 13px; cursor: pointer; }
+  .acciones { white-space: nowrap; }
+  .acciones .enlace + .enlace { margin-left: 10px; }
   .fila_pagos > td { background: #f8fafc; padding: 12px 20px; }
   .tabla_pagos th { background: #eef2f7; }
   .paginacion { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; font-size: 13px; color: #475569; }

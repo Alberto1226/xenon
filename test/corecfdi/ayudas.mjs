@@ -24,6 +24,11 @@ export function json(status, body, headers = {}) {
     return { status, body, headers };
 }
 
+/** Respuesta binaria (descargas): `contenido` se manda tal cual, sin JSON. */
+export function binario(status, contenido, headers = {}) {
+    return { status, crudo: contenido, headers };
+}
+
 /**
  * fetch simulado. `manejador(llamada, numero)` devuelve json(status, body) o lanza un error.
  * Guarda cada llamada en `api.llamadas` con { url, ruta, method, headers, body }.
@@ -42,7 +47,8 @@ export function crearApiFalsa(manejador) {
         };
         llamadas.push(llamada);
         const respuesta = await manejador(llamada, llamadas.length);
-        return new Response(respuesta.body === undefined ? "" : JSON.stringify(respuesta.body), {
+        const cuerpo = respuesta.crudo !== undefined ? respuesta.crudo : respuesta.body === undefined ? "" : JSON.stringify(respuesta.body);
+        return new Response(cuerpo, {
             status: respuesta.status,
             headers: respuesta.headers
         });

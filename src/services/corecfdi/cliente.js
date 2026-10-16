@@ -24,9 +24,10 @@ export function crearCoreCfdiCliente({ config, auth, fetch: fetchImpl, logger = 
 
     /**
      * opciones: { method, ruta, query, json, multipart, timeoutMs, reintentos, esperaReintentoMs,
-     *             noReintentarSi, logExtra }
+     *             noReintentarSi, logExtra, binario }
      * `multipart` es una función que devuelve un FormData nuevo: se llama en cada intento para
      * volver a adjuntar los archivos.
+     * Con `binario`, un 2xx devuelve { buffer, contentType, contentDisposition } en lugar del JSON.
      */
     async function peticion(opciones) {
         const cfg = leerConfig();
@@ -60,6 +61,7 @@ export function crearCoreCfdiCliente({ config, auth, fetch: fetchImpl, logger = 
                 esperaReintentoMs: opciones.esperaReintentoMs !== undefined ? opciones.esperaReintentoMs : null,
                 noReintentarSi: opciones.noReintentarSi || null,
                 logExtra: opciones.logExtra || null,
+                binario: !!opciones.binario,
                 logger,
                 sleep
             });
@@ -81,6 +83,7 @@ export function crearCoreCfdiCliente({ config, auth, fetch: fetchImpl, logger = 
         const mensaje = (data && data.message) || "";
 
         if (status >= 200 && status < 300) {
+            if (opciones.binario) return respuesta.archivo;
             if (data && data.success === false) {
                 throw new CoreCfdiError("servidor", mensaje || "CoreCFDI no pudo procesar la petición.", { status });
             }

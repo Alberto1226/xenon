@@ -1,5 +1,6 @@
 import { Carrito } from "../../../../models/carrito";
 import { Pedido } from "../../../../models/pedido";
+import { Factura } from "../../../../models/factura";
 import { Carrito_cancelado } from "../../../../models/carrito_cancelado";
 import { Cliente } from "../../../../models/cliente";
 import { Producto } from "../../../../models/producto";
@@ -188,6 +189,12 @@ export async function cambiar_status_a_entregado(carrito_id, usuario, req) {
         const pedido_nuevo = new Pedido(pedido_temp);
         await pedido_nuevo.save();
 
+        // Las facturas ligadas al carrito deben apuntar al pedido definitivo.
+        await Factura.updateMany(
+            { carrito_id: carrito._id },
+            { $set: { pedido_id: pedido_nuevo._id, folio_pedido: carrito.folio } }
+        );
+
         // Vincular folio en la colección Folio
         await FolioService.vincular_folio_a_estado(carrito.folio, { tipo: 'pedido', id_destino: pedido_nuevo._id });
 
@@ -210,6 +217,11 @@ export async function cancelar_pedido(carrito_id, usuario, req, opciones = {}) {
 
         if (['Pagado', 'Empaque', 'Envío', 'Envio', 'En Ruta', 'Entregado', 'Finalizada'].includes(carrito.status)) {
             return { ok: false, mensaje: `El pedido no se puede cancelar en estatus ${carrito.status}` };
+        }
+
+        const cfdiVigente = (carrito.facturacion || []).some(f => f.status !== "Cancelada");
+        if (cfdiVigente) {
+            return { ok: false, mensaje: "El pedido tiene un CFDI vigente. Cancela primero la factura ante el SAT." };
         }
 
         // 1. Liberar reservas específicas en productos y generar snaplog '4d'

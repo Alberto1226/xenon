@@ -24,6 +24,8 @@ var schema = new Schema({
     fecha_creacion: { type: Date, default: new Date },
     fecha_update: { type: Date, default: new Date },
     fecha_desactivacion: { type: Date, default: new Date },
+    // Cache del libro MovimientoSaldoCliente; se puede reconstruir sumando sus movimientos.
+    saldo_a_favor: { type: Number, default: 0 },
     datos_fiscales: {
         razon_social: { type: String, default: '' },
         rfc: { type: String, default: '' },

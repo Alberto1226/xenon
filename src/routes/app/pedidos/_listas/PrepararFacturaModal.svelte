@@ -4,6 +4,7 @@
 
   export let visible = false;
   export let pedido = null;
+  export let tipo = "PUE";
 
   let cargando = false;
   let guardando = false;
@@ -27,6 +28,9 @@
   };
   let metodo_pago = "PUE";
   let forma_pago = "01";
+  let dias_credito = 30;
+  let condiciones_pago = "";
+  $: es_ppd = tipo === "PPD";
   let conceptos = [];
   $: codigo_postal_valido = /^\d{5}$/.test(receptor.codigo_postal);
 
@@ -80,8 +84,15 @@
       if (!receptor.tipo_persona) {
         receptor.tipo_persona = receptor.rfc.length === 12 ? "MORAL" : (receptor.rfc.length === 13 ? "FISICA" : "");
       }
-      metodo_pago = (borrador && borrador.metodo_pago) || "PUE";
-      forma_pago = (borrador && borrador.forma_pago) || "01";
+      if (tipo === "PPD") {
+        metodo_pago = "PPD";
+        forma_pago = "99";
+        dias_credito = (borrador && borrador.dias_credito) || 30;
+        condiciones_pago = (borrador && borrador.condiciones_pago) || "";
+      } else {
+        metodo_pago = "PUE";
+        forma_pago = (borrador && borrador.forma_pago && borrador.forma_pago !== "99") ? borrador.forma_pago : "01";
+      }
       conceptos = (pedido_datos.lista || []).map((item, indice) => {
         const guardado = borrador && (borrador.conceptos || []).find(concepto =>
           concepto.indice === indice && String(concepto.producto_id) === String(item.producto && item.producto._id)
@@ -152,8 +163,11 @@
       const respuesta = await postData("/app/pedidos/guardar_preparacion_factura", {
         pedido_id: pedido_datos._id,
         receptor,
+        tipo,
         metodo_pago,
         forma_pago,
+        dias_credito: es_ppd ? Number(dias_credito) : 0,
+        condiciones_pago: es_ppd ? condiciones_pago : "",
         conceptos: conceptos.map(concepto => ({
           indice: concepto.indice,
           producto_id: concepto.producto_id,
@@ -297,13 +311,25 @@
                   {/each}
                 </select>
               </label>
-              <label>Método de pago
-                <select bind:value={metodo_pago}>
-                  <option value="PUE">PUE - Pago en una sola exhibición</option>
-                  <option value="PPD">PPD - Pago en parcialidades o diferido</option>
-                </select>
-              </label>
-              <label>Forma de pago
+              {#if es_ppd}
+                <label>Método de pago
+                  <input value="PPD - Pago en parcialidades o diferido" disabled />
+                </label>
+                <label>Forma de pago
+                  <input value="99 - Por definir" disabled />
+                </label>
+                <label>Días de crédito
+                  <input type="number" min="1" max="365" step="1" bind:value={dias_credito} required />
+                </label>
+                <label>Condiciones de pago
+                  <input type="text" maxlength="200" placeholder="Ej. Crédito a 30 días" bind:value={condiciones_pago} />
+                </label>
+              {:else}
+                <label>Método de pago
+                <input value="PUE - Pago en una sola exhibición" disabled />
+                <small class="ayuda">Las ventas a crédito (PPD) se facturan en Facturación → Emitir factura.</small>
+                </label>
+                <label>Forma de pago
                 <select bind:value={forma_pago}>
                   <option value="01">01 - Efectivo</option>
                   <option value="02">02 - Cheque nominativo</option>
@@ -326,9 +352,9 @@
                   <option value="29">29 - Tarjeta de servicios</option>
                   <option value="30">30 - Aplicación de anticipos</option>
                   <option value="31">31 - Intermediario pagos</option>
-                  <option value="99">99 - Por definir</option>
                 </select>
-              </label>
+                </label>
+              {/if}
             </div>
           </section>
 

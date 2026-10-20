@@ -43,6 +43,11 @@ if (!process.env.DB) {
 	process.env.DB = "xenon-y-mas-app"
 	console.log("Ahora su db sera " + FgBlue + process.env.DB + Reset);
 }
+// API de CoreCFDI (descarga de CFDI del SAT). La empresa, el email y la contraseña se piden en pantalla.
+if (!process.env.CORECFDI_BASE_URL) {
+	process.env.CORECFDI_BASE_URL = "http://corecfdi.test/api/v1";
+}
+console.log("CoreCFDI en =" + FgBlue + process.env.CORECFDI_BASE_URL + Reset);
 console.log("DB usada =" + FgBlue + devolver_nombre_db() + " , osea :" + process.env.DB + Reset);
 console.log(FgBlue + '#---------------------------------------------------------------------------------------------------------------------------------#' + Reset);
 //if(!dev) process.env.PORT = 3004;
@@ -62,8 +67,12 @@ if (process.env.DB != "xenon-y-mas-app") {
 
 // mongoose.connect(`mongodb+srv://root:11111@xenon.02uz8yx.mongodb.net/xenon-y-mas-app`, {
 // mongoose.connect(`mongodb+srv://root:11111@xenon.02uz8yx.mongodb.net/pruebas-xenon-monterrey`, {//base para pruebas locales
-mongoose.connect(`mongodb+srv://agustinquintanar:JTIYVdKKsGu1A4LN@cluster0.x1bkcvk.mongodb.net/xenonNewMonterrey`, {
-	useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false
+// mongoose.connect(`mongodb+srv://agustinquintanar:JTIYVdKKsGu1A4LN@cluster0.x1bkcvk.mongodb.net/xenon-y-mas-app`, {
+mongoose.connect(`mongodb://xenonformongo:DWuis9maB8nq04Ya@191.215.39.202:39482/xenon-y-mas-appMonterrey?authSource=admin&directConnection=true`, {
+	useNewUrlParser: true,
+	useUnifiedTopology: true,
+	useFindAndModify: false,
+	serverSelectionTimeoutMS: 5000
 })
 	.then(() => {
 		console.log(FgGreen + "  Mongoose, acceso a DB: " + FgBlue + 'Ok' + FgGreen);
@@ -71,7 +80,7 @@ mongoose.connect(`mongodb+srv://agustinquintanar:JTIYVdKKsGu1A4LN@cluster0.x1bkc
 		console.log('  Express en: ' + FgBlue + process.env.PORT + '\n' + FgWhite + Reset);
 	})
 	.catch((err) => {
-		console.log(err);
+		console.log(FgRed + ">>> [ERROR] Falló la conexión a MongoDB: " + err.message + Reset);
 	})
 
 

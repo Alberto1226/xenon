@@ -19,6 +19,7 @@ export async function post(req, res, next) {
     }
 
     let bloqueado = false;
+    let rep = null;
     const pagoId = req.body.pago_id;
     try {
         const config = await ConfiguracionFiscal.findOne().exec();
@@ -40,7 +41,7 @@ export async function post(req, res, next) {
         if (!pago || pago.status !== "Registrado") {
             return res.send({ ok: false, mensaje: "El pago no existe o está cancelado." });
         }
-        if (!["sin_timbrar", "fallido"].includes(pago.rep.estado)) {
+        if (!["sin_timbrar", "fallido", "requiere_revision"].includes(pago.rep.estado)) {
             return res.send({ ok: false, mensaje: "El complemento de este pago ya fue timbrado o está en revisión." });
         }
         if (!pago.aplicaciones || pago.aplicaciones.length === 0) {
@@ -56,7 +57,7 @@ export async function post(req, res, next) {
 
         const serie = "P";
         const folio = await reservarFolioFiscal(serie);
-        const rep = construirREP20({
+        rep = construirREP20({
             pago,
             facturas,
             emisor: { rfc: config.emisor_rfc, nombre: config.emisor_nombre, regimen: config.emisor_regimen, cp: config.emisor_cp },
@@ -68,7 +69,7 @@ export async function post(req, res, next) {
         });
 
         const bloqueo = await Pago.updateOne(
-            { _id: pagoId, status: "Registrado", "rep.estado": { $in: ["sin_timbrar", "fallido"] } },
+            { _id: pagoId, status: "Registrado", "rep.estado": { $in: ["sin_timbrar", "fallido", "requiere_revision"] } },
             { $set: { "rep.estado": "emitiendo", "rep.error": "" } }
         ).exec();
         if (bloqueo.nModified !== 1) {
@@ -80,17 +81,24 @@ export async function post(req, res, next) {
         try {
             resultadoPAC = await timbrarConCUCC({ xml: rep.xml, config, soapPassword });
         } catch (err) {
-            const estado = err.definitivo ? "fallido" : "requiere_revision";
-            await Pago.updateOne({ _id: pagoId, "rep.estado": "emitiendo" }, { $set: { "rep.estado": estado, "rep.error": err.message } }).exec();
+            const esDefinitivo = Boolean(err.definitivo || /^(CRP|CFDI|\d{3}|Error|Rechazo)/i.test(err.message || ""));
+            const estado = esDefinitivo ? "fallido" : "requiere_revision";
+            await Pago.updateOne({ _id: pagoId, "rep.estado": "emitiendo" }, { $set: { "rep.estado": estado, "rep.error": err.message, "rep.xml_generado": rep ? rep.xml : "" } }).exec();
             bloqueado = false;
             return res.send({
                 ok: false,
                 estado,
                 mensaje: estado === "requiere_revision"
-                    ? `No se confirmó la respuesta del PAC. No reintentes aún para evitar duplicar el timbre. Revisa CUCC. Detalle: ${err.message}`
+                    ? `No se confirmó la respuesta del PAC. Puedes revisar el error, verificar CUCC o reintentar. Detalle: ${err.message}`
                     : `CUCC rechazó el complemento: ${err.message}`
             });
         }
+
+        await Factura.updateMany(
+            { "parcialidades.pago_id": pagoId },
+            { $set: { "parcialidades.$[elem].uuid_rep": resultadoPAC.uuid } },
+            { arrayFilters: [{ "elem.pago_id": pagoId }] }
+        ).exec();
 
         await Pago.updateOne({ _id: pagoId }, {
             $set: {
@@ -99,6 +107,7 @@ export async function post(req, res, next) {
                 "rep.serie": serie,
                 "rep.folio": folio,
                 "rep.error": "",
+                "rep.xml_timbrado": resultadoPAC.xmlTimbrado || "",
                 "rep.fecha_timbrado": new Date()
             }
         }).exec();

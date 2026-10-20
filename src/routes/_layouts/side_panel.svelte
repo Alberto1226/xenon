@@ -36,9 +36,9 @@
         "gerente",
         "marketing",
         "ComercioExterior",
+        "diseñador",
       ],
     },
-
     {
       url: "/app/pedidos",
       titulo: "Pedidos",
@@ -53,91 +53,57 @@
       ],
     },
     {
-      url: "/app/productos",
-      titulo: "Productos",
-      icono: "view_list",
-      roles: [
-        "administrador",
-        "vendedor",
-        "almacen",
-        "gerente",
-        "diseñador",
-        "ComercioExterior",
-        "marketing",
-      ],
-    },
-    {
-      url: "/app/Catalogos",
-      titulo: "Catalogos",
-      icono: "view_cozy",
-      roles: ["administrador", "gerente"],
-    },
-    {
-      url: "/app/clientes",
-      titulo: "Clientes",
-      icono: "people",
-      roles: [
-        "administrador",
-        "vendedor",
-        "gerente",
-        "marketing",
-        "ComercioExterior",
-      ],
-    },
-    {
       url: "/app/clientes/analisis_comercial",
-      titulo: "Análisis Comercial",
+      titulo: "Análisis",
       icono: "analytics",
       roles: [
         "administrador",
-        "vendedor",
         "gerente",
+        "vendedor",
         "marketing",
         "ComercioExterior",
       ],
-    },
-
-    //{
-    //url: "/app/clientes_nuevos",
-    //titulo: "Clientes Nuevos",
-    //icono: "supervised_user_circle",
-    //roles: ["administrador"],
-    //},
-
-    {
-      url: "/app/graficos",
-      titulo: "Gráficos",
-      icono: "bar_chart",
-      roles: ["administrador"],
-    },
-
-    {
-      url: "/app/usuarios",
-      titulo: "Usuarios",
-      icono: "supervised_user_circle",
-      roles: ["administrador"],
-    },
-
-    {
-      url: "/app/mapas",
-      titulo: "Mapas",
-      icono: "maps",
-      roles: ["administrador"],
-    },
-    {
-      url: "/app/tecnico-isotech/logs",
-      titulo: "Logs",
-      icono: "admin_panel_settings",
-      roles: ["administrador"],
-    },
-    {
-      url: "/app/pedimentos",
-      titulo: "Pedimentos",
-      icono: "sailing",
-      roles: ["administrador", "gerente"],
+      subitems: [
+        {
+          url: "/app/reportes/utilidades",
+          titulo: "Utilidades",
+          icono: "trending_up",
+          roles: ["administrador"],
+        },
+        {
+          url: "/app/clientes/analisis_comercial",
+          titulo: "Análisis Comercial",
+          icono: "analytics",
+          roles: [
+            "administrador",
+            "vendedor",
+            "gerente",
+            "marketing",
+            "ComercioExterior",
+          ],
+        },
+        {
+          titulo: "Logs",
+          url: "/app/tecnico-isotech/logs",
+          icono: "admin_panel_settings",
+          roles: ["administrador"],
+        },
+        {
+          url: "/app/graficos",
+          titulo: "Gráficos",
+          icono: "bar_chart",
+          roles: ["administrador"],
+        },
+        {
+          url: "/app/mapas",
+          titulo: "Mapas",
+          icono: "maps",
+          roles: ["administrador"],
+        },
+      ],
     },
     {
-      url: "/app/facturacion/perfil-fiscal",
+      url: "/app/facturacion/facturas-emitidas",
       titulo: "Facturación",
       icono: "receipt_long",
       roles: ["administrador", "gerente", "vendedor"],
@@ -165,6 +131,96 @@
           url: "/app/facturacion/pagos",
           icono: "payments",
           roles: ["administrador", "gerente"],
+        },
+        {
+          titulo: "Abonos y Saldos a Favor",
+          url: "/app/facturacion/pagos?tab=saldos",
+          icono: "savings",
+          roles: ["administrador", "gerente"],
+        },
+        {
+          url: "/app/pedimentos",
+          titulo: "Pedimentos",
+          icono: "sailing",
+          roles: ["administrador", "gerente"],
+        },
+      ],
+    },
+    {
+      url: "/app/Catalogos",
+      titulo: "Configuración",
+      icono: "settings",
+      roles: [
+        "administrador",
+        "gerente",
+        "vendedor",
+        "almacen",
+        "diseñador",
+        "ComercioExterior",
+        "marketing",
+      ],
+      subitems: [
+        {
+          titulo: "Catalogos",
+          url: "/app/Catalogos",
+          icono: "view_cozy",
+          roles: ["administrador", "gerente"],
+        },
+        {
+          titulo: "Clientes",
+          url: "/app/clientes",
+          icono: "people",
+          roles: [
+            "administrador",
+            "vendedor",
+            "gerente",
+            "marketing",
+            "ComercioExterior",
+          ],
+        },
+        {
+          titulo: "Productos",
+          url: "/app/productos",
+          icono: "view_list",
+          roles: [
+            "administrador",
+            "vendedor",
+            "almacen",
+            "gerente",
+            "diseñador",
+            "ComercioExterior",
+            "marketing",
+          ],
+        },
+        {
+          titulo: "Rutas",
+          url: "/app/rutas",
+          icono: "alt_route",
+          roles: ["administrador", "gerente"],
+        },
+        {
+          titulo: "Código QR",
+          url: "/app/QR",
+          icono: "qr_code",
+          roles: ["administrador", "gerente"],
+        },
+        {
+          titulo: "Promociones",
+          url: "/app/promociones",
+          icono: "new_releases",
+          roles: ["administrador"],
+        },
+        {
+          url: "/app/usuarios",
+          titulo: "Usuarios",
+          icono: "supervised_user_circle",
+          roles: ["administrador"],
+        },
+        {
+          url: "/app/categorias",
+          titulo: "Categorias",
+          icono: "account_tree",
+          roles: ["administrador"],
         },
       ],
     },
@@ -205,37 +261,6 @@
           roles: ["administrador", "gerente"],
         },
       ],
-    },
-    {
-      url: "/app/rutas",
-      titulo: "Rutas",
-      icono: "alt_route",
-      roles: ["administrador", "gerente"],
-    },
-    {
-      url: "/app/QR",
-      titulo: "Código QR",
-      icono: "qr_code",
-      roles: ["administrador", "gerente"],
-    },
-    {
-      url: "/app/reportes/utilidades",
-      titulo: "Utilidades",
-      icono: "trending_up",
-      roles: ["administrador"],
-    },
-
-    {
-      url: "/app/categorias",
-      titulo: "Categorias",
-      icono: "account_tree",
-      roles: ["administrador"],
-    },
-    {
-      url: "/app/promociones",
-      titulo: "Promociones",
-      icono: "new_releases",
-      roles: ["administrador"],
     },
     {
       url: "/app/productos/Almacen/Empaque",
@@ -301,6 +326,17 @@
     ) {
       return false;
     }
+    // Si tiene subitems (dropdown), debe tener al menos una opción accesible para este usuario
+    if (item.subitems && item.subitems.length > 0) {
+      const visibles = filtrar_subitems(item.subitems, development, user);
+      if (visibles.length === 0) {
+        return false;
+      }
+    } else {
+      if (item.roles && !item.roles.includes(user.rol)) {
+        return false;
+      }
+    }
     if (item.roles && !item.roles.includes(user.rol)) {
       return false;
     }
@@ -329,48 +365,104 @@
 
       switch (locacion) {
         case "/app/inicio":
+          $ui.ventana_visible = "Inicio";
           menu_actual = "inicio";
           break;
         case "/app/pedidos":
+          $ui.ventana_visible = "Pedidos";
           menu_actual = "pedidos";
           break;
         case "/app/productos":
+          $ui.ventana_visible = "Productos";
           menu_actual = "productos";
           break;
-        case "/app/promociones":
-          menu_actual = "promociones";
+        case "/app/Catalogos":
+        case "/app/catalogos":
+          $ui.ventana_visible = "Catalogos";
+          menu_actual = "catalogos";
           break;
         case "/app/clientes":
+          $ui.ventana_visible = "Clientes";
           menu_actual = "clientes";
           break;
         case "/app/clientes_nuevos":
+          $ui.ventana_visible = "Clientes Nuevos";
           menu_actual = "clientes_nuevos";
           break;
+        case "/app/graficos":
+          $ui.ventana_visible = "Gráficos";
+          menu_actual = "graficos";
+          break;
         case "/app/usuarios":
+          $ui.ventana_visible = "Usuarios";
           menu_actual = "usuarios";
           break;
         case "/app/mapas":
+          $ui.ventana_visible = "Mapas";
           menu_actual = "mapas";
+          break;
+        case "/app/tecnico-isotech/logs":
+          $ui.ventana_visible = "Logs";
+          menu_actual = "logs";
+          break;
+        case "/app/rutas":
+          $ui.ventana_visible = "Rutas";
+          menu_actual = "rutas";
+          break;
+        case "/app/QR":
+        case "/app/qr":
+          $ui.ventana_visible = "Código QR";
+          menu_actual = "qr";
+          break;
+        case "/app/promociones":
+          $ui.ventana_visible = "Promociones";
+          menu_actual = "promociones";
           break;
         case "/app/herramientas/correccion":
           menu_actual = "correccion";
           break;
         case "/app/pedimentos":
+          $ui.ventana_visible = "Pedimentos";
           menu_actual = "pedimentos";
           break;
         case "/app/reportes/utilidades":
+          $ui.ventana_visible = "Utilidades";
           menu_actual = "utilidades";
           break;
+        case "/app/clientes/analisis_comercial":
+          $ui.ventana_visible = "Análisis Comercial";
+          menu_actual = "facturacion";
+          break;
         case "/app/categorias":
+          $ui.ventana_visible = "Categorias";
           menu_actual = "categorias";
           break;
         case "/app/pedidos/publicos":
+          $ui.ventana_visible = "Pedidos públicos";
           menu_actual = "pedidos-publicos";
           break;
         case "/app/productos/Almacen/Empaque":
+          $ui.ventana_visible = "Almacen -Salidas";
           menu_actual = "almacen";
           break;
+        case "/app/Precios":
+          $ui.ventana_visible = "Precios";
+          menu_actual = "precios";
+          break;
         case "/app/dev_tools/huerfanos":
+          $ui.ventana_visible = "Huérfanos";
+          menu_actual = "dev-tools";
+          break;
+        case "/app/dev_tools/sobrecarga":
+          $ui.ventana_visible = "Prueba Sobrecarga";
+          menu_actual = "dev-tools";
+          break;
+        case "/app/dev_tools/importar_sat":
+          $ui.ventana_visible = "Importar catálogos SAT";
+          menu_actual = "dev-tools";
+          break;
+        case "/app/dev_tools/correccion_relaciones":
+          $ui.ventana_visible = "Corrección Relaciones";
           menu_actual = "dev-tools";
           break;
         case "/app/facturacion/perfil-fiscal":

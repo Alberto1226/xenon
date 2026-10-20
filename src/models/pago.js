@@ -46,6 +46,8 @@ var schema = new Schema({
         serie: { type: String, default: '' },
         folio: { type: String, default: '' },
         error: { type: String, default: '' },
+        xml_generado: { type: String, default: '' },
+        xml_timbrado: { type: String, default: '' },
         fecha_timbrado: { type: Date, default: null }
     },
     status: { type: String, enum: ['Registrado', 'Cancelado'], default: 'Registrado' },

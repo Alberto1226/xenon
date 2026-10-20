@@ -8,6 +8,10 @@ var schema = new Schema({
     pedido_id: { type: Schema.Types.ObjectId, default: null },
     carrito_id: { type: Schema.Types.ObjectId, default: null },
     folio_pedido: { type: Number, default: 0, index: true },
+    pedidos_ids: [{ type: Schema.Types.ObjectId, ref: 'Pedido' }],
+    folios_pedidos: [{ type: Number }],
+    es_publico_general: { type: Boolean, default: false },
+    informacion_global: { periodicidad: String, meses: String, anio: String },
     cliente_id: { type: Schema.Types.ObjectId, default: null, index: true },
     receptor: {
         rfc: { type: String, default: "" },
@@ -46,6 +50,7 @@ var schema = new Schema({
         importe: { type: Number, default: 0 },
         saldo_anterior: { type: Number, default: 0 },
         saldo_insoluto: { type: Number, default: 0 },
+        uuid_rep: { type: String, default: "" },
         fecha: { type: Date, default: Date.now }
     }],
     fecha_emision: { type: Date, default: Date.now },

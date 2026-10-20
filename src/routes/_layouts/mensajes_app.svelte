@@ -29,7 +29,7 @@
 
 
 <!-- Styles -->
-<Snackbar bind:visible bg={fondo_snack}>
+<Snackbar bind:visible bg={fondo_snack} style="z-index: 99999999 !important; position: fixed !important;">
   <div class="mensaje-texto">
     {@html message}
   </div>
@@ -40,6 +40,11 @@
 </Snackbar>
 
 <style>
+  :global(.snackbar) {
+    z-index: 99999999 !important;
+    position: fixed !important;
+  }
+
   .mensaje-texto {
     background-color: rgba(240, 248, 255, 0.075);
     text-shadow: 1px 1px 5px currentColor;

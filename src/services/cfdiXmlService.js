@@ -347,17 +347,36 @@ export function construirREP20({ pago, facturas, emisor, receptor, cuentaDestino
         const pagado = redondearMoneda(aplicacion.importe_pagado);
         montoTotal += pagado;
         const proporcion = Number(factura.total) > 0 ? pagado / Number(factura.total) : 0;
-        const trasladosDR = (factura.traslados || []).map(traslado => {
-            const base = redondearMoneda(traslado.base * proporcion);
-            const importe = traslado.factor === "Exento" ? 0 : redondearMoneda(traslado.importe * proporcion);
+        const trasladosLista = (Array.isArray(factura.traslados) && factura.traslados.length > 0)
+            ? factura.traslados
+            : (Number(factura.total) > Number(factura.subtotal) ? [{
+                impuesto: "002",
+                factor: "Tasa",
+                tasa: 0.16,
+                base: Number(factura.subtotal) > 0 ? Number(factura.subtotal) : redondearMoneda(Number(factura.total) / 1.16),
+                importe: Number(factura.impuestos) > 0 ? Number(factura.impuestos) : redondearMoneda(Number(factura.total) - (Number(factura.total) / 1.16))
+            }] : []);
+        const trasladosDR = [];
+        for (const traslado of trasladosLista) {
+            let base = redondearMoneda(Number(traslado.base || 0) * proporcion);
+            if (base <= 0 && pagado > 0 && traslado.factor !== "Exento") {
+                const tasa = Number(traslado.tasa) || 0.16;
+                base = redondearMoneda(pagado / (1 + tasa));
+            }
+            // Regla SAT CRP20255: El valor del campo BaseDR que corresponde a Traslado debe ser mayor que cero.
+            if (base <= 0) continue;
+
+            const importe = traslado.factor === "Exento"
+                ? 0
+                : (redondearMoneda(Number(traslado.importe || 0) * proporcion) || redondearMoneda(base * (Number(traslado.tasa) || 0.16)));
             const clave = `${traslado.impuesto}|${traslado.factor}|${traslado.tasa === null || traslado.tasa === undefined ? "" : traslado.tasa}`;
             const acumulado = totalesP.get(clave) || { impuesto: traslado.impuesto, factor: traslado.factor, tasa: traslado.tasa, base: 0, importe: 0 };
             acumulado.base = redondearMoneda(acumulado.base + base);
             acumulado.importe = redondearMoneda(acumulado.importe + importe);
             totalesP.set(clave, acumulado);
             const tasaAttr = traslado.factor === "Exento" ? "" : ` TasaOCuotaDR="${formatoTasa(traslado.tasa)}" ImporteDR="${formatoImporte(importe)}"`;
-            return `<pago20:TrasladoDR BaseDR="${formatoImporte(base)}" ImpuestoDR="${traslado.impuesto}" TipoFactorDR="${traslado.factor}"${tasaAttr}/>`;
-        });
+            trasladosDR.push(`<pago20:TrasladoDR BaseDR="${formatoImporte(base)}" ImpuestoDR="${traslado.impuesto}" TipoFactorDR="${traslado.factor}"${tasaAttr}/>`);
+        }
         const impuestosDR = trasladosDR.length > 0
             ? `<pago20:ImpuestosDR><pago20:TrasladosDR>${trasladosDR.join("")}</pago20:TrasladosDR></pago20:ImpuestosDR>`
             : "";
@@ -366,7 +385,7 @@ export function construirREP20({ pago, facturas, emisor, receptor, cuentaDestino
     });
     montoTotal = redondearMoneda(montoTotal);
 
-    const acumulados = [...totalesP.values()];
+    const acumulados = [...totalesP.values()].filter(t => t.base > 0);
     const trasladosP = acumulados.map(traslado => {
         const tasaAttr = traslado.factor === "Exento" ? "" : ` TasaOCuotaP="${formatoTasa(traslado.tasa)}" ImporteP="${formatoImporte(traslado.importe)}"`;
         return `<pago20:TrasladoP BaseP="${formatoImporte(traslado.base)}" ImpuestoP="${traslado.impuesto}" TipoFactorP="${traslado.factor}"${tasaAttr}/>`;
@@ -397,4 +416,63 @@ export function construirREP20({ pago, facturas, emisor, receptor, cuentaDestino
         `<pago20:Pago FechaPago="${formatoFechaHora(fechaPago)}" FormaDePagoP="${escaparXml(forma)}" MonedaP="MXN" TipoCambioP="1" Monto="${formatoImporte(montoTotal)}"${atributosCuentas}>${documentos.join("")}${impuestosP}</pago20:Pago></pago20:Pagos></cfdi:Complemento></cfdi:Comprobante>`;
 
     return { xml, monto: montoTotal };
+}
+
+
+export function construirCFDIGlobal40({ pedidos, emisor, serie, folio, fecha, metodoPago = "PUE", formaPago = "01", periodicidad = "04", meses, anio }) {
+    if (!Array.isArray(pedidos) || pedidos.length === 0) {
+        throw new Error("Selecciona al menos un pedido para facturar a Público en General.");
+    }
+    if (!/^\d{5}$/.test(String(emisor.cp || ""))) {
+        throw new Error("Configura el código postal de expedición del emisor.");
+    }
+
+    // Consolidación en un solo concepto global (Regla oficial SAT Factura Global CFDI 4.0)
+    let totalEsperado = 0;
+    for (let i = 0; i < pedidos.length; i++) {
+        totalEsperado = redondearMoneda(totalEsperado + (Number(pedidos[i].total_pedido) || 0));
+    }
+
+    const subtotalAcum = redondearMoneda(totalEsperado / 1.16);
+    const ivaAcum = redondearMoneda(totalEsperado - subtotalAcum);
+    const totalFinal = redondearMoneda(subtotalAcum + ivaAcum);
+
+    const trasladosConcepto = `<cfdi:Impuestos><cfdi:Traslados><cfdi:Traslado Base="${formatoImporte(subtotalAcum)}" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="${formatoImporte(ivaAcum)}"/></cfdi:Traslados></cfdi:Impuestos>`;
+    const xmlConceptos = `<cfdi:Concepto ClaveProdServ="01010101" NoIdentificacion="VENTA" Cantidad="1.000000" ClaveUnidad="ACT" Descripcion="Venta" ValorUnitario="${formatoImporte(subtotalAcum)}" Importe="${formatoImporte(subtotalAcum)}" ObjetoImp="02">${trasladosConcepto}</cfdi:Concepto>`;
+
+    const fechaCfdi = fecha || new Date();
+    const anioCalculado = anio ? String(anio) : String(fechaCfdi.getFullYear());
+    const mesNum = meses ? Number(meses) : (fechaCfdi.getMonth() + 1);
+    const mesesCalculado = String(mesNum).padStart(2, "0");
+    const periodicidadCalculada = periodicidad || "04";
+
+    const nodoInformacionGlobal = `<cfdi:InformacionGlobal Periodicidad="${escaparXml(periodicidadCalculada)}" Meses="${escaparXml(mesesCalculado)}" Año="${escaparXml(anioCalculado)}"/>`;
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?><cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" Version="4.0" Serie="${escaparXml(serie)}" Folio="${escaparXml(folio)}" Fecha="${formatoFechaHora(fechaCfdi)}" Sello="" FormaPago="${escaparXml(formaPago)}" NoCertificado="" Certificado="" SubTotal="${formatoImporte(subtotalAcum)}" Moneda="MXN" Total="${formatoImporte(totalFinal)}" TipoDeComprobante="I" Exportacion="01" MetodoPago="${escaparXml(metodoPago)}" LugarExpedicion="${escaparXml(emisor.cp)}">` +
+        nodoInformacionGlobal +
+        `<cfdi:Emisor Rfc="${escaparXml(emisor.rfc)}" Nombre="${escaparXml(emisor.nombre)}" RegimenFiscal="${escaparXml(emisor.regimen)}"/>` +
+        `<cfdi:Receptor Rfc="XAXX010101000" Nombre="PUBLICO EN GENERAL" DomicilioFiscalReceptor="${escaparXml(emisor.cp)}" RegimenFiscalReceptor="616" UsoCFDI="S01"/>` +
+        `<cfdi:Conceptos>${xmlConceptos}</cfdi:Conceptos>` +
+        `<cfdi:Impuestos TotalImpuestosTrasladados="${formatoImporte(ivaAcum)}">` +
+        `<cfdi:Traslados><cfdi:Traslado Base="${formatoImporte(subtotalAcum)}" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="${formatoImporte(ivaAcum)}"/></cfdi:Traslados>` +
+        `</cfdi:Impuestos></cfdi:Comprobante>`;
+
+    return {
+        xml,
+        subtotal: subtotalAcum,
+        impuestos: ivaAcum,
+        total: totalFinal,
+        informacionGlobal: {
+            periodicidad: periodicidadCalculada,
+            meses: mesesCalculado,
+            anio: anioCalculado
+        },
+        traslados: [{
+            impuesto: "002",
+            factor: "Tasa",
+            tasa: 0.16,
+            base: subtotalAcum,
+            importe: ivaAcum
+        }]
+    };
 }

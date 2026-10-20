@@ -1,4 +1,4 @@
-import { obtenerOAuthToken } from "./cuccApiService";
+import { obtenerOAuthToken } from "./cuccApiService.js";
 
 const httpFetch = globalThis.fetch || fetch;
 
@@ -79,7 +79,9 @@ export async function timbrarConCUCC({ xml, config, soapPassword }) {
         const mensaje = decodificarEntidadesXml(leerEtiqueta(body, "response_message"));
         const archivoXml = leerEtiqueta(body, "fileXml").replace(/^<!\[CDATA\[([\s\S]*)\]\]>$/, "$1");
         if (!archivoXml) {
-            throw new Error(mensaje || "CUCC no devolvió el XML timbrado.");
+            const error = new Error(mensaje || "CUCC no devolvió el XML timbrado.");
+            error.definitivo = true;
+            throw error;
         }
         const xmlTimbrado = /^[A-Za-z0-9+/=\r\n]+$/.test(archivoXml)
             ? Buffer.from(archivoXml.replace(/\s/g, ""), "base64").toString("utf8")
@@ -149,6 +151,36 @@ export async function descargarDeCUCC({ uuid, tipo, config, soapPassword, client
             };
         }
         return { buffer, contentType };
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+export async function cancelarConCUCC({ uuid, motivo, uuidSustitucion, config, soapPassword }) {
+    const endpoint = obtenerEndpointSoap(config);
+    const envelope = `<?xml version="1.0" encoding="utf-8"?><soapenv:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:cuccws"><soapenv:Header/><soapenv:Body><urn:cancelInvoice soapenv:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><requestCancelInvoice xsi:type="urn:requestCancelInvoice"><usuario xsi:type="xsd:string">${escaparXml(config.soap_user)}</usuario><pass xsi:type="xsd:string">${escaparXml(soapPassword)}</pass><uuid xsi:type="xsd:string">${escaparXml(uuid)}</uuid><motivo xsi:type="xsd:string">${escaparXml(motivo || "02")}</motivo><folioSustitucion xsi:type="xsd:string">${escaparXml(uuidSustitucion || "")}</folioSustitucion></requestCancelInvoice></urn:cancelInvoice></soapenv:Body></soapenv:Envelope>`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    try {
+        const response = await httpFetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "text/xml; charset=utf-8",
+                "SOAPAction": "\"urn:cuccws#cancelInvoice\"",
+                "Accept": "text/xml"
+            },
+            body: envelope,
+            signal: controller.signal
+        });
+        const body = await response.text();
+        if (/<(?:[\w.-]+:)?Fault\b/i.test(body)) {
+            const fault = decodificarEntidadesXml(leerEtiqueta(body, "faultstring"));
+            throw new Error(fault || `CUCC rechazó la solicitud de cancelación (HTTP ${response.status}).`);
+        }
+        return {
+            ok: response.ok,
+            mensaje: decodificarEntidadesXml(leerEtiqueta(body, "response_message")) || "Cancelación procesada ante el PAC."
+        };
     } finally {
         clearTimeout(timeout);
     }

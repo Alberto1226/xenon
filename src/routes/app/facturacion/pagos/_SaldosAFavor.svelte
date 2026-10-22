@@ -21,6 +21,7 @@
   let temporizador_busqueda;
   let deposito_monto = "";
   let deposito_fecha = formatearFechaInput(new Date());
+  let deposito_fecha_max = formatearFechaInput(new Date());
   let deposito_forma_pago = "03";
   let deposito_cuenta_destino = "";
   let deposito_referencia = "";
@@ -122,7 +123,8 @@
     texto_buscar_cliente = "";
     lista_busqueda_clientes = [];
     deposito_monto = "";
-    deposito_fecha = formatearFechaInput(new Date());
+    deposito_fecha_max = formatearFechaInput(new Date());
+    deposito_fecha = deposito_fecha_max;
     deposito_forma_pago = "03";
     deposito_cuenta_destino = (cuentas_empresa && cuentas_empresa.length > 0) ? cuentas_empresa[0]._id : "";
     deposito_referencia = "";
@@ -148,6 +150,16 @@
     const montoNum = Math.round(((Number(deposito_monto) || 0) + Number.EPSILON) * 100) / 100;
     if (!(montoNum > 0)) {
       return avisar("error", "El monto abonado debe ser mayor a cero.");
+    }
+    if (!deposito_fecha) {
+      return avisar("error", "Ingresa la fecha y hora del depósito.");
+    }
+    const fechaDep = new Date(deposito_fecha);
+    if (isNaN(fechaDep.getTime())) {
+      return avisar("error", "La fecha del depósito no es válida.");
+    }
+    if (fechaDep.getTime() > Date.now() + (2 * 60 * 1000)) {
+      return avisar("error", "No se permiten fechas posteriores al día en curso. La fecha debe ser igual o anterior a la actual.");
     }
 
     guardando = true;
@@ -464,7 +476,12 @@
           <!-- Fecha -->
           <div class="campo">
             <label>Fecha y Hora del Depósito *</label>
-            <input type="datetime-local" bind:value={deposito_fecha} class="input-form" />
+            <input
+              type="datetime-local"
+              bind:value={deposito_fecha}
+              max={deposito_fecha_max}
+              class="input-form"
+            />
           </div>
         </div>
 

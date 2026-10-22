@@ -33,6 +33,7 @@
 
   // Información del Pago (replica InformacionPago.jsx de CUCC)
   let fecha_pago = obtenerFechaHoraLocal();
+  let fecha_pago_max = obtenerFechaHoraLocal();
   let forma_pago = "03";
   let moneda = "MXN";
   let tipo_cambio = 1;
@@ -303,6 +304,16 @@
     if (facturas_seleccionadas.length === 0) {
       return avisar("error", "Agrega al menos una factura a la recepción de pago.");
     }
+    if (!fecha_pago) {
+      return avisar("error", "Ingresa la fecha y hora de pago.");
+    }
+    const fPagoD = new Date(fecha_pago);
+    if (isNaN(fPagoD.getTime())) {
+      return avisar("error", "La fecha de pago no es válida.");
+    }
+    if (fPagoD.getTime() > Date.now() + (2 * 60 * 1000)) {
+      return avisar("error", "No se permiten fechas posteriores al día en curso. La fecha de pago debe ser igual o anterior a la actual.");
+    }
     if (monto_total <= 0) {
       return avisar("error", "El monto total a pagar debe ser mayor a cero.");
     }
@@ -359,6 +370,8 @@
       operacion_referencia = "";
       notas = "";
       clave_idempotencia = nueva_clave();
+      fecha_pago_max = obtenerFechaHoraLocal();
+      fecha_pago = fecha_pago_max;
       await cargar_facturas_cliente();
       await buscar_clientes();
 
@@ -612,6 +625,7 @@
                 id="input-fecha-pago"
                 type="datetime-local"
                 bind:value={fecha_pago}
+                max={fecha_pago_max}
                 required
               />
             </div>

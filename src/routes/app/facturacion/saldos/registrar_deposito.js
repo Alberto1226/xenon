@@ -24,6 +24,17 @@ export async function post(req, res, next) {
         if (!(monto > 0)) {
             return res.send({ ok: false, mensaje: "El importe a abonar debe ser mayor a cero." });
         }
+        if (isNaN(fecha.getTime())) {
+            return res.send({ ok: false, mensaje: "La fecha del abono no es válida." });
+        }
+        var ahoraMilis = Date.now();
+        // No permitir fechas posteriores al día/hora actual (tolerancia de 5 min)
+        if (fecha.getTime() > ahoraMilis + (5 * 60 * 1000)) {
+            return res.send({
+                ok: false,
+                mensaje: "No se permiten fechas posteriores al día en curso. La fecha del abono debe ser igual o anterior a la fecha actual."
+            });
+        }
 
         const cliente = await Cliente.findById(clienteId).select("nombre rfc saldo_a_favor").exec();
         if (!cliente) {

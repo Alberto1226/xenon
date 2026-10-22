@@ -54,6 +54,9 @@ export async function registrarPago(datos, user) {
     if (isNaN(fechaPago.getTime())) {
         throw new Error("La fecha de pago no es válida.");
     }
+    if (fechaPago.getTime() > Date.now() + (5 * 60 * 1000)) {
+        throw new Error("No se permiten fechas posteriores al día en curso. La fecha de pago debe ser igual o anterior a la actual.");
+    }
 
     const claveIdem = String(datos.clave_idempotencia || "").trim().slice(0, 80);
     if (claveIdem) {

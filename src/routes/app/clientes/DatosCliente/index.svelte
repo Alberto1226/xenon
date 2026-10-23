@@ -119,6 +119,26 @@
         observaciones: "",
     };
 
+    // Detecta campos obligatorios sin llenar para resaltarlos en rojo
+    function vacio_campo(valor) {
+        return valor === undefined || valor === null || String(valor).trim() === "";
+    }
+
+    $: campos_incompletos = (() => {
+        if ($donde !== "editar") return new Set();
+        const set = new Set();
+        const camposDireccion = ["calle", "numero_exterior", "colonia", "localidad_nombre", "cp", "estado", "municipio"];
+        camposDireccion.forEach(c => { if (vacio_campo(direccion[c])) set.add(c); });
+        if (vacio_campo(telefono_numero)) set.add("telefono");
+        if (vacio_campo(cliente.datos_fiscales.rfc)) set.add("rfc");
+        if (vacio_campo(cliente.datos_fiscales.tipo_persona)) set.add("tipo_persona");
+        if (vacio_campo(cliente.datos_fiscales.cfdi)) set.add("cfdi");
+        if (vacio_campo(cliente.datos_fiscales.rfiscal)) set.add("rfiscal");
+        return set;
+    })();
+
+    $: hay_campos_incompletos = campos_incompletos.size > 0;
+
     let direccion = {
         calle: "",
         colonia: "",
@@ -1106,7 +1126,7 @@
             <div class="form-floating mb-3">
                 <input
                     type="text"
-                    class="form-control"
+                    class="form-control {campos_incompletos.has('telefono') ? 'campo_incompleto' : ''}"
                     value={formatear_telefono(telefono_numero, tipo_telefono)}
                     on:input={(event) => {
                         telefono_numero = solo_digitos(event.target.value);
@@ -1281,7 +1301,7 @@
                 <div class="form-floating mb-3">
                     <input
                         type="text"
-                        class="form-control"
+                        class="form-control {campos_incompletos.has('rfc') ? 'campo_incompleto' : ''}"
                         id="floatingInput"
                         bind:value={cliente.datos_fiscales.rfc}
                     />
@@ -1291,7 +1311,7 @@
             <div class="col-md-2">
                 <div class="form-floating">
                     <select
-                        class="form-select"
+                        class="form-select {campos_incompletos.has('tipo_persona') ? 'campo_incompleto' : ''}"
                         id="floatingSelectRegion"
                         aria-label="Floating label select example"
                         bind:value={cliente.datos_fiscales.tipo_persona}
@@ -1308,7 +1328,7 @@
             <div class="col-md-2">
                 <div class="form-floating">
                     <select
-                        class="form-select"
+                        class="form-select {campos_incompletos.has('cfdi') ? 'campo_incompleto' : ''}"
                         id="floatingSelectRegion"
                         aria-label="Floating label select example"
                         disabled={cfdiOptions.length === 0 ||
@@ -1329,7 +1349,7 @@
             <div class="col-md-2">
                 <div class="form-floating">
                     <select
-                        class="form-select"
+                        class="form-select {campos_incompletos.has('rfiscal') ? 'campo_incompleto' : ''}"
                         id="floatingSelectRegion"
                         aria-label="Floating label select example"
                         disabled={rfOptions.length === 0 || cliente.cfdi === ""}
@@ -1379,7 +1399,7 @@
             <form class="form-floating">
                 <input
                     type="number"
-                    class="form-control"
+                    class="form-control {campos_incompletos.has('cp') ? 'campo_incompleto' : ''}"
                     id="floatingInputValueZip"
                     bind:value={direccion.cp}
                 />
@@ -1390,7 +1410,7 @@
             <form class="form-floating">
                 <input
                     type="text"
-                    class="form-control"
+                    class="form-control {campos_incompletos.has('localidad_nombre') ? 'campo_incompleto' : ''}"
                     id="floatingInputValueLocalidad"
                     bind:value={direccion.localidad_nombre}
                 />
@@ -1401,7 +1421,7 @@
             <form class="form-floating">
                 <input
                     type="text"
-                    class="form-control"
+                    class="form-control {campos_incompletos.has('colonia') ? 'campo_incompleto' : ''}"
                     id="floatingInputValueColonia"
                     bind:value={direccion.colonia}
                 />
@@ -1412,7 +1432,7 @@
             <form class="form-floating">
                 <input
                     type="text"
-                    class="form-control"
+                    class="form-control {campos_incompletos.has('calle') ? 'campo_incompleto' : ''}"
                     id="floatingInputValueCalle"
                     bind:value={direccion.calle}
                 />
@@ -1434,7 +1454,7 @@
             <form class="form-floating">
                 <input
                     type="text"
-                    class="form-control"
+                    class="form-control {campos_incompletos.has('numero_exterior') ? 'campo_incompleto' : ''}"
                     id="floatingInputValueExterior"
                     bind:value={direccion.numero_exterior}
                 />
@@ -1608,6 +1628,23 @@
         border: 1px solid #222d32;
         border-radius: 8px;
         background-color: #f0f1ff;
+    }
+
+    /* Campo con dato obligatorio faltante */
+    :global(.campo_incompleto) {
+        border-color: #ef4444 !important;
+        border-width: 2px !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+        background-color: #fff5f5 !important;
+    }
+
+    :global(.campo_incompleto:focus) {
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25) !important;
+    }
+
+    :global(.campo_incompleto + label) {
+        color: #dc2626 !important;
     }
     .form-group {
         margin-bottom: 1rem;

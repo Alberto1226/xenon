@@ -29,6 +29,50 @@
   let telefonos_lista = [];
   let dialogo_agente = false; //visibilidad
   let dialogo_pass_visible = false;
+  let tooltip_visible = false;
+  let tooltip_x = 0;
+  let tooltip_y = 0;
+
+  // Mapeo de claves internas a etiquetas legibles
+  const ETIQUETAS_CAMPOS = {
+    calle: "Calle",
+    numero_exterior: "N° Exterior",
+    colonia: "Colonia",
+    localidad_nombre: "Localidad",
+    cp: "Código Postal",
+    estado: "Estado",
+    municipio: "Municipio",
+    telefono: "Teléfono",
+    "datos_fiscales.rfc": "RFC",
+    "datos_fiscales.tipo_persona": "Tipo de Persona",
+    "datos_fiscales.cfdi": "Uso del CFDI",
+    "datos_fiscales.rfiscal": "Régimen Fiscal",
+  };
+
+  function calcular_campos_faltantes(cliente) {
+    const dir = (cliente.direcciones_asociadas && cliente.direcciones_asociadas[0]) || {};
+    const df = cliente.datos_fiscales || {};
+    const faltantes = [];
+
+    const camposDireccion = ["calle", "numero_exterior", "colonia", "localidad_nombre", "cp", "estado", "municipio"];
+    camposDireccion.forEach(c => {
+      const v = dir[c];
+      if (v === undefined || v === null || String(v).trim() === "") faltantes.push(c);
+    });
+
+    const t = cliente.telefono;
+    if (t === undefined || t === null || String(t).trim() === "") faltantes.push("telefono");
+
+    const camposFiscales = ["rfc", "tipo_persona", "cfdi", "rfiscal"];
+    camposFiscales.forEach(c => {
+      const v = df[c];
+      if (v === undefined || v === null || String(v).trim() === "") faltantes.push(`datos_fiscales.${c}`);
+    });
+
+    return faltantes;
+  }
+
+  $: campos_faltantes_lista = cliente.datos_completos ? [] : calcular_campos_faltantes(cliente);
 
   onMount(() => {
     // fecha_nacimiento = cliente.fecha_nacimiento.toDate();
@@ -242,12 +286,16 @@
   class:inactivo={cliente.activo === false}
 >
   <div class="uno">
-    <i
-      style="vertical-align:middle; color: {cliente.datos_completos ? 'black' : 'red'};"
-      class="material-icons"
-    >
-      account_circle
-    </i>
+    <span class="icono_estado_wrapper" style="position: relative; display: inline-block;">
+      <i
+        style="vertical-align:middle; color: {cliente.datos_completos ? 'black' : 'red'}; cursor: {cliente.datos_completos ? 'default' : 'help'};"
+        class="material-icons"
+        on:mouseenter={(e) => { if (!cliente.datos_completos) { const r = e.currentTarget.getBoundingClientRect(); tooltip_x = r.left; tooltip_y = r.bottom + 6; tooltip_visible = true; } }}
+        on:mouseleave={() => tooltip_visible = false}
+      >
+        account_circle
+      </i>
+    </span>
 
     {#if cliente.activo === false}
       <i
@@ -579,6 +627,21 @@
   bind:visible={dialogo_pass_visible}
 />
 
+{#if tooltip_visible && !cliente.datos_completos}
+  <div
+    class="tooltip_faltantes_fixed"
+    style="left: {tooltip_x}px; top: {tooltip_y}px;"
+  >
+    <div class="tooltip_titulo">⚠️ Datos incompletos</div>
+    <div class="tooltip_subtitulo">Campos que faltan:</div>
+    <ul class="tooltip_lista">
+      {#each campos_faltantes_lista as campo}
+        <li>{ETIQUETAS_CAMPOS[campo] || campo}</li>
+      {/each}
+    </ul>
+  </div>
+{/if}
+
 <style>
   .row {
     height: 97px;
@@ -596,6 +659,69 @@
     grid-template-areas: "uno dos tres cuatro cinco ocho";
     padding: 8px;
     align-items: center;
+  }
+
+  .icono_estado_wrapper {
+    display: inline-block;
+    position: relative;
+  }
+
+  .tooltip_faltantes_fixed {
+    position: fixed;
+    z-index: 99999;
+    background: #1e293b;
+    color: #f8fafc;
+    border-radius: 10px;
+    padding: 10px 14px;
+    min-width: 210px;
+    max-width: 270px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.32);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    pointer-events: none;
+    animation: fadeInTooltip 0.15s ease;
+  }
+
+  .tooltip_faltantes_fixed::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 14px;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid #1e293b;
+  }
+
+  .tooltip_titulo {
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    color: #fca5a5;
+  }
+
+  .tooltip_subtitulo {
+    font-size: 0.73rem;
+    color: #94a3b8;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .tooltip_lista {
+    margin: 0;
+    padding-left: 1rem;
+    list-style: disc;
+  }
+
+  .tooltip_lista li {
+    color: #fde68a;
+    font-size: 0.8rem;
+    margin-bottom: 2px;
+  }
+
+  @keyframes fadeInTooltip {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   .uno {

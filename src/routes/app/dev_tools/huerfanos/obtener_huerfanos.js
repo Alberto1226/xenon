@@ -39,7 +39,7 @@ export async function post(req, res) {
     }
 
     try {
-        const { accion, producto_id, folio } = req.body || {};
+        const { accion, producto_id, folio, items } = req.body || {};
 
         if (accion === 'obtener' || !accion) {
             const huerfanos = await detectar_apartados_huerfanos();
@@ -48,8 +48,14 @@ export async function post(req, res) {
             return;
         }
 
+        if (accion === 'obtener_historial') {
+            const historial = await obtener_historial_correcciones();
+            res.send({ ok: true, historial, total: historial.length });
+            return;
+        }
+
         if (accion === 'eliminar_uno' && producto_id) {
-            const resultado = await eliminar_apartado_huerfano_especifico(producto_id, folio);
+            const resultado = await eliminar_apartado_huerfano_especifico(req, producto_id, folio);
             const total_correcciones = await obtener_total_correcciones();
             res.send({ ok: true, mensaje: "Apartado huérfano eliminado correctamente (sin alterar inventario)", resultado, correcciones: 1, total_correcciones });
             return;
@@ -62,13 +68,39 @@ export async function post(req, res) {
             return;
         }
 
+        if (accion === 'eliminar_seleccionados' && Array.isArray(items)) {
+            let eliminados = 0;
+            for (let item of items) {
+                if (item && item.producto_id) {
+                    const ok = await eliminar_apartado_huerfano_especifico(req, item.producto_id, item.folio);
+                    if (ok) eliminados++;
+                }
+            }
+            const total_correcciones = await obtener_total_correcciones();
+            res.send({ ok: true, mensaje: `Se limpiaron ${eliminados} apartado(s) seleccionado(s) exitosamente`, eliminados, correcciones: eliminados, total_correcciones });
+            return;
+        }
+
+        if (accion === 'limpiar_y_descontar_seleccionados' && Array.isArray(items)) {
+            let procesados = 0;
+            for (let item of items) {
+                if (item && item.producto_id) {
+                    const ok = await limpiar_y_descontar_huerfano_especifico(req, item.producto_id, item.folio);
+                    if (ok) procesados++;
+                }
+            }
+            const total_correcciones = await obtener_total_correcciones();
+            res.send({ ok: true, mensaje: `Se descontaron y limpiaron ${procesados} apartado(s) seleccionado(s) exitosamente`, procesados, correcciones: procesados, total_correcciones });
+            return;
+        }
+
         if (accion === 'eliminar_todos') {
             const huerfanos = await detectar_apartados_huerfanos();
             let eliminados = 0;
 
             for (let item of huerfanos) {
-                await eliminar_apartado_huerfano_especifico(item.producto_id, item.folio);
-                eliminados++;
+                const ok = await eliminar_apartado_huerfano_especifico(req, item.producto_id, item.folio);
+                if (ok) eliminados++;
             }
             const total_correcciones = await obtener_total_correcciones();
 
@@ -82,8 +114,8 @@ export async function post(req, res) {
             let procesados = 0;
 
             for (let item of huerfanos_enviados) {
-                await limpiar_y_descontar_huerfano_especifico(req, item.producto_id, item.folio);
-                procesados++;
+                const ok = await limpiar_y_descontar_huerfano_especifico(req, item.producto_id, item.folio);
+                if (ok) procesados++;
             }
             const total_correcciones = await obtener_total_correcciones();
 
@@ -116,6 +148,135 @@ export async function obtener_total_correcciones() {
     } catch (e) {
         return 0;
     }
+}
+
+function parsearLineaLog(linea) {
+    if (!linea || !linea.trim()) return null;
+    const matchFecha = linea.match(/^\[(.*?)\]\s*(.*)$/);
+    if (!matchFecha) return null;
+    const fecha = matchFecha[1];
+    const resto = matchFecha[2];
+
+    const partes = resto.split('|').map(p => p.trim());
+    const tag = partes[0] || 'MANUAL_DEVTOOLS';
+
+    const info = {
+        fecha,
+        tag,
+        tipo: tag.includes('LIMPIAR_Y_DESCONTAR') ? 'limpiar_descontar' : (tag.includes('MANUAL') ? 'solo_limpiar' : 'backfill'),
+        tipo_label: tag.includes('LIMPIAR_Y_DESCONTAR') ? 'Limpiar y Descontar' : (tag.includes('MANUAL') ? 'Solo Limpiar' : 'Backfill Reconciliación'),
+        sku: '',
+        modelo: '',
+        producto: '',
+        folio: '',
+        cliente: '',
+        cantidad: 1,
+        detalle_stock: tag.includes('LIMPIAR_Y_DESCONTAR') ? 'Descuento aplicado' : 'Reserva liberada',
+        usuario: 'devtools'
+    };
+
+    for (let p of partes.slice(1)) {
+        if (p.startsWith('SKU:')) info.sku = p.replace(/^SKU:\s*"?/, '').replace(/"?$/, '');
+        else if (p.startsWith('Modelo:')) info.modelo = p.replace(/^Modelo:\s*"?/, '').replace(/"?$/, '');
+        else if (p.startsWith('Producto:')) info.producto = p.replace(/^Producto:\s*"?/, '').replace(/"?$/, '');
+        else if (p.startsWith('Folio:')) info.folio = p.replace(/^Folio:\s*#?/, '');
+        else if (p.startsWith('Cliente:')) info.cliente = p.replace(/^Cliente:\s*"?/, '').replace(/"?$/, '');
+        else if (p.startsWith('Cantidad:')) info.cantidad = parseInt(p.replace('Cantidad:', '').trim()) || 1;
+        else if (p.startsWith('Cantidad Descontada:')) info.cantidad = parseInt(p.replace('Cantidad Descontada:', '').trim()) || 1;
+        else if (p.startsWith('Stock:')) info.detalle_stock = p.replace('Stock:', '').trim();
+    }
+    return info;
+}
+
+export async function obtener_historial_correcciones() {
+    let historial = [];
+    const clavesVistas = new Set();
+
+    // 1. Obtener desde la colección Log en MongoDB
+    try {
+        const logs_db = await Log.find({
+            accion: { $in: ['LIMPIAR_Y_DESCONTAR_HUERFANO', 'ELIMINACION_DEVTOOLS_HUERFANO', 'BACKFILL_HUERFANO_ELIMINADO', 'BACKFILL_HUERFANOS_PROCESADO'] }
+        }).sort({ fecha: -1 }).limit(300).lean();
+
+        for (let log of logs_db) {
+            let body = {};
+            try {
+                body = typeof log.body === 'string' ? JSON.parse(log.body) : (log.body || {});
+            } catch (e) {
+                body = {};
+            }
+
+            const tipo = log.accion === 'LIMPIAR_Y_DESCONTAR_HUERFANO' ? 'limpiar_descontar'
+                : (log.accion === 'ELIMINACION_DEVTOOLS_HUERFANO' ? 'solo_limpiar' : 'backfill');
+            const tipo_label = tipo === 'limpiar_descontar' ? 'Limpiar y Descontar'
+                : (tipo === 'solo_limpiar' ? 'Solo Limpiar' : 'Backfill Reconciliación');
+
+            const folio = body.folio != null ? body.folio : (body.reserva && body.reserva.folio ? body.reserva.folio : 'S/N');
+            const sku = body.sku || (body.reserva && body.reserva.sku) || '';
+            const modelo = body.modelo || (body.reserva && body.reserva.modelo) || '';
+            const nombre = body.nombre || (body.reserva && body.reserva.nombre) || 'Producto';
+            const cliente = body.cliente || (body.reserva && body.reserva.cliente && body.reserva.cliente.nombre) || (body.reserva && body.reserva.cliente_id) || 'Cliente';
+            const cantidad = body.cantidad_descontada || (body.reserva && body.reserva.cantidad) || body.cantidad || 1;
+
+            let detalle_stock = 'Reserva liberada';
+            if (body.existencias_antes != null && body.existencias_despues != null) {
+                detalle_stock = `${body.existencias_antes} ➔ ${body.existencias_despues} pzas`;
+            }
+
+            const usuario = (log.usuario && log.usuario.nombre) ? log.usuario.nombre : 'devtools';
+            const fecha = log.fecha || new Date();
+
+            const clave = `${folio}_${sku}_${new Date(fecha).toISOString().slice(0, 16)}`;
+            clavesVistas.add(clave);
+
+            historial.push({
+                id: String(log._id),
+                fecha,
+                tipo,
+                tipo_label,
+                sku,
+                modelo,
+                producto: nombre,
+                folio,
+                cliente,
+                cantidad,
+                detalle_stock,
+                usuario
+            });
+        }
+    } catch (e) {
+        console.error("Error al obtener logs de correcciones en DB:", e);
+    }
+
+    // 2. Obtener desde archivo físico de auditoría si contiene registros adicionales
+    try {
+        const archivo_log = path.join(process.cwd(), 'logs_correccion', 'apartados_huerfanos.log');
+        if (fs.existsSync(archivo_log)) {
+            const contenido = fs.readFileSync(archivo_log, 'utf-8');
+            const lineas = contenido.split('\n').filter(l => l.trim().length > 0);
+
+            for (let i = lineas.length - 1; i >= 0; i--) {
+                const parseado = parsearLineaLog(lineas[i]);
+                if (!parseado) continue;
+
+                const clave = `${parseado.folio}_${parseado.sku}_${new Date(parseado.fecha).toISOString().slice(0, 16)}`;
+                if (!clavesVistas.has(clave)) {
+                    clavesVistas.add(clave);
+                    historial.push({
+                        id: `file_${i}`,
+                        ...parseado
+                    });
+                }
+            }
+        }
+    } catch (eFile) {
+        console.error("Error al leer archivo de logs:", eFile);
+    }
+
+    // Ordenar de más reciente a más antiguo
+    historial.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    return historial;
 }
 
 export async function detectar_apartados_huerfanos() {
@@ -205,7 +366,7 @@ export async function detectar_apartados_huerfanos() {
     return apartados_huerfanos;
 }
 
-async function eliminar_apartado_huerfano_especifico(producto_id, folio) {
+async function eliminar_apartado_huerfano_especifico(req, producto_id, folio) {
     const producto = await Producto.findById(producto_id);
     if (!producto || !Array.isArray(producto.carritos)) return false;
 
@@ -241,12 +402,25 @@ async function eliminar_apartado_huerfano_especifico(producto_id, folio) {
             const linea = `[${fecha_iso}] MANUAL_DEVTOOLS | SKU: "${producto.sku || ''}" | Modelo: "${producto.modelo || ''}" | Producto: "${producto.nombre || ''}" | Folio: #${reserva_removida.folio || 'S/N'} | Cliente: "${cliente_nom}" | Cantidad: ${reserva_removida.cantidad || 1}\n`;
             fs.appendFileSync(archivo_log, linea);
 
+            const usuario_req = (req && req.user) || (req && req.session && req.session.usuario) || {};
             await Log.create({
                 activo: true,
                 fecha: new Date(),
-                usuario: { nombre: 'devtools_huerfanos', id: 'devtools' },
+                usuario: {
+                    nombre: usuario_req.usuario || usuario_req.nombre || 'devtools_huerfanos',
+                    id: usuario_req._id || usuario_req.id || 'devtools'
+                },
                 accion: 'ELIMINACION_DEVTOOLS_HUERFANO',
-                body: JSON.stringify({ producto_id: producto._id, sku: producto.sku, folio, reserva: reserva_removida })
+                body: JSON.stringify({
+                    producto_id: producto._id,
+                    sku: producto.sku,
+                    modelo: producto.modelo,
+                    nombre: producto.nombre,
+                    folio,
+                    cliente: cliente_nom,
+                    cantidad: reserva_removida.cantidad || 1,
+                    reserva: reserva_removida
+                })
             });
         } catch (eLog) {
             console.error("Error al registrar log de eliminación manual:", eLog);
@@ -302,9 +476,16 @@ async function limpiar_y_descontar_huerfano_especifico(req, producto_id, folio) 
         producto.markModified('carritos');
         await producto.save();
 
+        const usuario_req = (req && req.user) || (req && req.session && req.session.usuario) || {};
+        let usuario_id_obj = null;
+        if (usuario_req._id && mongoose.Types.ObjectId.isValid(usuario_req._id)) {
+            usuario_id_obj = usuario_req._id;
+        } else if (usuario_req.id && mongoose.Types.ObjectId.isValid(usuario_req.id)) {
+            usuario_id_obj = usuario_req.id;
+        }
+
         // 1. Crear registro en Producto_snaplog
         try {
-            const usuario_req = req.user || (req.session && req.session.usuario) || {};
             const cliente_info = reserva_removida.cliente || {};
 
             let cliente_id_obj = null;
@@ -314,13 +495,6 @@ async function limpiar_y_descontar_huerfano_especifico(req, producto_id, folio) 
                 cliente_id_obj = cliente_info._id;
             } else if (reserva_removida.cliente_id && mongoose.Types.ObjectId.isValid(reserva_removida.cliente_id)) {
                 cliente_id_obj = reserva_removida.cliente_id;
-            }
-
-            let usuario_id_obj = null;
-            if (usuario_req._id && mongoose.Types.ObjectId.isValid(usuario_req._id)) {
-                usuario_id_obj = usuario_req._id;
-            } else if (usuario_req.id && mongoose.Types.ObjectId.isValid(usuario_req.id)) {
-                usuario_id_obj = usuario_req.id;
             }
 
             await Producto_snaplog.create({
@@ -370,9 +544,22 @@ async function limpiar_y_descontar_huerfano_especifico(req, producto_id, folio) 
             await Log.create({
                 activo: true,
                 fecha: new Date(),
-                usuario: { nombre: 'devtools_huerfanos', id: 'devtools' },
+                usuario: {
+                    nombre: (usuario_req && (usuario_req.usuario || usuario_req.nombre)) || 'devtools_huerfanos',
+                    id: usuario_id_obj || 'devtools'
+                },
                 accion: 'LIMPIAR_Y_DESCONTAR_HUERFANO',
-                body: JSON.stringify({ producto_id: producto._id, sku: producto.sku, folio, cantidad_descontada: cantidad_descontar, existencias_antes, existencias_despues })
+                body: JSON.stringify({
+                    producto_id: producto._id,
+                    sku: producto.sku,
+                    modelo: producto.modelo,
+                    nombre: producto.nombre,
+                    folio,
+                    cliente: cliente_nom,
+                    cantidad_descontada: cantidad_descontar,
+                    existencias_antes,
+                    existencias_despues
+                })
             });
         } catch (eLog) {
             console.error("Error al registrar Log:", eLog);

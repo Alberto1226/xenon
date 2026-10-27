@@ -315,12 +315,15 @@ export async function cancelar_pedido(carrito_id, usuario, req, opciones = {}) {
             return { ok: false, mensaje: `El pedido no se puede cancelar en estatus ${existe.status}` };
         }
 
-        const cfdiVigente = (carrito.facturacion || []).some(f => f.status !== "Cancelada");
+        status_original = carrito.status;
+
+        // Validación de CFDI vigente (módulo de facturación en xenonPruebas)
+        const cfdiVigente = (carrito.facturacion || []).some(f => f && f.status !== "Cancelada");
         if (cfdiVigente) {
+            // Revertir estatus en DB para no dejar el pedido bloqueado en 'Cancelando'
+            await Carrito.updateOne({ _id: carrito_id }, { $set: { status: status_original } }).catch(() => {});
             return { ok: false, mensaje: "El pedido tiene un CFDI vigente. Cancela primero la factura ante el SAT." };
         }
-
-        status_original = carrito.status;
 
         // 3. Verificar si ya existe en Carrito_cancelado para evitar duplicados en la colección de cancelados
         if (carrito.folio != null) {

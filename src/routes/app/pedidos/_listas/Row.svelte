@@ -37,6 +37,7 @@
     activo: true,
   };
   let visible_cancelar = false;
+  let cancelando = false;
 
   let message =
     '<i  class="material-icons vertical-alineado">delete</i> Cancelar el pedido <b>' +
@@ -77,16 +78,13 @@
   }
 
   function mostrar_cargando(razon) {
-    let mensaje = `Se esta mandando el pdf por email <br> <span class="indice_row">El proceso puede tardar de 5 segundos a 1 minuto.</span>`;
+    let mensaje = `Procesando solicitud... <br> <span class="indice_row">El proceso puede tardar de 5 segundos a 1 minuto.</span>`;
     if (razon == "email")
-      mensaje = `Se esta mandando el pdf por email <i  class="material-icons vertical-alineado">email</i>  
-      <br> <span class="indice_row">El proceso puede tardar de 5 segundos a 1 minuto.</span>`;
+      mensaje = `Enviando PDF por correo electrónico <i class="material-icons vertical-alineado">email</i> <br> <span class="indice_row">El proceso puede tardar de 5 segundos a 1 minuto.</span>`;
     if (razon == "cancelar")
-      mensaje = `Se esta cancelando <i  class="material-icons vertical-alineado">delete</i> el pedido y se borrarán 
-      los apartados del mismo. <br> <span class="indice_row">El proceso puede tardar de 5 segundos a 1 minuto.</span>`;
+      mensaje = `Cancelando el pedido <i class="material-icons vertical-alineado" style="color: #ea580c;">delete</i> y liberando apartados... <br> <span class="indice_row">El proceso puede tardar de 5 segundos a 1 minuto.</span>`;
     if (razon == "envio")
-      mensaje = `Se ha solicitado un cambio de status a <b>"Envío"</b> <i  class="material-icons vertical-alineado">flight_takeoff</i> en el pedido con folio
-       <b>${pedido.folio}</b>. <br> <span class="indice_row">El proceso puede tardar de 5 segundos a 1 minuto.</span>`;
+      mensaje = `Cambiando estatus a <b>"Envío"</b> <i class="material-icons vertical-alineado" style="color: #0065ff;">flight_takeoff</i> (Folio <b>#${pedido.folio}</b>) <br> <span class="indice_row">El proceso puede tardar de 5 segundos a 1 minuto.</span>`;
     $cargando_mensajes_app.push({
       tipo: "info",
       mensaje: mensaje,
@@ -167,44 +165,48 @@
   }
 
   function cancelar_pedido() {
-    // mensaje_envio = 'CAncelado...';
+    if (cancelando || procesando) return;
+    cancelando = true;
+    procesando = true;
+    visible_cancelar = false;
+    mostrar_cargando("cancelar");
+
     let ruta = false;
     if (pedido.folio_salida && pedido.cliente && pedido.cliente.id == "") {
       ruta = true;
     }
     dispatch("procesando_cambio_status_a_envio");
-    procesando = true;
     postData("/app/pedidos/cancelar_carrito", { id: pedido._id, ruta: ruta })
       .then((respuesta) => {
-        //console.log(respuesta);
+        quitar_cargando();
+        cancelando = false;
+        procesando = false;
 
         if (respuesta.ok) {
           $mensajes_app.push({
             tipo: "exito",
-            mensaje: "Status cambiado a " + status,
+            mensaje: "Pedido cancelado exitosamente",
           });
           $mensajes_app = $mensajes_app;
-          procesando = false;
-          //visible =false;
           actualizar_local();
-          //dispatch("recargar_lista");
         } else {
-          //  ver razon por la cual no se puede cancelar
           $mensajes_app.push({
             tipo: "error",
-            mensaje: respuesta.mensaje,
+            mensaje: respuesta.mensaje || "Error al cancelar el pedido",
           });
           $mensajes_app = $mensajes_app;
         }
       })
       .catch((err) => {
+        quitar_cargando();
+        cancelando = false;
+        procesando = false;
         console.log(err);
         $mensajes_app.push({
           tipo: "error",
-          mensaje: "No se pudo hacer el cambio a " + status,
+          mensaje: "No se pudo cancelar el pedido",
         });
         $mensajes_app = $mensajes_app;
-        procesando = false;
       });
   }
   function actualizar_local() {
@@ -481,14 +483,15 @@
                 icon
                 dense
                 color="darkorange"
-                disabled={$usuario_db.rol == "almacen"}
+                disabled={$usuario_db.rol == "almacen" || cancelando || procesando}
                 hidden={$usuario_db.rol == "almacen"}
                 on:click={() => {
+                  if (cancelando || procesando) return;
                   visible_cancelar = true;
                 }}
-                title="cancelar"
+                title={cancelando || procesando ? "Cancelando pedido..." : "cancelar"}
               >
-                <i class="material-icons">delete</i>
+                <i class="material-icons">{cancelando || procesando ? "hourglass_empty" : "delete"}</i>
               </Button>
             {/if}
           </ButtonGroup>
@@ -580,13 +583,15 @@
   <span slot="action">
     <Button
       color="white"
+      disabled={cancelando || procesando}
       on:click={() => {
+        if (cancelando || procesando) return;
         visible_cancelar = false;
         cancelar_pedido();
       }}
     >
-      <i class="material-icons">delete</i>
-      Aceptar
+      <i class="material-icons">{cancelando || procesando ? "hourglass_empty" : "delete"}</i>
+      {cancelando || procesando ? "Cancelando..." : "Aceptar"}
     </Button>
   </span>
 </Snackbar>

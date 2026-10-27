@@ -65,17 +65,21 @@
 
 <main class:admin_background={$usuario_db.usuario == undefined}>
   {#if $cargando_mensajes_app.length > 0}
-    <!-- CArgando  en fullscreen -->
-    <div class="centrado">
-      {#each $cargando_mensajes_app as item}
-        <!-- content here -->
-
-        <div class="centrado_vertical">
-          {@html item.mensaje}
-          <br />
+    <!-- Cargando en fullscreen con diseño moderno, centrado y legible -->
+    <div class="pantalla_cargando_overlay">
+      <div class="cargando_card">
+        <div class="spinner_contenedor">
+          <div class="spinner_glow" />
+          <div class="loader_pulso_moderno" />
         </div>
-      {/each}
-      <div id="wave1" />
+        <div class="mensajes_contenedor">
+          {#each $cargando_mensajes_app as item}
+            <div class="cargando_mensaje">
+              {@html item.mensaje}
+            </div>
+          {/each}
+        </div>
+      </div>
     </div>
   {:else}<!-- NADA esta cargando en fullscreen-->
     {#if $usuario_db.usuario != undefined}<!--LOGUEADO-->
@@ -265,5 +269,123 @@ background: linear-gradient(351deg, rgba(255,194,0,1) 5%, rgba(230,255,0,1) 100%
     color: #313131;
     font-size: 0.8em;
     padding-top: 7px;
+  }
+
+  /* Overlay de carga a pantalla completa */
+  .pantalla_cargando_overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at center, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.94) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+  }
+
+  .cargando_card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 40px 38px;
+    max-width: 540px;
+    width: 90%;
+    margin: 0 auto;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.2);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    animation: cargandoAparecer 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes cargandoAparecer {
+    from {
+      opacity: 0;
+      transform: scale(0.93) translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .spinner_contenedor {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .spinner_glow {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.35) 0%, rgba(249, 115, 22, 0) 70%);
+    border-radius: 50%;
+    animation: pulsarGlow 1.6s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulsarGlow {
+    0% { transform: scale(0.85); opacity: 0.4; }
+    100% { transform: scale(1.35); opacity: 0.9; }
+  }
+
+  .loader_pulso_moderno {
+    width: 58px;
+    height: 58px;
+    border: 4px solid #e2e8f0;
+    border-top-color: #0065ff;
+    border-right-color: #f97316;
+    border-radius: 50%;
+    animation: girarLoader 0.85s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+  }
+
+  @keyframes girarLoader {
+    to { transform: rotate(360deg); }
+  }
+
+  .mensajes_contenedor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .cargando_mensaje {
+    font-size: 1.18rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.55;
+  }
+
+  .cargando_mensaje :global(i.material-icons) {
+    vertical-align: middle;
+    font-size: 1.45rem;
+    margin: 0 4px;
+    color: #ea580c;
+  }
+
+  .cargando_mensaje :global(b) {
+    color: #0065ff;
+    font-weight: 700;
+  }
+
+  .cargando_mensaje :global(.indice_row) {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 7px 16px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 0.92rem;
+    font-weight: 500;
+    border-radius: 20px;
+    border: 1px solid #cbd5e1;
   }
 </style>

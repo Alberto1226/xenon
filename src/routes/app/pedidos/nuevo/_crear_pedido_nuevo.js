@@ -7,6 +7,8 @@ import * as accesos from "../../accesos";
 import { Producto } from "../../../../models/producto";
 import { Ficha_de_descuento } from "../../../../models/ficha_de_descuento";
 import { generar_siguiente_folio } from "../_servicios/folio_service";
+import { asegurarObjectId, obtener_variantes_id } from '../_servicios/inventario_reserva_service';
+
 
 
 export function post(req, res, next) {
@@ -117,13 +119,12 @@ export function post(req, res, next) {
                             console.log(err);
                             res.send({
                                 borrado_ficha,
-                                ok: true,
+                                ok: false,
                                 contador_suficientes,
-                                carrito_creado,
-                                detalle:
-                                    "Se apartaron los productos y produjo un pedido , de forma correcta."
+                                carrito_creado: null,
+                                detalle: "Error al crear el pedido."
                             });
-                            return
+                            return;
                         })
                     //console.log("carrito_creado =");
                     //console.log(carrito_creado);
@@ -356,7 +357,49 @@ function crear_su_carrito(data, email, tenia_ficha, usuario) {
                 let nuevo_carrito = new Carrito(doc_nuevo);
                 //nuevo_carrito.tipo_de_cambio = parseFloat(doc_nuevo.tipo_de_cambio);
                 nuevo_carrito.save()
-                    .then(() => {
+                    .then(async () => {
+                        // Actualizar reservas temporales: agregar carrito_id y folio a las reservas
+                        // que se crearon solo con cliente.id (sin folio ni carrito_id)
+                        try {
+                            const carrid_obj = nuevo_carrito._id;
+                            const folio_num = parseInt(folio) || null;
+                            const cliente_id_raw = data.pedido_nuevo.cliente._id;
+                            const variantes_cliente = obtener_variantes_id(cliente_id_raw);
+                            const lista_productos = data.pedido_nuevo.lista_productos_en_pedido_nuevo || [];
+
+                            for (let item of lista_productos) {
+                                if (!item.producto || !item.producto._id) continue;
+                                await Producto.updateOne(
+                                    {
+                                        _id: item.producto._id,
+                                        "carritos.carrito_id": { $exists: false },
+                                        $or: [
+                                            { "carritos.cliente.id": { $in: variantes_cliente } },
+                                            { "carritos.cliente_id": { $in: variantes_cliente } }
+                                        ]
+                                    },
+                                    {
+                                        $set: {
+                                            "carritos.$[elem].carrito_id": carrid_obj,
+                                            "carritos.$[elem].folio": folio_num
+                                        }
+                                    },
+                                    {
+                                        arrayFilters: [
+                                            {
+                                                "elem.carrito_id": { $exists: false },
+                                                $or: [
+                                                    { "elem.cliente.id": { $in: variantes_cliente } },
+                                                    { "elem.cliente_id": { $in: variantes_cliente } }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                );
+                            }
+                        } catch (eUpdate) {
+                            console.error('Error al actualizar carrito_id/folio en reservas de productos:', eUpdate);
+                        }
                         resolve({ ok: true, doc_nuevo: nuevo_carrito });
                     })
                     .catch((err) => {

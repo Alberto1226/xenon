@@ -1,5 +1,13 @@
 
-
+/**
+ * cambiar_cantidad.js
+ * Endpoint que maneja la modificación de cantidades de productos en un pedido activo.
+ *
+ * CAMBIO RELEVANTE (corrección de huérfanos):
+ * Se agregó import de `asegurarObjectId`, `obtener_variantes_folio` y `obtener_variantes_id`
+ * para estandarizar los tipos de datos al insertar y limpiar reservas en `producto.carritos`.
+ * Ver función `apartar_producto` más abajo para los detalles de la corrección.
+ */
 import { Carrito } from "../../../../models/carrito";
 import { Promocion } from './../../../../models/promocion';
 import { Producto } from "../../../../models/producto";
@@ -10,6 +18,10 @@ import { snap_por_cambio_en_pedido } from './_producto_snaplogs/snap_por_cambio_
 import { devolver_prod_snap_log_fixBug } from './_server_cambiar_cantidad/devolver_prod_snap_log_fixBug';
 import { isEmpty } from "underscore";
 import mongoose from 'mongoose';
+// Helpers de normalización de tipos: necesarios para retrocompatibilidad con datos
+// de producción que tienen carrito_id como String o folio como String.
+import { asegurarObjectId, obtener_variantes_folio, obtener_variantes_id } from '../_servicios/inventario_reserva_service';
+import { registrar_error } from './_server_cambiar_cantidad/registrar_error';
 
 export async function post(req, res, next) {
     if (accesos.esta_logueado(req) === false) {
@@ -142,7 +154,7 @@ export async function post(req, res, next) {
         }
 
         const total_dinero = await sumar_cantidades_dinero(lista);
-        const proceso_apartado = await apartar_producto(registro_seguro, carritoDB.cliente, carritoDB.folio);
+        const proceso_apartado = await apartar_producto(registro_seguro, carritoDB.cliente, carritoDB.folio, id);
 
         if (proceso_apartado.ok === true) {
             const proceso_cambiar_carrito_de_cliente = await cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, registro.producto._id);
@@ -342,68 +354,87 @@ async function sumar_cantidades_dinero(lista) {
 
 
 
-//   Aparta los productos en el registor de cada producto para que nadie pueda exceder existencias
-async function apartar_producto(registro, cliente, folio) {
-    //  Ciclo producto por producto apartando su cantidad respectiva
-    //var contador = 0;
-    //console.log(cliente);
-    //console.log('*********APARTAR RPODUCTO********');
+/**
+ * Actualiza la reserva de un producto en `producto.carritos` al cambiar su cantidad en el pedido.
+ *
+ * PROBLEMA ORIGINAL:
+ * La versión anterior guardaba la reserva con solo `{ folio, cliente, cantidad }`:
+ *   - NO incluía `carrito_id`, lo que hacía imposible identificar la reserva por carrito
+ *     al momento de liberar (cancelar/finalizar). Solo podía buscarse por folio.
+ *   - El `$pull` usaba `{ folio: folio }` (valor literal), que fallaba si el folio
+ *     en la reserva era Number y el valor buscado era String, o viceversa.
+ *   - La función usaba `reject()` fuera de una Promise, lo que causaba un ReferenceError
+ *     en lugar de retornar el error correctamente.
+ *
+ * CORRECCIÓN:
+ *   1. La llamada a esta función ahora pasa `id` (carrito_id) como cuarto argumento.
+ *   2. El `$pull` ahora usa `{ $or: pull_or }` con variantes ObjectId+String para
+ *      carrito_id y Number+String para folio: garantiza limpiar la reserva existente
+ *      sin importar cómo fue guardada originalmente.
+ *   3. El `$push` ahora incluye `carrito_id` (ObjectId preferido) y `folio` (Number
+ *      preferido), de modo que las futuras liberaciones puedan identificarla.
+ *   4. Se reemplazó la cadena `.then().catch()` por `async/await` con try/catch.
+ *
+ * @param {Object} registro - Item del pedido (con producto._id y cantidad).
+ * @param {Object} cliente - Objeto cliente del carrito (id, nombre, correo).
+ * @param {number|string} folio - Folio del pedido.
+ * @param {string|ObjectId|null} carrito_id - ID del carrito (nuevo parámetro agregado).
+ */
+async function apartar_producto(registro, cliente, folio, carrito_id = null) {
     let hay_suficientes = await si_hay_suficientes_productos(registro.producto._id, registro.cantidad)
-    /// Borrar de lista
     if (hay_suficientes.ok === false || hay_suficientes.suficientes === false) {
-        reject({ ok: false, mensaje: 'Productos insuficientes para apartado' })
-        return;
+        return { ok: false, mensaje: 'Productos insuficientes para apartado' };
     }
-    return Producto.findByIdAndUpdate(registro.producto._id, {
-        $pull: {
-            carritos: {
-                // 'cliente.id': { $in: [cliente.id] },
-                folio: folio
-            }
+
+    // Normalizar identificadores para búsqueda resiliente (ObjectId y String, Number y String)
+    const carrid_obj = asegurarObjectId(carrito_id);           // ObjectId del carrito
+    const variantes_id = obtener_variantes_id(carrito_id);     // [ObjectId, String] para $in
+    const folio_num = folio != null ? parseInt(folio) : null;  // Number del folio
+    const variantes_folio = folio_num != null ? obtener_variantes_folio(folio_num) : []; // [Number, String]
+    const cid_obj = asegurarObjectId(cliente ? cliente.id : null);
+
+    // Pull multicriterio: cubre reservas antiguas (solo folio) y nuevas (carrito_id + folio)
+    // ANTES era: $pull: { carritos: { folio: folio } }  ← fallaba por disparidad de tipos
+    const pull_or = [];
+    if (variantes_id.length > 0) pull_or.push({ carrito_id: { $in: variantes_id } });
+    if (variantes_folio.length > 0) pull_or.push({ folio: { $in: variantes_folio } });
+
+    try {
+        if (pull_or.length > 0) {
+            await Producto.findByIdAndUpdate(registro.producto._id, {
+                $pull: { carritos: { $or: pull_or } }
+            });
         }
-    })
-        .then((resultadodb) => {
-            // Volver a poner en lista si es > 0
-            // console.log({ resultado_primer: resultadodb });
-            if (registro.cantidad === 0) {
-                // aqui es cuando se borra un producto
-                return { ok: true }
-            }
-            //  mayor a 0
-            return Producto.findByIdAndUpdate(registro.producto._id, {
-                $push: {
-                    carritos:
-                    {
-                        cantidad: parseInt(registro.cantidad),
-                        cliente: {
-                            id: cliente.id,
-                            nombre: cliente.nombre,
-                            correo: cliente.correo,
-                        },
-                        fecha: new Date(),
-                        folio: folio
+
+        // Si cantidad === 0, solo se eliminó la reserva (caso: borrar producto del pedido)
+        if (registro.cantidad === 0) {
+            return { ok: true };
+        }
+
+        // Insertar nueva reserva con todos los identificadores normalizados.
+        // ANTES era: { cantidad, cliente: { id, nombre, correo }, fecha, folio }  (sin carrito_id)
+        // AHORA: incluye carrito_id como ObjectId y folio como Number para futuros $pull.
+        await Producto.findByIdAndUpdate(registro.producto._id, {
+            $push: {
+                carritos: {
+                    carrito_id: carrid_obj || (carrito_id ? String(carrito_id) : undefined),
+                    cantidad: parseInt(registro.cantidad),
+                    folio: folio_num,
+                    fecha: new Date(),
+                    cliente: {
+                        id: cid_obj || (cliente ? String(cliente.id) : ''),
+                        nombre: cliente ? cliente.nombre : '',
+                        correo: cliente ? cliente.correo : '',
                     }
                 }
-            })
-                .then(() => {
+            }
+        });
 
-                    return { ok: true }
-
-                })
-                .catch((err) => {
-                    console.log(err);
-                    return { ok: false, err };
-                })
-        })
-        .catch((err) => {
-            console.log(err);
-            //contador.insuficientes++;
-
-
-
-            return { ok: false, err };
-        })
-
+        return { ok: true };
+    } catch (err) {
+        console.error('Error en apartar_producto (cambiar_cantidad):', err);
+        return { ok: false, err };
+    }
 }
 
 

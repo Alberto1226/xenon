@@ -275,10 +275,7 @@ $: if($storeWithDebounce  ){
     }, 500);
   };
 
-  let timerBusqueda = null;
-
   function ejecutar_busqueda_inmediata() {
-    if (timerBusqueda) clearTimeout(timerBusqueda);
     $buscadores.productos = buscando;
     $productos.pagina_actual = 1;
     $paginas_actuales.productos = 1;
@@ -288,12 +285,7 @@ $: if($storeWithDebounce  ){
   function handle_buscar(evt) {
     if (evt.key === "Enter") {
       ejecutar_busqueda_inmediata();
-      return;
     }
-    if (timerBusqueda) clearTimeout(timerBusqueda);
-    timerBusqueda = setTimeout(() => {
-      ejecutar_busqueda_inmediata();
-    }, 350);
   }
 
   const fn_obtener_productos_por_pagina2 = async () => {

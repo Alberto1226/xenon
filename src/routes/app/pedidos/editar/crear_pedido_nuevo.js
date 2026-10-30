@@ -379,7 +379,7 @@ function obtener_datos_agente(id_agente) {
                             nombre: '',
                             comision: '',
                             correo: '',
-                            id: ''
+                            id: null
                         }
                     });
                     return;

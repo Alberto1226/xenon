@@ -63,7 +63,7 @@
         'Entregado': 6
     };
 
-    $: es_carrito_ruta = !!(pedido && (pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || !pedido.cliente.nombre)) || pedido.folio_salida || pedido.ruta));
+    $: es_carrito_ruta = !!(pedido && (pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || pedido.cliente.id == null || !pedido.cliente.nombre)) || pedido.folio_salida || pedido.ruta));
     $: bloqueado_por_en_ruta = es_carrito_ruta && (pedido && (pedido.status === "En Ruta" || pedido.status === "En ruta"));
 
     function estatus_deshabilitado(status_boton, status_actual) {

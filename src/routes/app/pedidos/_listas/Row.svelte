@@ -58,7 +58,7 @@
   let lista_visible = false;
   var es_par = false;
 
-  $: es_carrito_ruta = !!(pedido && (pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || !pedido.cliente.nombre)) || pedido.folio_salida || pedido.ruta));
+  $: es_carrito_ruta = !!(pedido && (pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || pedido.cliente.id == null || !pedido.cliente.nombre)) || pedido.folio_salida || pedido.ruta));
   $: bloqueado_por_en_ruta = es_carrito_ruta && (pedido && (pedido.status === "En Ruta" || pedido.status === "En ruta"));
 
   onMount(() => {
@@ -172,7 +172,7 @@
     mostrar_cargando("cancelar");
 
     let ruta = false;
-    if (pedido.folio_salida && pedido.cliente && pedido.cliente.id == "") {
+    if (pedido.folio_salida && pedido.cliente && (pedido.cliente.id == "" || pedido.cliente.id == null)) {
       ruta = true;
     }
     dispatch("procesando_cambio_status_a_envio");
@@ -355,7 +355,7 @@
   <div class="seis">
     <div class="sobresaltar no_select">
       <!-- Mostrar el folio de salida, la ruta o el cliente según corresponda -->
-      {#if pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || !pedido.cliente.nombre))}
+      {#if pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || pedido.cliente.id == null || !pedido.cliente.nombre))}
         {#if pedido.folio_salida}
           <span style="font-weight: bold; color: #19825c;">
             <i class="material-icons vertical-alineado" style="font-size: 14px;">alt_route</i>

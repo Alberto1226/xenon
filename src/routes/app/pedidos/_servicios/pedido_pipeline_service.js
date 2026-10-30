@@ -120,7 +120,7 @@ export async function cambiar_status_basico(carrito_id, nuevo_status, usuario, r
         const carrito = await Carrito.findById(carrito_id);
         if (!carrito) return { ok: false, mensaje: "El pedido no existe" };
 
-        const es_de_ruta = !!(carrito.rutas || (carrito.cliente && (carrito.cliente.id == "" || !carrito.cliente.nombre)) || carrito.folio_salida || carrito.ruta);
+        const es_de_ruta = !!(carrito.rutas || (carrito.cliente && (carrito.cliente.id == "" || carrito.cliente.id == null || !carrito.cliente.nombre)) || carrito.folio_salida || carrito.ruta);
 
         if (es_de_ruta && (carrito.status === "En Ruta" || carrito.status === "En ruta")) {
             return {
@@ -330,8 +330,8 @@ export async function cancelar_pedido(carrito_id, usuario, req, opciones = {}) {
             const ya_en_cancelados = await Carrito_cancelado.findOne({ folio: carrito.folio }).lean();
             if (ya_en_cancelados) {
                 // Ya existe registro de cancelación; borrar el carrito activo residual y liberar
-                await Carrito.findByIdAndDelete(carrito._id).catch(() => {});
-                await InventarioReservaService.liberar_apartados_de_carrito(carrito).catch(() => {});
+                await Carrito.findByIdAndDelete(carrito._id).catch(() => { });
+                await InventarioReservaService.liberar_apartados_de_carrito(carrito).catch(() => { });
                 return { ok: true, mensaje: "El pedido ya había sido cancelado previamente" };
             }
         }
@@ -409,7 +409,7 @@ export async function cancelar_pedido(carrito_id, usuario, req, opciones = {}) {
         console.error("Error en cancelar_pedido:", err);
         // Si falló antes de completarse, restaurar el estatus original para evitar dejar el pedido trabado en 'Cancelando'
         if (status_original) {
-            await Carrito.updateOne({ _id: carrito_id }, { $set: { status: status_original } }).catch(() => {});
+            await Carrito.updateOne({ _id: carrito_id }, { $set: { status: status_original } }).catch(() => { });
         }
         return { ok: false, mensaje: err.message || "Error al cancelar el pedido", err };
     } finally {

@@ -10,7 +10,8 @@ function construirQueryPedido(buscando, usuario) {
     let condiciones = [];
 
     if (buscando && typeof buscando === 'string' && buscando.trim() !== '') {
-        const textoLimpio = buscando.trim();
+        // Compatibilidad y sanitización de comillas dobles y simples
+        const textoLimpio = buscando.replace(/["'“”]/g, '').trim();
         const palabras = textoLimpio.split(/\s+/).filter(Boolean);
 
         const condicionesTexto = palabras.map(palabra => {

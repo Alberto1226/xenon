@@ -216,22 +216,14 @@
     }
   }
 
-  let timerBusquedaPedidos = null;
-
   function ejecutar_busqueda_pedidos_inmediata() {
-    if (timerBusquedaPedidos) clearTimeout(timerBusquedaPedidos);
     buscando_mandar = buscando;
   }
 
   function handle_buscar(evt) {
     if (evt.key === "Enter") {
       ejecutar_busqueda_pedidos_inmediata();
-      return;
     }
-    if (timerBusquedaPedidos) clearTimeout(timerBusquedaPedidos);
-    timerBusquedaPedidos = setTimeout(() => {
-      ejecutar_busqueda_pedidos_inmediata();
-    }, 350);
   }
 
   function cerrar_dialogo_de_Folios() {

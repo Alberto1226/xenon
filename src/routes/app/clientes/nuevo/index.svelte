@@ -14,7 +14,7 @@
     activo: true,
     agente: {
       nombre: "",
-      id: "",
+      id: null,
       correo: ""
     },
     alias: "",

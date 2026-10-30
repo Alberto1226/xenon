@@ -293,7 +293,7 @@
 
   <div class="seis">
     <div class="sobresaltar">
-      {#if pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || !pedido.cliente.nombre))}
+      {#if pedido.rutas || (pedido.cliente && (pedido.cliente.id == "" || pedido.cliente.id == null || !pedido.cliente.nombre))}
         {#if pedido.folio_salida}
           <span style="font-weight: bold; color: #19825c;">
             <i class="material-icons vertical-alineado" style="font-size: 14px;">alt_route</i>

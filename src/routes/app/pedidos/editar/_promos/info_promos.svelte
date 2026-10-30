@@ -14,7 +14,7 @@
   export var producto = {
     nombre: "",
     promo: {
-      id_promocion: ""
+      id_promocion: null
     }
   };
   var http_ocupado = false;

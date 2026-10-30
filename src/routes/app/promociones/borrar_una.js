@@ -41,7 +41,7 @@ const id_producto = req.body.id_producto;
     Promocion.findByIdAndUpdate(id_promocion,{borrada:true,borrada_detalle,activa:false})
         .then((resultado_promo) => {
             let promo={
-                id_promocion:'',
+                id_promocion: null,
                 precio:0,
                 tiene_promo:false,
                 tipo_condicion:0

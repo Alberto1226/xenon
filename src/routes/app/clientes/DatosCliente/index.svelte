@@ -80,7 +80,7 @@
         activo: true,
         agente: {
             nombre: "",
-            id: "",
+            id: null,
             correo: "",
         },
         alias: "",
@@ -825,7 +825,7 @@
             cliente.agente.nombre = agenteSeleccionado.nombre;
             cliente.agente.correo = agenteSeleccionado.correo;
         } else {
-            cliente.agente.id = "";
+            cliente.agente.id = null;
             cliente.agente.nombre = "";
             cliente.agente.correo = "";
         }
@@ -994,7 +994,7 @@
         cliente.observaciones = clientSelect.observaciones || "";
 
         let ag = clientSelect.agente || {};
-        cliente.agente.id = ag.id || "";
+        cliente.agente.id = ag.id || null;
         cliente.agente.nombre = ag.nombre || "";
         cliente.agente.correo = ag.correo || "";
     }

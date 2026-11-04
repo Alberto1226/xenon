@@ -1,3 +1,4 @@
+import './config/objectid_tolerante';
 import sirv from 'sirv';
 import express from 'express';
 import compression from 'compression';

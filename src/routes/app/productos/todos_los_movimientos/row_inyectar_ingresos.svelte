@@ -73,7 +73,11 @@
   </div>
 
   <div class="nombre col10 margen-vertical accion">
-    Inyectar existencias <br />
+    {#if item.accion === "1c"}
+      Corrección de salida duplicada<br />
+    {:else}
+      Inyectar existencias <br />
+    {/if}
 
     <i class="material-icons escribir ">local_shipping</i>
     <i class="material-icons escribir flecha">arrow_forward</i>
@@ -82,7 +86,7 @@
   </div>
 
   <div class="col10 centrado folio" title="folio">
-    <br />
+    {#if item.accion === "1c"}Folio {item.pedido.folio}{/if}<br />
 
     <br />
     <div class="centrado fecha" title={"fecha :" + fecha_formateada}>

@@ -12,7 +12,7 @@
     import { RUTA, Producto, stores_productos } from "./../../../store_http";
     export var pedido;
     export let visible = false;
-    import { createEventDispatcher, onMount } from "svelte";
+    import { createEventDispatcher } from "svelte";
     import { get } from "svelte/store";
     import {
         visible_ventana_de_detalles,
@@ -26,7 +26,6 @@
     var costo_envio = 0;
     var todos_los_botones_visibles = true;
     var producto_para_envios_existe = false;
-
     $: if (visible == false) {
         resetear();
     }
@@ -93,6 +92,7 @@
     function resetear() {
         //console.log("cerrado");
         contador = 0;
+        mensaje_envio = "Envío (Descontar)";
         costo_envio = 0;
         todos_los_botones_visibles = true;
     }
@@ -113,6 +113,12 @@
                     procesando = false;
                     visible = false;
                     //actualizar_local(status);
+                } else {
+                    $mensajes_app = [...$mensajes_app, {
+                        tipo: "error",
+                        mensaje: respuesta.mensaje || "No se pudo cambiar el estatus.",
+                    }];
+                    procesando = false;
                 }
             })
             .catch((err) => {
@@ -143,7 +149,7 @@
         $pedidos = $pedidos;
         dispatch("recargar_lista");
     }
-    function cambiar_status_a_envio() {
+    async function cambiar_status_a_envio() {
         if (procesando === true) return;
         if (contador == 0) {
             contador++;
@@ -156,63 +162,50 @@
             mensaje_envio = `Confirma ${2 - contador + 1} vez más`;
             return;
         }
+        await ejecutar_envio();
+    }
+
+    async function ejecutar_envio() {
         procesando = true;
         mensaje_envio = "Subiendo...";
-        // dispatch('procesando_cambio_status_a_envio');
-        postData("/app/pedidos/cambiar_status_a_envio", {
-            id: pedido._id,
-            producto_para_envios_existe,
-            costo_envio,
-            producto_para_envios_id:
-                producto_para_envios_existe == true
-                    ? $stores_productos.paqueteria_default._id
-                    : null,
-        })
-            .then((respuesta) => {
-                console.log({ respuesta });
-
-                if (respuesta.ok == true) {
-                    setTimeout(() => {
-                        $mensajes_app.push({
-                            tipo: "exito",
-                            mensaje: "Status cambiado a " + status,
-                        });
-                        $mensajes_app = $mensajes_app;
-                        var reporte = respuesta.reporte_de_folios_para_frontend;
-                        if (reporte) {
-                            $visible_ventana_de_detalles = true;
-                            $lista_detalle = reporte;
-                        }
-                        dispatch("recargar_lista");
-                    }, 100);
-                    //procesando = false;
-                    visible = false;
-                } else {
-                    procesando = false;
-                    $mensajes_app.push({
-                        tipo: "error",
-                        mensaje: respuesta.mensaje,
-                    });
-                    $mensajes_app = $mensajes_app;
-                    var reporte = respuesta.reporte_de_folios_para_frontend;
-                    if (reporte) {
-                        $visible_ventana_de_detalles = true;
-                        $lista_detalle = reporte;
-                    }
-                    console.log($visible_ventana_de_detalles);
-                    visible = false;
-                }
-            })
-            .catch((err) => {
-                console.log(err);
-                $mensajes_app.push({
-                    tipo: "error",
-                    mensaje: "No se pudo hacer el cambio a " + status,
-                });
-                $mensajes_app = $mensajes_app;
-                //procesando = false;
-                dispatch("cambio_a_status_envio");
-            });
+        const carga = {
+            tipo: "info",
+            mensaje: `Cambiando estatus a <b>Envío</b> (folio <b>#${pedido.folio}</b>).<br><span class="indice_row">Espere mientras se procesa la solicitud.</span>`,
+        };
+        $cargando_mensajes_app = [...$cargando_mensajes_app, carga];
+        try {
+            const datos = {
+                id: pedido._id,
+                producto_para_envios_existe,
+                costo_envio,
+                producto_para_envios_id:
+                    producto_para_envios_existe == true
+                        ? $stores_productos.paqueteria_default._id
+                        : null,
+            };
+            const respuesta = await postData("/app/pedidos/cambiar_status_a_envio", datos);
+            $mensajes_app = [...$mensajes_app, {
+                tipo: respuesta.ok ? "exito" : "error",
+                mensaje: respuesta.ok
+                    ? (respuesta.mensaje || "Status cambiado a Envío")
+                    : (respuesta.mensaje || "No se pudo confirmar el envío. Revise el pedido antes de reintentar."),
+            }];
+            if (respuesta.reporte_de_folios_para_frontend) {
+                $visible_ventana_de_detalles = true;
+                $lista_detalle = respuesta.reporte_de_folios_para_frontend;
+            }
+        } catch (err) {
+            console.error(err);
+            $mensajes_app = [...$mensajes_app, {
+                tipo: "error",
+                mensaje: "No se pudo confirmar el resultado del envío. Revise el pedido y sus movimientos antes de reintentar.",
+            }];
+        } finally {
+            $cargando_mensajes_app = $cargando_mensajes_app.filter(item => item !== carga);
+            procesando = false;
+            visible = false;
+            dispatch("recargar_lista");
+        }
     }
 
     function cambiar_status_a_enviado() {

@@ -34,10 +34,12 @@ var schema = new Schema({
         existencias: { type: Number, default: 0 },
         apartados: { type: Number, default: 0 },
     },
-    folios: []//     Folios involucrados en el movimiento, ejemplos: inyeccion , 
+    folios: [],//     Folios involucrados en el movimiento, ejemplos: inyeccion ,
+    correccion_salida_duplicada: {
+        salidas: [{ type: Schema.Types.ObjectId, ref: 'Producto_snaplog' }]
+    }
 });
 
 
 export var Producto_snaplog = mongoose.model('Producto_snaplog', schema);
-
 

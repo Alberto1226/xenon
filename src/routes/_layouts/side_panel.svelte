@@ -199,6 +199,13 @@
           roles: ["administrador"],
         },
         {
+          titulo: "Salidas duplicadas",
+          url: "/app/dev_tools/salidas_duplicadas",
+          icono: "inventory",
+          roles: ["administrador"],
+          solo_usuario: ["isotech_Xenonymas"],
+        },
+        {
           titulo: "Prueba Sobrecarga",
           url: "/app/dev_tools/sobrecarga",
           icono: "flash_on",

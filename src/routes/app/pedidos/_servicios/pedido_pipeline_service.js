@@ -128,8 +128,15 @@ export async function cambiar_status_basico(carrito_id, nuevo_status, usuario, r
             };
         }
 
-        carrito.status = nuevo_status;
-        await carrito.save();
+        if (!['Pedido', 'Ficha pago', 'Ficha Pago', 'Pagado', 'Empaque'].includes(nuevo_status)) {
+            return { ok: false, mensaje: "Use la operación correspondiente para este estatus." };
+        }
+        const actualizado = await Carrito.findOneAndUpdate(
+            { _id: carrito_id, status: { $eq: carrito.status, $nin: ['Cancelando', 'Cancelado'] } },
+            { $set: { status: nuevo_status } },
+            { new: true }
+        );
+        if (!actualizado) return { ok: false, mensaje: "El pedido está siendo procesado o requiere revisión manual." };
 
         await accesos.logActividad('cambio_status_pedidos/' + nuevo_status.toLowerCase().replace(' ', '_'), usuario, { folio: carrito.folio, id: carrito._id, status: nuevo_status }, req);
 
@@ -144,27 +151,28 @@ export async function cambiar_status_a_envio(carrito_id, opciones, usuario, req)
     try {
         const carrito = await Carrito.findById(carrito_id);
         if (!carrito) return { ok: false, mensaje: "El pedido no existe" };
-
-        if (carrito.status === "Envío") {
+        if (carrito.status === 'Envío' || carrito.status === 'Envio') {
             return { ok: true, mensaje: "El pedido ya está en fase de Envío" };
         }
 
-        // Ejecutar deducción física de inventario y snaplogs
         const res_descuento = await InventarioReservaService.descontar_fisico_inventario(carrito, req);
         if (!res_descuento.ok) {
-            return { ok: false, mensaje: "Error al descontar el inventario físico" };
+            throw new Error("El descuento o la auditoría quedaron incompletos: " + JSON.stringify(res_descuento.errores));
         }
 
         carrito.status = "Envío";
         carrito.procesando = false;
         await carrito.save();
-
-        await accesos.logActividad("pedidos/cambiar_status_a_envio", usuario, { exito: true, folio: carrito.folio, id: carrito._id }, req);
+        try {
+            await accesos.logActividad("pedidos/cambiar_status_a_envio", usuario, { exito: true, folio: carrito.folio, id: carrito._id }, req);
+        } catch (error) {
+            console.error("Error al registrar actividad del envío:", error);
+        }
 
         return { ok: true, mensaje: "Status cambiado a Envío e inventario afectado correctamente" };
     } catch (err) {
         console.error("Error en cambiar_status_a_envio:", err);
-        return { ok: false, err };
+        return { ok: false, mensaje: "No se pudo completar el envío. Puede haber productos ya descontados; revise el inventario y los movimientos antes de reintentar. " + err.message };
     }
 }
 
@@ -255,7 +263,7 @@ export async function cambiar_status_a_entregado(carrito_id, usuario, req) {
         return { ok: true, mensaje: "Pedido entregado y trasladado al histórico" };
     } catch (err) {
         console.error("Error en cambiar_status_a_entregado:", err);
-        return { ok: false, mensaje: err.message || "Error al trasladar el pedido al histórico", err };
+        return { ok: false, mensaje: "No se pudo completar la entrega; requiere revisión manual antes de reintentar. " + (err.message || ""), err };
     } finally {
         pedidos_en_entrega.delete(id_str);
     }

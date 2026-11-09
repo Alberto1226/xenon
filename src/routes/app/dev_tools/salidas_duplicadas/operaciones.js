@@ -103,12 +103,208 @@ async function recuperarSnaplog(productoId, folio) {
     if (encontrados !== 1) throw new Error('No se pudo confirmar la marca de auditoría del producto.');
 }
 
+/**
+ * Escanea los snaplogs de acción '2' (salidas) generados en los últimos N meses (por defecto 6),
+ * agrupando por producto y folio para identificar aquellos con 2 o más salidas registradas.
+ */
+async function escanearSalidasDuplicadas(meses = 6) {
+    const fechaLimite = new Date();
+    fechaLimite.setMonth(fechaLimite.getMonth() - meses);
+
+    // Agregación para agrupar salidas de los últimos N meses
+    const pipeline = [
+        {
+            $match: {
+                accion: '2',
+                fecha: { $gte: fechaLimite },
+                'pedido.folio': { $exists: true, $ne: null }
+            }
+        },
+        {
+            $group: {
+                _id: {
+                    folio: '$pedido.folio',
+                    producto_id: '$producto.id'
+                },
+                total_salidas: { $sum: 1 },
+                fechas: { $push: '$fecha' },
+                cantidades: { $push: '$cantidad' },
+                salida_ids: { $push: '$_id' },
+                cliente_nombre: { $first: '$pedido.cliente.nombre' },
+                producto_nombre: { $first: '$producto.nombre' }
+            }
+        },
+        {
+            $match: {
+                total_salidas: { $gte: 2 }
+            }
+        },
+        {
+            $sort: { '_id.folio': -1 }
+        }
+    ];
+
+    const grupos = await Producto_snaplog.collection.aggregate(pipeline).toArray();
+
+    // Obtener información adicional de folios y productos
+    const foliosUnicos = Array.from(new Set(grupos.map(g => Number(g._id.folio)).filter(f => Number.isSafeInteger(f) && f > 0)));
+    const productosIds = Array.from(new Set(grupos.map(g => g._id.producto_id).filter(id => id && mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(String(id)))));
+
+    // Consultar pedidos y productos
+    const [carritos, pedidosHist, cancelados, productosDB] = await Promise.all([
+        Carrito.collection.find({ folio: { $in: foliosUnicos.concat(foliosUnicos.map(String)) } }, { projection: { folio: 1, cliente: 1, status: 1 } }).toArray(),
+        Pedido.collection.find({ folio: { $in: foliosUnicos.concat(foliosUnicos.map(String)) } }, { projection: { folio: 1, cliente: 1, status: 1 } }).toArray(),
+        Carrito_cancelado.collection.find({ folio: { $in: foliosUnicos.concat(foliosUnicos.map(String)) } }, { projection: { folio: 1, cliente: 1, status: 1 } }).toArray(),
+        Producto.collection.find({ _id: { $in: productosIds } }, { projection: { _id: 1, nombre: 1, codigo: 1, existencia: 1, correcciones_salida_duplicada: 1 } }).toArray()
+    ]);
+
+    const mapaCancelados = new Set(cancelados.map(c => Number(c.folio)));
+    const mapaPedidos = new Map();
+    carritos.concat(pedidosHist).forEach(p => {
+        mapaPedidos.set(Number(p.folio), p);
+    });
+
+    const mapaProductos = new Map();
+    productosDB.forEach(p => {
+        mapaProductos.set(String(p._id), p);
+    });
+
+    // Mapear cada caso con estado y diagnóstico
+    const casos = grupos.map(g => {
+        const folioNum = Number(g._id.folio);
+        const prodIdStr = String(g._id.producto_id);
+        const producto = mapaProductos.get(prodIdStr);
+        const pedido = mapaPedidos.get(folioNum);
+        const estaCancelado = mapaCancelados.has(folioNum);
+
+        // Verificar si ya fue corregido por la herramienta
+        const correccion = producto && Array.isArray(producto.correcciones_salida_duplicada)
+            ? producto.correcciones_salida_duplicada.find(c => Number(c.folio) === folioNum)
+            : null;
+
+        let estado = 'sospechoso';
+        let motivo = `${g.total_salidas} salidas registradas para este pedido.`;
+
+        if (correccion) {
+            estado = correccion.auditoria_pendiente ? 'auditoria_pendiente' : 'corregido';
+            motivo = correccion.auditoria_pendiente
+                ? 'Inventario corregido pero auditoría de snaplog pendiente.'
+                : 'Ya corregido por la herramienta.';
+        } else if (estaCancelado) {
+            estado = 'cancelado';
+            motivo = 'El pedido figura como cancelado; requiere revisión manual.';
+        } else if (g.total_salidas === 2) {
+            estado = 'elegible_revision';
+            motivo = 'Exactamente 2 salidas registradas. Listo para revisar y corregir.';
+        } else if (g.total_salidas > 2) {
+            estado = 'anomalia_grave';
+            motivo = `Tiene ${g.total_salidas} salidas. Requiere revisión técnica manual.`;
+        }
+
+        return {
+            folio: folioNum,
+            producto_id: prodIdStr,
+            producto_nombre: (producto && producto.nombre) || g.producto_nombre || 'Producto sin nombre',
+            producto_codigo: (producto && producto.codigo) || '',
+            stock_actual: producto && producto.existencia ? producto.existencia.actual : null,
+            cliente: (pedido && pedido.cliente && pedido.cliente.nombre) || g.cliente_nombre || 'Cliente sin nombre',
+            total_salidas: g.total_salidas,
+            fechas_salidas: g.fechas,
+            cantidades_salidas: g.cantidades,
+            estado,
+            motivo
+        };
+    });
+
+    // Agrupar resumen por folios
+    const foliosAfectados = Array.from(new Set(casos.map(c => c.folio)));
+    const totalElegibles = casos.filter(c => c.estado === 'elegible_revision').length;
+    const totalCorregidos = casos.filter(c => c.estado === 'corregido').length;
+    const totalPendientesAuditoria = casos.filter(c => c.estado === 'auditoria_pendiente').length;
+
+    // Agrupar por pedidos (folios)
+    const mapaFolios = new Map();
+    for (const caso of casos) {
+        if (!mapaFolios.has(caso.folio)) {
+            mapaFolios.set(caso.folio, {
+                folio: caso.folio,
+                cliente: caso.cliente,
+                total_productos: 0,
+                total_elegibles: 0,
+                total_corregidos: 0,
+                total_pendientes_auditoria: 0,
+                total_anomalias: 0,
+                esta_cancelado: caso.estado === 'cancelado',
+                productos: []
+            });
+        }
+        const grupoPedido = mapaFolios.get(caso.folio);
+        grupoPedido.total_productos++;
+        if (caso.estado === 'elegible_revision') grupoPedido.total_elegibles++;
+        if (caso.estado === 'corregido') grupoPedido.total_corregidos++;
+        if (caso.estado === 'auditoria_pendiente') grupoPedido.total_pendientes_auditoria++;
+        if (caso.estado === 'anomalia_grave') grupoPedido.total_anomalias++;
+        grupoPedido.productos.push(caso);
+    }
+
+    const pedidos = Array.from(mapaFolios.values()).map(p => {
+        let estado = 'pendiente';
+        let estado_etiqueta = 'Pendiente de corregir';
+        if (p.esta_cancelado) {
+            estado = 'cancelado';
+            estado_etiqueta = 'Cancelado';
+        } else if (p.total_elegibles === 0 && p.total_pendientes_auditoria === 0 && p.total_corregidos > 0) {
+            estado = 'corregido';
+            estado_etiqueta = 'Completamente corregido';
+        } else if (p.total_pendientes_auditoria > 0) {
+            estado = 'auditoria_pendiente';
+            estado_etiqueta = 'Auditoría pendiente';
+        } else if (p.total_corregidos > 0 && p.total_elegibles > 0) {
+            estado = 'parcial';
+            estado_etiqueta = 'Parcialmente corregido';
+        } else if (p.total_anomalias > 0 && p.total_elegibles === 0) {
+            estado = 'anomalia_grave';
+            estado_etiqueta = 'Revisión técnica requerida';
+        }
+        return {
+            ...p,
+            estado,
+            estado_etiqueta
+        };
+    });
+
+    // Ordenar pedidos poniendo primero los que tienen pendientes de corrección
+    pedidos.sort((a, b) => {
+        if (a.total_elegibles > 0 && b.total_elegibles === 0) return -1;
+        if (a.total_elegibles === 0 && b.total_elegibles > 0) return 1;
+        return b.folio - a.folio;
+    });
+
+    return {
+        fecha_desde: fechaLimite,
+        meses_analizados: meses,
+        total_casos: casos.length,
+        total_folios: foliosAfectados.length,
+        total_elegibles: totalElegibles,
+        total_corregidos: totalCorregidos,
+        total_pendientes_auditoria: totalPendientesAuditoria,
+        pedidos,
+        casos
+    };
+}
+
 export async function post(req, res) {
     if (!accesos.esta_logueado(req)) return res.status(401).send({ ok: false, mensaje: 'Sesión expirada.' });
     if (!accesos.tiene_permisos_administrativos(req) || req.user.usuario !== 'isotech_Xenonymas') {
         return res.status(403).send({ ok: false, mensaje: 'Acceso restringido.' });
     }
     try {
+        if (req.body && req.body.accion === 'escanear_ultimos_meses') {
+            const meses = req.body.meses ? Number(req.body.meses) : 6;
+            const reporte = await escanearSalidasDuplicadas(meses);
+            return res.send({ ok: true, reporte });
+        }
+
         const folio = validarFolio(req.body && req.body.folio);
         if (req.body.accion === 'consultar') {
             const resultado = await consultar(folio);

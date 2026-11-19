@@ -731,13 +731,13 @@
     }
 
     function DatosAgenteSelect() {
-        postData("app/usuarios/lista_de_usuarios")
+        postData("app/usuarios/lista_de_usuarios", { todos: true })
             .then((res) => {
                 if (res.ok) {
                     $usuarios.lista = res.lista;
                     $usuarios.lista_actualizada = new Date(); //  cuando se actualizo la lista completa por ultima vez
                     $usuarios = $usuarios;
-                    listaAgente = $usuarios.lista;
+                    listaAgente = res.lista || [];
                 }
             })
             .catch((err) => {
@@ -1235,7 +1235,7 @@
                     >
                         <option value="" selected>Seleccione un Agente</option>
                         {#each listaAgente as item}
-                            <option value={item._id}>{item.nombre}</option>
+                            <option value={item._id}>{item.nombre || item.usuario}</option>
                         {/each}
                     </select>
                     <label for="floatingSelect">Agente</label>

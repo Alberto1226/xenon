@@ -1,48 +1,34 @@
 <script>
   import { Button, Textfield, Menu, Menuitem } from "svelte-mui/src";
   import { onMount, onDestroy } from "svelte";
-  //import firebase from "firebase/app";
-  import { usuarios, postData } from "./../../../stores";
+  import { postData } from "./../../../stores";
   import { createEventDispatcher } from "svelte";
   export var agente;
   const dispatch = createEventDispatcher();
 
   onMount(() => {
-    //console.log('antes');
-
-    if ($usuarios.lista.length > 0) {
-      lista = $usuarios.lista;
-      agentes = lista;
-      return;
-    }
-    //console.log('aqui');
-    //var db = firebase.database;
     obtener_agentes();
-    // var ref = firebase.database().ref("usuarios/bodega_1/usuarios")
   });
+
   onDestroy(() => {
     busqueda = "";
   });
+
   var input_1;
   var busqueda = "";
   var lista = [];
-
   var agentes = [];
-  var lista_visible = true;
   let cargando = false;
 
   function obtener_agentes() {
     if (cargando) return;
     cargando = true;
-    postData("app/usuarios/lista_de_usuarios", { buscando: busqueda })
+    postData("app/usuarios/lista_de_usuarios", { todos: true })
       .then(res => {
         cargando = false;
         if (res.ok) {
-          $usuarios.lista = res.lista;
-          $usuarios.lista_actualizada = new Date(); //  cuando se actualizo la lista completa por ultima vez
-          $usuarios = $usuarios;
-          agentes = res.lista;
-          lista = $usuarios.lista;
+          agentes = res.lista || [];
+          filtrar_nuevo_arreglo();
         }
       })
       .catch(err => {
@@ -52,32 +38,52 @@
   }
 
   function incluye_busqueda(agente_selecto) {
-  //  console.log(agente_selecto);
-    if (
-      agente_selecto.usuario.toLowerCase().indexOf(busqueda.toLowerCase()) >=
-        0 ||
-      agente_selecto.nombre.toLowerCase().indexOf(busqueda.toLowerCase()) >= 0
-    ) {
-      return true;
-    }
-    return false;
+    if (!agente_selecto) return false;
+    const term = (busqueda || "").trim().toLowerCase();
+    if (!term) return true;
+    const nombre = (agente_selecto.nombre || "").toLowerCase();
+    const usuario = (agente_selecto.usuario || "").toLowerCase();
+    const correo = (agente_selecto.correo || "").toLowerCase();
+    const alias = (agente_selecto.alias || "").toLowerCase();
+    return (
+      nombre.indexOf(term) >= 0 ||
+      usuario.indexOf(term) >= 0 ||
+      correo.indexOf(term) >= 0 ||
+      alias.indexOf(term) >= 0
+    );
   }
 
   function filtrar_nuevo_arreglo() {
-    if (busqueda == "") {
+    if (!busqueda || busqueda.trim() === "") {
       lista = agentes;
-
       return;
     }
-    var lista_previa = $usuarios.lista;
-    var lista_temp = agentes.filter(state => incluye_busqueda(state));
+    lista = agentes.filter(state => incluye_busqueda(state));
+  }
 
-    lista = lista_temp;
+  function buscar_servidor_o_local(evt) {
+    filtrar_nuevo_arreglo();
+    if (evt && evt.key === 'Enter') {
+      if (lista.length === 0 && busqueda.trim() !== '') {
+        cargando = true;
+        postData("app/usuarios/lista_de_usuarios", { buscando: busqueda, todos: true })
+          .then(res => {
+            cargando = false;
+            if (res.ok && res.lista) {
+              lista = res.lista;
+            }
+          })
+          .catch(() => {
+            cargando = false;
+          });
+      }
+    }
   }
 
   function handleKeydown(evt) {
     input_1 = document.getElementById("input_1");
     if (input_1 == null) return;
+    if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
     input_1.focus();
   }
 </script>
@@ -85,8 +91,24 @@
 <style>
   .scrollable {
     overflow-y: auto;
-    height: 150px;
+    height: 180px;
     width: 350px;
+  }
+  .input-buscar-agente {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  .input-buscar-agente input {
+    flex: 1;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px 8px;
+    outline: none;
+  }
+  .input-buscar-agente input:focus {
+    border-color: #3e58ec;
   }
 </style>
 
@@ -104,33 +126,37 @@
         arrow_drop_down
       </i>
 
-      <span>{agente ? agente.nombre : 'pendiente...'}</span>
+      <span>{agente ? (agente.nombre || agente.usuario) : 'pendiente...'}</span>
 
     </Button>
   </div>
-  <input
-    id="input_1"
-    type="text"
-    bind:value={busqueda}
-    on:keyup={filtrar_nuevo_arreglo} />
-  <i class="material-icons vertical-alineado">search</i>
+  <div class="input-buscar-agente">
+    <input
+      id="input_1"
+      type="text"
+      placeholder="Buscar por nombre, usuario o correo..."
+      bind:value={busqueda}
+      on:input={filtrar_nuevo_arreglo}
+      on:keyup={buscar_servidor_o_local} />
+    <i class="material-icons vertical-alineado" style="cursor: pointer; margin-left: 6px; color: #555;" on:click={() => buscar_servidor_o_local({ key: 'Enter' })}>search</i>
+  </div>
   {#if cargando}
-    <!-- content here -->
-    <div class="centrado">
+    <div class="centrado" style="padding: 15px;">
       <b>cargando...</b>
     </div>
+  {:else if lista.length === 0}
+    <div class="centrado" style="padding: 20px; color: #777;">
+      <i>No se encontraron usuarios</i>
+    </div>
   {:else}
-    <!-- else content here -->
     <div class="scrollable">
       {#each lista as item}
-        <!-- content here -->
-
         <Menuitem
           on:click={() => {
-            agente = { nombre: item.nombre, id: item._id, correo: item.correo };
+            agente = { nombre: item.nombre || item.usuario, id: item._id, correo: item.correo || '' };
             dispatch('change', agente);
           }}>
-          {item.nombre} {item.correo}
+          {item.nombre || item.usuario} {item.correo ? `(${item.correo})` : ''}
         </Menuitem>
       {/each}
     </div>

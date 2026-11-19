@@ -7,11 +7,27 @@ export async function post(req, res, next) {
         return;
     }
 
-    let buscando = req.body.buscando || '';
+    let buscando = (req.body.buscando || '').toString().trim();
     let tipo = req.body.tipo;
-    const pagina_actual = (req.body.pagina_actual || 1) - 1;
+    let todos = req.body.todos === true;
+    let paginar = !todos && (req.body.pagina_actual !== undefined && req.body.pagina_actual !== null);
+    const limite = parseInt(req.body.limite) || 10;
+    const pagina_actual = Math.max(1, parseInt(req.body.pagina_actual) || 1) - 1;
 
-    let query = { nombre: { '$regex': buscando, '$options': "im" } };
+    let query = {};
+    if (buscando !== '') {
+        const regex = { '$regex': buscando, '$options': "i" };
+        query.$or = [
+            { nombre: regex },
+            { usuario: regex },
+            { correo: regex },
+            { alias: regex }
+        ];
+    }
+
+    if (req.body.solo_activos === true) {
+        query.activo = true;
+    }
 
     if (tipo === 'pedido') {
         try {
@@ -20,11 +36,11 @@ export async function post(req, res, next) {
             let queryFinal = totalMovil > 0 ? queryMovil : query;
 
             let numero_total = await Usuario.countDocuments(queryFinal);
-            let resDB = await Usuario.find(queryFinal)
-                .sort({ nombre: 1 })
-                .skip(pagina_actual * 10)
-                .limit(10)
-                .exec();
+            let consulta = Usuario.find(queryFinal).sort({ nombre: 1 });
+            if (paginar) {
+                consulta = consulta.skip(pagina_actual * limite).limit(limite);
+            }
+            let resDB = await consulta.exec();
 
             res.send({ ok: true, lista: resDB, numero_total });
             return;
@@ -37,11 +53,11 @@ export async function post(req, res, next) {
 
     try {
         let numero_total = await Usuario.countDocuments(query);
-        let resDB = await Usuario.find(query)
-            .sort({ nombre: 1 })
-            .skip(pagina_actual * 10)
-            .limit(10)
-            .exec();
+        let consulta = Usuario.find(query).sort({ nombre: 1 });
+        if (paginar) {
+            consulta = consulta.skip(pagina_actual * limite).limit(limite);
+        }
+        let resDB = await consulta.exec();
 
         res.send({ ok: true, lista: resDB, numero_total });
     } catch (err) {

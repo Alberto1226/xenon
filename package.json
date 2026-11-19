@@ -63,6 +63,7 @@
     "svelte": "^3.0.0",
     "svelte-json-tree": "^0.1.0",
     "svelte-mui": "^0.3.3",
-    "uuidv4": "^6.0.8"
+    "uuidv4": "^6.0.8",
+    "xlsx": "^0.18.5"
   }
 }

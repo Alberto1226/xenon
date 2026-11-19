@@ -222,12 +222,13 @@
     const c = nuevoPedimento.contribuciones_sat;
     const inc = nuevoPedimento.incrementables_sat;
     
-    // Sumar contribuciones e incrementables
-    const totalImpuestosSat = (c.igi || 0) + (c.iva || 0) + (c.dta || 0) + (c.prv || 0);
+    // Sumar contribuciones deducibles (IGI + DTA + PRV) excluyendo el IVA (100% acreditable según LIVA y NIF C-4)
+    const totalImpuestosSat = (c.igi || 0) + (c.dta || 0) + (c.prv || 0);
     nuevoPedimento.gastos_importacion.Impuesto_Aduanal = totalImpuestosSat;
     nuevoPedimento.gastos_importacion.Flete = inc.fletes || 0;
+    nuevoPedimento.gastos_importacion.Seguro = inc.seguros || 0;
     
-    mensaje_bueno("Gastos e impuestos del SAT sincronizados para prorrateo.");
+    mensaje_bueno("Gastos e impuestos del SAT sincronizados para prorrateo (IVA acreditable excluido del costo).");
   }
 
   function agregarProductoALista() {
@@ -303,22 +304,34 @@
   }
 
   function listaDeGastos(ped, partida) {
-    if (partida === null || partida === undefined) return ped.gastos_importacion.otros;
+    if (!ped) return [];
+    if (partida === null || partida === undefined) {
+      if (!ped.gastos_importacion) ped.gastos_importacion = { Impuesto_Aduanal: 0, Flete: 0, Agente_Aduanal: 0, Seguridad: 0, Seguro: 0, otros: [] };
+      if (!ped.gastos_importacion.otros) ped.gastos_importacion.otros = [];
+      return ped.gastos_importacion.otros;
+    }
+    if (!ped.productos || !ped.productos[partida]) return [];
     if (!ped.productos[partida].gastos_adicionales) ped.productos[partida].gastos_adicionales = [];
     return ped.productos[partida].gastos_adicionales;
   }
 
   function abrirGastoModal(contexto, partida = null, indice = null) {
     const ped = pedimentoDeContexto(contexto);
-    let datos = { concepto: "", monto: 0, fecha_gasto: fechaHoyISO(), observaciones: "" };
+    let datos = { concepto: "", monto: 0, fecha_gasto: fechaHoyISO(), uuid_cfdi: "", proveedor: "", rfc: "", factura: "", observaciones: "" };
     if (indice !== null) {
       const g = listaDeGastos(ped, partida)[indice];
-      datos = {
-        concepto: g.concepto || "",
-        monto: g.monto || 0,
-        fecha_gasto: g.fecha_gasto ? String(g.fecha_gasto).slice(0, 10) : "",
-        observaciones: g.observaciones || ""
-      };
+      if (g) {
+        datos = {
+          concepto: g.concepto || "",
+          monto: g.monto || 0,
+          fecha_gasto: g.fecha_gasto ? String(g.fecha_gasto).slice(0, 10) : "",
+          uuid_cfdi: g.uuid_cfdi || (g.factura ? g.factura.uuid : "") || "",
+          proveedor: g.proveedor ? (g.proveedor.nombre || "") : "",
+          rfc: g.proveedor ? (g.proveedor.rfc || "") : "",
+          factura: g.factura ? (g.factura.numero || "") : "",
+          observaciones: g.observaciones || ""
+        };
+      }
     }
     gastoModal = { abierto: true, contexto, partida, indice, datos };
   }
@@ -334,35 +347,64 @@
       mensaje_error("Escribe el concepto del gasto.");
       return;
     }
-    if (!(monto > 0)) {
-      mensaje_error("El monto debe ser mayor a cero.");
+    if (isNaN(monto) || monto === 0) {
+      mensaje_error("El monto debe ser diferente de cero (positivo para gastos/honorarios, negativo para devoluciones o reembolsos de anticipo).");
       return;
     }
     const ped = pedimentoDeContexto(gastoModal.contexto);
     const lista = listaDeGastos(ped, gastoModal.partida);
+    const uuidLimpio = (d.uuid_cfdi || "").trim().toUpperCase();
     const gasto = {
       concepto: d.concepto.trim(),
       monto,
       fecha_gasto: d.fecha_gasto || null,
+      uuid_cfdi: uuidLimpio,
+      proveedor: {
+        nombre: (d.proveedor || "").trim(),
+        rfc: (d.rfc || "").trim().toUpperCase()
+      },
+      factura: {
+        numero: (d.factura || "").trim(),
+        uuid: uuidLimpio,
+        fecha_emision: d.fecha_gasto || null
+      },
       observaciones: d.observaciones || ""
     };
     if (gastoModal.indice === null) lista.push(gasto);
     else lista[gastoModal.indice] = gasto;
-    asignarPedimentoContexto(gastoModal.contexto);
+    asignarPedimentoContexto(gastoModal.contexto, gastoModal.partida);
     cerrarGastoModal();
   }
 
   function quitarGasto(contexto, partida, indice) {
-    listaDeGastos(pedimentoDeContexto(contexto), partida).splice(indice, 1);
-    asignarPedimentoContexto(contexto);
+    const lista = listaDeGastos(pedimentoDeContexto(contexto), partida);
+    lista.splice(indice, 1);
+    asignarPedimentoContexto(contexto, partida);
   }
 
-  // Reasigna para que Svelte detecte el cambio en las listas anidadas.
-  function asignarPedimentoContexto(contexto) {
-    if (contexto === "edicion") pedimentoEditar = pedimentoEditar;
-    else nuevoPedimento = nuevoPedimento;
+  // Reasigna para que Svelte detecte el cambio en las listas anidadas (reactividad forzada).
+  function asignarPedimentoContexto(contexto, partida = null) {
+    if (contexto === "edicion") {
+      if (partida === null || partida === undefined) {
+        if (!pedimentoEditar.gastos_importacion) pedimentoEditar.gastos_importacion = {};
+        pedimentoEditar.gastos_importacion.otros = [...(pedimentoEditar.gastos_importacion.otros || [])];
+      } else if (pedimentoEditar.productos && pedimentoEditar.productos[partida]) {
+        pedimentoEditar.productos[partida].gastos_adicionales = [...(pedimentoEditar.productos[partida].gastos_adicionales || [])];
+        pedimentoEditar.productos = [...pedimentoEditar.productos];
+      }
+      pedimentoEditar = { ...pedimentoEditar };
+    } else {
+      if (partida === null || partida === undefined) {
+        if (!nuevoPedimento.gastos_importacion) nuevoPedimento.gastos_importacion = {};
+        nuevoPedimento.gastos_importacion.otros = [...(nuevoPedimento.gastos_importacion.otros || [])];
+      } else if (nuevoPedimento.productos && nuevoPedimento.productos[partida]) {
+        nuevoPedimento.productos[partida].gastos_adicionales = [...(nuevoPedimento.productos[partida].gastos_adicionales || [])];
+        nuevoPedimento.productos = [...nuevoPedimento.productos];
+      }
+      nuevoPedimento = { ...nuevoPedimento };
+    }
     // El modal de gastos de partida lee los datos por función; hay que invalidarlo.
-    gastosPartidaModal = gastosPartidaModal;
+    gastosPartidaModal = { ...gastosPartidaModal };
   }
 
   function sumarGastosPartidas(ped) {
@@ -409,6 +451,66 @@
       if (contexto === "edicion") removerProductoDeListaEdicion(partida);
       else removerProductoDeLista(partida);
     }
+  }
+
+  // --- Menú desplegable de opciones para pedimentos en la lista principal ---
+  let menuPedimento = { abierto: false, ped: null, x: 0, y: 0 };
+  let showCargosModal = false;
+  let pedimentoCargos = null;
+
+  function abrirMenuPedimento(evento, ped) {
+    evento.stopPropagation();
+    if (menuPedimento.abierto && menuPedimento.ped && menuPedimento.ped._id === ped._id) {
+      menuPedimento = { ...menuPedimento, abierto: false };
+      return;
+    }
+    const caja = evento.currentTarget.getBoundingClientRect();
+    const alto = 220;
+    const y = caja.bottom + alto > window.innerHeight ? caja.top - alto : caja.bottom + 4;
+    menuPedimento = { abierto: true, ped, x: Math.max(8, caja.right - 240), y };
+  }
+
+  function cerrarMenuPedimento() {
+    if (menuPedimento.abierto) menuPedimento = { ...menuPedimento, abierto: false };
+  }
+
+  function cerrarTodosLosMenus() {
+    cerrarMenuPartida();
+    cerrarMenuPedimento();
+  }
+
+  function ejecutarAccionPedimento(accion) {
+    const ped = menuPedimento.ped;
+    cerrarMenuPedimento();
+    if (!ped) return;
+    if (accion === "costos") {
+      irACalcularCostos(ped);
+    } else if (accion === "ver_cargos") {
+      abrirModalCargos(ped);
+    } else if (accion === "editar") {
+      abrirModalEditar(ped);
+    } else if (accion === "arribar") {
+      abrirModalArribo(ped);
+    } else if (accion === "eliminar") {
+      eliminarPedimento(ped);
+    }
+  }
+
+  function abrirModalCargos(ped) {
+    pedimentoCargos = ped;
+    showCargosModal = true;
+  }
+
+  function contarTotalCargosExtra(ped) {
+    if (!ped) return 0;
+    const otrosCount = (ped.gastos_importacion && Array.isArray(ped.gastos_importacion.otros)) ? ped.gastos_importacion.otros.length : 0;
+    const partidasCount = (ped.productos || []).reduce((acc, p) => acc + ((p.gastos_adicionales && Array.isArray(p.gastos_adicionales)) ? p.gastos_adicionales.length : 0), 0);
+    return otrosCount + partidasCount;
+  }
+
+  function obtenerPartidasConCargos(ped) {
+    if (!ped || !Array.isArray(ped.productos)) return [];
+    return ped.productos.filter(p => p.gastos_adicionales && Array.isArray(p.gastos_adicionales) && p.gastos_adicionales.length > 0);
   }
 
   function removerProductoDeLista(index) {
@@ -680,14 +782,28 @@
       pedimentoEditar.fecha_arribo = "";
     }
     
-    pedimentoEditar.productos = pedimentoEditar.productos.map(item => {
+    if (!pedimentoEditar.gastos_importacion) {
+      pedimentoEditar.gastos_importacion = { Impuesto_Aduanal: 0, Flete: 0, Agente_Aduanal: 0, Seguridad: 0, Seguro: 0, otros: [] };
+    }
+    if (!pedimentoEditar.gastos_importacion.otros) {
+      pedimentoEditar.gastos_importacion.otros = [];
+    }
+    if (!pedimentoEditar.contribuciones_sat) {
+      pedimentoEditar.contribuciones_sat = { dta: 0, prv: 0, igi: 0, iva: 0, total_efectivo: 0 };
+    }
+    if (!pedimentoEditar.incrementables_sat) {
+      pedimentoEditar.incrementables_sat = { fletes: 0, seguros: 0, otros: 0 };
+    }
+
+    pedimentoEditar.productos = (pedimentoEditar.productos || []).map(item => {
       const pId = item.producto && item.producto._id ? item.producto._id : item.producto;
       const prodOriginal = allProducts.find(p => p._id === pId);
       return {
         ...item,
         producto: pId,
         nombre: prodOriginal ? prodOriginal.nombre : (item.producto && item.producto.nombre ? item.producto.nombre : "Producto Desconocido"),
-        codigo: prodOriginal ? prodOriginal.codigo : (item.producto && item.producto.codigo ? item.producto.codigo : "")
+        codigo: prodOriginal ? prodOriginal.codigo : (item.producto && item.producto.codigo ? item.producto.codigo : ""),
+        gastos_adicionales: item.gastos_adicionales || []
       };
     });
 
@@ -791,11 +907,13 @@
     const c = pedimentoEditar.contribuciones_sat;
     const inc = pedimentoEditar.incrementables_sat;
     
-    const totalImpuestosSat = (c.igi || 0) + (c.iva || 0) + (c.dta || 0) + (c.prv || 0);
+    // Sumar contribuciones deducibles (IGI + DTA + PRV) excluyendo el IVA (100% acreditable según LIVA y NIF C-4)
+    const totalImpuestosSat = (c.igi || 0) + (c.dta || 0) + (c.prv || 0);
     pedimentoEditar.gastos_importacion.Impuesto_Aduanal = totalImpuestosSat;
     pedimentoEditar.gastos_importacion.Flete = inc.fletes || 0;
+    pedimentoEditar.gastos_importacion.Seguro = inc.seguros || 0;
     
-    mensaje_bueno("Gastos e impuestos del SAT sincronizados para prorrateo.");
+    mensaje_bueno("Gastos e impuestos del SAT sincronizados para prorrateo (IVA acreditable excluido del costo).");
   }
 
   async function guardarEdicionPedimento() {
@@ -918,17 +1036,130 @@
     return amount.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
   }
 
-  // Sumatoria total de gastos indirectos de un pedimento
-  function sumarGastosIndirectos(ped) {
-    if (!ped || !ped.gastos_importacion) return 0;
-    const g = ped.gastos_importacion;
-    const otros = g.otros ? g.otros.reduce((acc, curr) => acc + (curr.monto || 0), 0) : 0;
-    const porPartida = (ped.productos || []).reduce((acc, p) => acc + sumarGastosLista(p.gastos_adicionales), 0);
-    return (g.Impuesto_Aduanal || 0) + (g.Flete || 0) + (g.Agente_Aduanal || 0) + (g.Seguridad || 0) + otros + porPartida;
+  function calcularCostoBase(item, tc) {
+    if (!item) return 0;
+    const cant = parseFloat(item.cantidad) || 1;
+    const vAduana = parseFloat(item.valor_aduana_partida_mxn);
+    if (vAduana > 0 && cant > 0) {
+      return vAduana / cant;
+    }
+    const vPagado = parseFloat(item.importe_precio_pagado_mxn);
+    if (vPagado > 0 && cant > 0) {
+      return vPagado / cant;
+    }
+    return (parseFloat(item.precio_compra_usd) || 0) * (parseFloat(tc) || 1);
   }
+
+  function calcularGastoDirecto(item) {
+    if (!item || !item.cantidad) return 0;
+    return sumarGastosLista(item.gastos_adicionales) / item.cantidad;
+  }
+
+  function calcularGastoIndirecto(item, tc) {
+    if (!item || !item.costo_fiscal_unitario_mxn || item.costo_fiscal_unitario_mxn <= 0) return 0;
+    const base = calcularCostoBase(item, tc);
+    const directo = calcularGastoDirecto(item);
+    return Math.max(0, item.costo_fiscal_unitario_mxn - base - directo);
+  }
+
+  // --- Funciones de Desglose Fiscal Exacto (Excluyendo IVA según Art. 4-5 LIVA y NIF C-4) ---
+  function obtenerImpuestosDeducibles(ped) {
+    if (!ped) return 0;
+    const g = ped.gastos_importacion || {};
+    const imp = ped.impuestos || {};
+    const cont = ped.contribuciones_sat || {};
+    let total = (imp.dta || cont.dta || 0) + (imp.prv || cont.prv || 0) + (imp.igi || cont.igi || 0) + (imp.cnt || 0);
+    if (total === 0 && (g.Impuesto_Aduanal || 0) > 0) {
+      total = g.Impuesto_Aduanal || 0;
+    }
+    return total;
+  }
+
+  function obtenerFletes(ped) {
+    if (!ped) return 0;
+    const g = ped.gastos_importacion || {};
+    const inc = ped.incrementables_sat || {};
+    if (g.gastos_costo && Array.isArray(g.gastos_costo) && g.gastos_costo.length > 0) {
+      const f = g.gastos_costo.filter(x => x.tipo === 'FLETE').reduce((acc, x) => acc + (parseFloat(x.importe) || 0), 0);
+      if (f > 0) return f;
+    }
+    return g.Flete || inc.fletes || 0;
+  }
+
+  function obtenerSeguros(ped) {
+    if (!ped) return 0;
+    const g = ped.gastos_importacion || {};
+    const inc = ped.incrementables_sat || {};
+    if (g.gastos_costo && Array.isArray(g.gastos_costo) && g.gastos_costo.length > 0) {
+      const s = g.gastos_costo.filter(x => x.tipo === 'SEGUROS').reduce((acc, x) => acc + (parseFloat(x.importe) || 0), 0);
+      if (s > 0) return s;
+    }
+    return g.Seguro || g.Seguridad || inc.seguros || 0;
+  }
+
+  function obtenerHonorarios(ped) {
+    if (!ped) return 0;
+    const g = ped.gastos_importacion || {};
+    if (g.honorarios_agente && Array.isArray(g.honorarios_agente) && g.honorarios_agente.length > 0) {
+      return g.honorarios_agente.reduce((acc, h) => acc + (parseFloat(h.importe) || 0), 0);
+    }
+    return g.Agente_Aduanal || 0;
+  }
+
+  function obtenerOtrosIndirectos(ped) {
+    if (!ped) return 0;
+    const g = ped.gastos_importacion || {};
+    const inc = ped.incrementables_sat || {};
+    let suma = 0;
+    if (g.gastos_costo && Array.isArray(g.gastos_costo) && g.gastos_costo.length > 0) {
+      suma += g.gastos_costo.filter(x => x.tipo !== 'FLETE' && x.tipo !== 'SEGUROS').reduce((acc, x) => acc + (parseFloat(x.importe) || 0), 0);
+    }
+    if (g.otros && Array.isArray(g.otros) && g.otros.length > 0) {
+      suma += g.otros.reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
+    } else if (suma === 0) {
+      suma = inc.otros || 0;
+    }
+    return suma;
+  }
+
+  function obtenerGastosPositivosIndirectos(ped) {
+    if (!ped || !ped.gastos_importacion || !Array.isArray(ped.gastos_importacion.otros)) return 0;
+    return ped.gastos_importacion.otros.filter(x => (parseFloat(x.monto) || 0) > 0).reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0);
+  }
+
+  function obtenerDevolucionesIndirectas(ped) {
+    if (!ped || !ped.gastos_importacion || !Array.isArray(ped.gastos_importacion.otros)) return 0;
+    return ped.gastos_importacion.otros.filter(x => (parseFloat(x.monto) || 0) < 0).reduce((acc, x) => acc + (parseFloat(x.monto) || 0), 0);
+  }
+
+  function tieneDevolucionesIndirectas(ped) {
+    return obtenerDevolucionesIndirectas(ped) < 0;
+  }
+
+  function obtenerIvaAcreditable(ped) {
+    if (!ped) return 0;
+    const imp = ped.impuestos || {};
+    const cont = ped.contribuciones_sat || {};
+    const ivaImp = (imp.iva && imp.iva.monto) ? parseFloat(imp.iva.monto) : 0;
+    return ivaImp || parseFloat(cont.iva) || parseFloat(cont.iva_acreditable) || 0;
+  }
+
+  // Sumatoria total de gastos indirectos de un pedimento a prorratear (SIN IVA)
+  function sumarGastosIndirectos(ped) {
+    if (!ped) return 0;
+    return (
+      obtenerImpuestosDeducibles(ped) +
+      obtenerFletes(ped) +
+      obtenerSeguros(ped) +
+      obtenerHonorarios(ped) +
+      obtenerOtrosIndirectos(ped)
+    );
+  }
+
+
 </script>
 
-<svelte:window on:click={cerrarMenuPartida} />
+<svelte:window on:click={cerrarTodosLosMenus} />
 
 <svelte:head>
   <title>Pedimentos de Importación - Admin</title>
@@ -1019,39 +1250,17 @@
                     </td>
                     <td class="text-center">
                       <button 
-                        class="btn btn-action-blue me-2" 
-                        on:click={() => irACalcularCostos(ped)}
-                        title="Calcular Costos Fiscales"
+                        class="btn-acciones" 
+                        on:click={(e) => abrirMenuPedimento(e, ped)} 
+                        title="Opciones del pedimento"
                       >
-                        <i class="material-icons text-medium">calculate</i> Costos
+                        Acciones <i class="material-icons">arrow_drop_down</i>
+                        {#if contarTotalCargosExtra(ped) > 0}
+                          <span class="badge-gastos" title="{contarTotalCargosExtra(ped)} cargo(s)/devolución(es) extra">
+                            {contarTotalCargosExtra(ped)}
+                          </span>
+                        {/if}
                       </button>
-
-                      <button 
-                        class="btn btn-action-orange me-2" 
-                        on:click={() => abrirModalEditar(ped)}
-                        title="Editar Pedimento"
-                      >
-                        <i class="material-icons text-medium">edit</i> Editar
-                      </button>
-
-                      {#if ped.status === 'transito'}
-                        <button 
-                          class="btn btn-action-green" 
-                          on:click={() => abrirModalArribo(ped)}
-                        >
-                          <i class="material-icons text-medium">warehouse</i> Arribar
-                        </button>
-                      {:else}
-                        <span class="arribado-label">
-                          <i class="material-icons text-medium vertical-align-middle">done_all</i>
-                        </span>
-                      {/if}
-
-                      {#if esLocal}
-                        <button class="btn btn-action-red" on:click={() => eliminarPedimento(ped)} title="Eliminar pedimento (solo local)">
-                          <i class="material-icons text-medium">delete</i>
-                        </button>
-                      {/if}
                     </td>
                   </tr>
                 {/each}
@@ -1408,7 +1617,13 @@
                   {/each}
                 </tbody>
               </table>
-              <div class="text-end text-small">Subtotal gastos adicionales: <strong class="font-mono">{formatMoney(sumarGastosLista(nuevoPedimento.gastos_importacion.otros))}</strong></div>
+              <div class="d-flex justify-content-end align-items-center gap-3 text-small mt-2 pt-2 border-top">
+                {#if tieneDevolucionesIndirectas(nuevoPedimento)}
+                  <span class="text-muted">Gastos brutos: <strong class="font-mono">{formatMoney(obtenerGastosPositivosIndirectos(nuevoPedimento))}</strong></span>
+                  <span class="text-danger font-bold">(-) Devoluciones: <strong class="font-mono">{formatMoney(obtenerDevolucionesIndirectas(nuevoPedimento))}</strong></span>
+                {/if}
+                <span>Subtotal neto adicionales: <strong class="font-mono text-primary">{formatMoney(sumarGastosLista(nuevoPedimento.gastos_importacion.otros))}</strong></span>
+              </div>
             {/if}
           </div>
         </div>
@@ -1720,8 +1935,12 @@
               <span class="label">Tipo de Cambio:</span>
               <span class="value">{pedimentoSeleccionado.tipo_cambio.toFixed(4)} MXN</span>
             </div>
+            <div class="detalle-row">
+              <span class="label">Valuación:</span>
+              <span class="value badge" style="background: #e0e7ff; color: #3730a3; font-weight: 700;">PEPS (LISR Art. 41)</span>
+            </div>
             <div class="detalle-row highlight">
-              <span class="label">Total Indirectos:</span>
+              <span class="label">Total a Prorratear:</span>
               <span class="value price">{formatMoney(sumarGastosIndirectos(pedimentoSeleccionado))}</span>
             </div>
             <div class="detalle-row">
@@ -1735,31 +1954,57 @@
               </span>
             </div>
 
-            <div class="detalle-seccion-titulo">Gastos Desglosados:</div>
+            <div class="detalle-seccion-titulo">Gastos Indirectos (a Prorratear):</div>
             <div class="detalle-row mini">
-              <span class="label">Impuestos:</span>
-              <span class="value">{formatMoney(pedimentoSeleccionado.gastos_importacion.Impuesto_Aduanal)}</span>
+              <span class="label">Impuestos Deducibles:</span>
+              <span class="value">{formatMoney(obtenerImpuestosDeducibles(pedimentoSeleccionado))}</span>
             </div>
             <div class="detalle-row mini">
               <span class="label">Fletes:</span>
-              <span class="value">{formatMoney(pedimentoSeleccionado.gastos_importacion.Flete)}</span>
+              <span class="value">{formatMoney(obtenerFletes(pedimentoSeleccionado))}</span>
             </div>
             <div class="detalle-row mini">
-              <span class="label">Agente:</span>
-              <span class="value">{formatMoney(pedimentoSeleccionado.gastos_importacion.Agente_Aduanal)}</span>
+              <span class="label">Seguros:</span>
+              <span class="value">{formatMoney(obtenerSeguros(pedimentoSeleccionado))}</span>
             </div>
             <div class="detalle-row mini">
-              <span class="label">Seguridad:</span>
-              <span class="value">{formatMoney(pedimentoSeleccionado.gastos_importacion.Seguridad)}</span>
+              <span class="label">Agente Aduanal:</span>
+              <span class="value">{formatMoney(obtenerHonorarios(pedimentoSeleccionado))}</span>
             </div>
-            <div class="detalle-row mini">
-              <span class="label">Otros indirectos:</span>
-              <span class="value">{formatMoney(sumarGastosLista(pedimentoSeleccionado.gastos_importacion.otros))}</span>
+            {#if tieneDevolucionesIndirectas(pedimentoSeleccionado)}
+              <div class="detalle-row mini">
+                <span class="label">Otros gastos brutos:</span>
+                <span class="value font-mono">{formatMoney(obtenerGastosPositivosIndirectos(pedimentoSeleccionado))}</span>
+              </div>
+              <div class="detalle-row mini" style="color: #dc2626;">
+                <span class="label font-bold">(-) Devoluciones / Reembolsos:</span>
+                <span class="value font-bold font-mono">{formatMoney(obtenerDevolucionesIndirectas(pedimentoSeleccionado))}</span>
+              </div>
+              <div class="detalle-row mini" style="border-top: 1px dashed #cbd5e1; padding-top: 2px;">
+                <span class="label font-bold">Otros indirectos (neto):</span>
+                <span class="value font-bold font-mono">{formatMoney(obtenerOtrosIndirectos(pedimentoSeleccionado))}</span>
+              </div>
+            {:else}
+              <div class="detalle-row mini">
+                <span class="label">Otros indirectos:</span>
+                <span class="value">{formatMoney(obtenerOtrosIndirectos(pedimentoSeleccionado))}</span>
+              </div>
+            {/if}
+            <div class="detalle-row mini" style="background: #f0fdf4; border-radius: 4px; padding: 4px 6px; margin-top: 6px;">
+              <span class="label" style="color: #166534; font-weight: 600;">IVA Importación (Acreditable):</span>
+              <span class="value font-mono" style="color: #166534; font-weight: 700;">
+                {formatMoney(obtenerIvaAcreditable(pedimentoSeleccionado))}
+              </span>
             </div>
-            <div class="detalle-row mini">
-              <span class="label">Gastos por partida:</span>
-              <span class="value">{formatMoney(sumarGastosPartidas(pedimentoSeleccionado))}</span>
+            <div style="font-size: 0.72rem; color: #16a34a; margin-top: 2px; text-align: right;">
+              100% acreditable (excluido del costo fiscal)
             </div>
+            {#if sumarGastosPartidas(pedimentoSeleccionado) > 0}
+              <div class="detalle-row mini" style="border-top: 1px dashed #cbd5e1; margin-top: 6px; padding-top: 4px;">
+                <span class="label">Gastos por partida (directos):</span>
+                <span class="value text-warning font-bold">{formatMoney(sumarGastosPartidas(pedimentoSeleccionado))}</span>
+              </div>
+            {/if}
           </div>
         </div>
 
@@ -1777,8 +2022,6 @@
             <select class="form-select custom-select" bind:value={metodologiaSeleccionada}>
               <option value="ad-valorem">Opción A: Prorrateo Ad-Valorem (Por valor de importación - SAT)</option>
               <option value="unitario">Opción B: Prorrateo Unitario (Equitativo por cantidad de piezas)</option>
-              <option value="mixto">Opción C: Prorrateo Mixto (Impuestos por Valor + Flete por Cantidad)</option>
-              <option value="fijo">Opción D: Porcentaje Fijo de Incremento Manual</option>
             </select>
           </div>
 
@@ -1819,7 +2062,15 @@
 
       <!-- Resultados del cálculo -->
       <div class="contenedor_ventana">
-        <h4 class="font-bold text-dark mb-3 p-3">Desglose de Costo Fiscal por Partida</h4>
+        <div class="d-flex justify-content-between align-items-center p-3 mb-2">
+          <div>
+            <h4 class="font-bold text-dark m-0">Desglose de Costo Fiscal por Partida</h4>
+            <span class="text-muted text-small">Valuación PEPS (LISR Art. 41) • IVA de Importación 100% Acreditable Excluido del Costo</span>
+          </div>
+          <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; padding: 6px 12px; font-size: 0.85rem;">
+            {metodologiaSeleccionada === 'ad-valorem' ? 'Prorrateo Ad-Valorem (SAT)' : (metodologiaSeleccionada === 'unitario' ? 'Prorrateo Unitario' : (metodologiaSeleccionada === 'mixto' ? 'Prorrateo Mixto' : 'Factor Fijo'))}
+          </span>
+        </div>
         <div class="table-responsive">
           <table class="table table-custom align-middle">
             <thead>
@@ -1829,9 +2080,10 @@
                 <th>Cantidad</th>
                 <th>Costo USD Unitario</th>
                 <th>Costo Base MXN</th>
-                <th>Gasto adicional / pza</th>
+                <th>Gasto Indirecto / pza</th>
+                <th>Gasto Directo / pza</th>
                 <th>Costo Fiscal Unitario MXN</th>
-                <th>Costo de Importación Total</th>
+                <th>Costo Importación Total</th>
               </tr>
             </thead>
             <tbody>
@@ -1844,13 +2096,20 @@
                   <td class="font-mono">{item.fraccion_arancelaria || 'S/C'}</td>
                   <td>{item.cantidad} {item.unidad_medida}</td>
                   <td>${item.precio_compra_usd.toFixed(2)} USD</td>
-                  <td>{formatMoney(item.precio_compra_usd * pedimentoSeleccionado.tipo_cambio)}</td>
+                  <td>{formatMoney(calcularCostoBase(item, pedimentoSeleccionado.tipo_cambio))}</td>
+                  <td>
+                    {#if item.costo_fiscal_unitario_mxn > 0}
+                      <span class="text-primary font-bold">+{formatMoney(calcularGastoIndirecto(item, pedimentoSeleccionado.tipo_cambio))}</span>
+                    {:else}
+                      <span class="text-muted">-</span>
+                    {/if}
+                  </td>
                   <td>
                     {#if sumarGastosLista(item.gastos_adicionales) > 0}
-                      <span class="text-warning font-bold">+{formatMoney(sumarGastosLista(item.gastos_adicionales) / (item.cantidad || 1))}</span>
+                      <span class="text-warning font-bold">+{formatMoney(calcularGastoDirecto(item))}</span>
                       <div class="text-muted text-small">{formatMoney(sumarGastosLista(item.gastos_adicionales))} en {item.gastos_adicionales.length} gasto(s)</div>
                     {:else}
-                      -
+                      <span class="text-muted">-</span>
                     {/if}
                   </td>
                   <td>
@@ -1864,7 +2123,7 @@
                     {#if item.costo_fiscal_unitario_mxn > 0}
                       <strong>{formatMoney(item.costo_fiscal_unitario_mxn * item.cantidad)}</strong>
                     {:else}
-                      -
+                      <span class="text-muted">-</span>
                     {/if}
                   </td>
                 </tr>
@@ -1896,6 +2155,36 @@
   </div>
 {/if}
 
+<!-- Menú desplegable de opciones para un pedimento en la lista principal -->
+{#if menuPedimento.abierto && menuPedimento.ped}
+  <div class="menu-acciones" style="left: {menuPedimento.x}px; top: {menuPedimento.y}px;" on:click|stopPropagation>
+    <button on:click={() => ejecutarAccionPedimento("costos")}>
+      <i class="material-icons" style="color: #0284c7;">calculate</i> Calcular Costos Fiscales
+    </button>
+    <button on:click={() => ejecutarAccionPedimento("ver_cargos")}>
+      <i class="material-icons" style="color: #7c3aed;">receipt_long</i> Ver Cargos y Devoluciones
+      {#if contarTotalCargosExtra(menuPedimento.ped) > 0}
+        <span class="badge rounded-pill bg-warning text-dark ms-auto" style="font-size: 0.72rem; padding: 2px 7px;">
+          {contarTotalCargosExtra(menuPedimento.ped)}
+        </span>
+      {/if}
+    </button>
+    <button on:click={() => ejecutarAccionPedimento("editar")}>
+      <i class="material-icons" style="color: #ea580c;">edit</i> Editar Pedimento
+    </button>
+    {#if menuPedimento.ped.status === 'transito'}
+      <button on:click={() => ejecutarAccionPedimento("arribar")}>
+        <i class="material-icons" style="color: #10b981;">warehouse</i> Registrar Arribo
+      </button>
+    {/if}
+    {#if esLocal}
+      <button class="peligro" on:click={() => ejecutarAccionPedimento("eliminar")}>
+        <i class="material-icons">delete</i> Eliminar Pedimento
+      </button>
+    {/if}
+  </div>
+{/if}
+
 <!-- Modal con los gastos adicionales de una partida -->
 {#if gastosPartidaModal.abierto}
   <div class="modal-arribo-backdrop modal-capa-alta" on:click={() => (gastosPartidaModal = { ...gastosPartidaModal, abierto: false })}>
@@ -1903,7 +2192,7 @@
       <div class="modal-arribo-header">
         <div>
           <h3>Gastos adicionales de la partida</h3>
-          <span class="pedimento-numero-badge">{pedimentoDeContexto(gastosPartidaModal.contexto).productos[gastosPartidaModal.partida].nombre || "Partida"}</span>
+          <span class="pedimento-numero-badge">{(pedimentoDeContexto(gastosPartidaModal.contexto).productos && pedimentoDeContexto(gastosPartidaModal.contexto).productos[gastosPartidaModal.partida] && pedimentoDeContexto(gastosPartidaModal.contexto).productos[gastosPartidaModal.partida].nombre) || "Partida"}</span>
         </div>
         <button class="btn-close-modal" on:click={() => (gastosPartidaModal = { ...gastosPartidaModal, abierto: false })} aria-label="Cerrar modal">&times;</button>
       </div>
@@ -1950,7 +2239,7 @@
             {#if gastoModal.partida === null}
               Se reparte entre todos los productos
             {:else}
-              Solo para: {pedimentoDeContexto(gastoModal.contexto).productos[gastoModal.partida].nombre || "la partida"}
+              Solo para: {(pedimentoDeContexto(gastoModal.contexto).productos && pedimentoDeContexto(gastoModal.contexto).productos[gastoModal.partida] && pedimentoDeContexto(gastoModal.contexto).productos[gastoModal.partida].nombre) || "la partida"}
             {/if}
           </span>
         </div>
@@ -1961,11 +2250,38 @@
           <input type="text" class="form-control" placeholder="Ej. Re-etiquetado, maniobras, almacenaje" bind:value={gastoModal.datos.concepto} />
         </label>
         <label class="form-label font-bold mt-2">Monto (MXN)
-          <input type="number" min="0" step="0.01" class="form-control" bind:value={gastoModal.datos.monto} />
+          <input type="number" step="0.01" class="form-control" placeholder="Ej. 15000 ó -29252.07" bind:value={gastoModal.datos.monto} />
+          <span class="text-muted d-block" style="font-size: 0.76rem; font-weight: normal; margin-top: 2px;">
+            Ingresa un monto positivo para gastos/honorarios, o negativo si es una devolución/reembolso de anticipo.
+          </span>
         </label>
         <label class="form-label font-bold mt-2">Fecha del gasto
           <input type="date" class="form-control" bind:value={gastoModal.datos.fecha_gasto} />
         </label>
+        <div class="row g-2 mt-1">
+          <div class="col-7">
+            <label class="form-label font-bold text-small">UUID CFDI / Folio Fiscal
+              <input type="text" class="form-control font-mono text-small" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" bind:value={gastoModal.datos.uuid_cfdi} />
+            </label>
+          </div>
+          <div class="col-5">
+            <label class="form-label font-bold text-small">N° Factura
+              <input type="text" class="form-control text-small" placeholder="FAC-001" bind:value={gastoModal.datos.factura} />
+            </label>
+          </div>
+        </div>
+        <div class="row g-2 mt-1">
+          <div class="col-7">
+            <label class="form-label font-bold text-small">Proveedor / Agente
+              <input type="text" class="form-control text-small" placeholder="Nombre o Razón Social" bind:value={gastoModal.datos.proveedor} />
+            </label>
+          </div>
+          <div class="col-5">
+            <label class="form-label font-bold text-small">RFC Proveedor
+              <input type="text" class="form-control text-small font-mono text-uppercase" placeholder="AAA010101AAA" bind:value={gastoModal.datos.rfc} />
+            </label>
+          </div>
+        </div>
         <label class="form-label font-bold mt-2">Notas / observaciones
           <textarea class="form-control" rows="2" bind:value={gastoModal.datos.observaciones}></textarea>
         </label>
@@ -2088,7 +2404,7 @@
         <div class="alert alert-info-custom" style="background: #ecfdf5; border-color: #a7f3d0; color: #065f46;">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="info-icon" style="color: #059669; width: 20px; height: 20px; flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
           <div>
-            <strong>Revisión de Cálculos:</strong> Compara los costos fiscales unitarios actuales contra los nuevos proyectados. Si está de acuerdo, confirme para guardarlos.
+            <strong>Revisión de Cálculos Fiscales (Valuación PEPS):</strong> Compara los costos fiscales unitarios actuales contra los nuevos proyectados. Los gastos indirectos se prorratearon excluyendo el 100% del IVA acreditable (Art. 4-5 LIVA y NIF C-4).
           </div>
         </div>
 
@@ -2099,8 +2415,10 @@
                 <th>Producto</th>
                 <th class="text-center">Cantidad</th>
                 <th class="text-center">Costo USD</th>
+                <th class="text-center">Costo Base MXN</th>
+                <th class="text-center">Indirecto / pza</th>
                 <th class="text-center">Costo Anterior</th>
-                <th class="text-center">Nuevo Costo</th>
+                <th class="text-center">Nuevo Costo Fiscal</th>
                 <th class="text-center">Diferencia</th>
               </tr>
             </thead>
@@ -2113,6 +2431,8 @@
                   </td>
                   <td class="text-center">{item.cantidad} {item.unidad_medida}</td>
                   <td class="text-center">${item.precio_compra_usd.toFixed(2)} USD</td>
+                  <td class="text-center text-muted font-mono">{formatMoney(calcularCostoBase(item, pedimentoSeleccionado.tipo_cambio))}</td>
+                  <td class="text-center text-primary font-bold font-mono">+{formatMoney(calcularGastoIndirecto(item, pedimentoSeleccionado.tipo_cambio))}</td>
                   <td class="text-center text-muted">
                     {item.costoAnterior > 0 ? formatMoney(item.costoAnterior) : 'Sin calcular'}
                   </td>
@@ -2140,6 +2460,261 @@
         <button class="btn btn-primary-custom" style="background: #10b981;" on:click={confirmarGuardarCalculoFiscal}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon"><polyline points="20 6 9 17 4 12"></polyline></svg>
           Confirmar y Guardar Precios
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+
+
+<!-- Modal Informativo: Cargos Adicionales y Devoluciones Extra -->
+{#if showCargosModal && pedimentoCargos}
+  <div class="modal-arribo-backdrop" on:click={() => showCargosModal = false}>
+    <div class="modal-arribo-container" style="max-width: 980px;" on:click|stopPropagation>
+      <div class="modal-arribo-header">
+        <div class="modal-arribo-title-container">
+          <div class="modal-arribo-icon" style="background: #f5f3ff; color: #7c3aed;">
+            <i class="material-icons">receipt_long</i>
+          </div>
+          <div>
+            <h3>Cargos Adicionales y Devoluciones Extra</h3>
+            <div class="d-flex align-items-center gap-2 mt-1">
+              <span class="pedimento-numero-badge" style="background: #1e293b;">Pedimento: {pedimentoCargos.numero_pedimento}</span>
+              <span class="badge bg-light text-dark border">Clave: {pedimentoCargos.clave_pedimento || 'A1'}</span>
+              <span class="badge bg-light text-dark border">TC: {pedimentoCargos.tipo_cambio} MXN</span>
+              {#if pedimentoCargos.status === 'transito'}
+                <span class="badge bg-warning text-dark"><i class="material-icons inline-icon">sailing</i> En Tránsito</span>
+              {:else}
+                <span class="badge bg-success"><i class="material-icons inline-icon">check_circle</i> Arribado</span>
+              {/if}
+            </div>
+          </div>
+        </div>
+        <button class="btn-close-modal" on:click={() => showCargosModal = false} aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-arribo-body" style="max-height: calc(85vh - 140px); overflow-y: auto;">
+        <!-- Tarjetas de resumen rápido -->
+        <div class="row g-2 mb-4">
+          <div class="col-md-3">
+            <div class="p-3 bg-light rounded border text-center">
+              <div class="text-muted text-small font-bold">CARGOS GENERALES BRUTOS</div>
+              <div class="font-bold text-dark font-mono fs-5 mt-1">{formatMoney(obtenerGastosPositivosIndirectos(pedimentoCargos))}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 bg-light rounded border text-center" style="background: #fef2f2 !important; border-color: #fecaca !important;">
+              <div class="text-danger text-small font-bold">(-) DEVOLUCIONES / REEMBOLSOS</div>
+              <div class="font-bold text-danger font-mono fs-5 mt-1">{formatMoney(obtenerDevolucionesIndirectas(pedimentoCargos))}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 bg-light rounded border text-center" style="background: #f0fdf4 !important; border-color: #bbf7d0 !important;">
+              <div class="text-success text-small font-bold">NETO GENERALES (A PRORRATEAR)</div>
+              <div class="font-bold text-success font-mono fs-5 mt-1">{formatMoney(sumarGastosLista(pedimentoCargos.gastos_importacion && pedimentoCargos.gastos_importacion.otros))}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 bg-light rounded border text-center" style="background: #fffbeb !important; border-color: #fde68a !important;">
+              <div class="text-warning text-small font-bold">DIRECTOS POR PARTIDA</div>
+              <div class="font-bold text-warning font-mono fs-5 mt-1">{formatMoney(sumarGastosPartidas(pedimentoCargos))}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 1: CARGOS GENERALES E INDIRECTOS -->
+        <div class="card p-3 mb-4 shadow-sm border">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <div>
+              <h5 class="font-bold text-dark m-0 d-flex align-items-center gap-2">
+                <i class="material-icons text-primary">public</i> 1. Cargos y Devoluciones Generales (Indirectos)
+              </h5>
+              <span class="text-muted text-small">Se prorratean entre todas las partidas según la metodología fiscal elegida.</span>
+            </div>
+            <span class="badge bg-primary-subtle text-primary border font-mono">
+              {(pedimentoCargos.gastos_importacion && pedimentoCargos.gastos_importacion.otros ? pedimentoCargos.gastos_importacion.otros.length : 0)} registro(s)
+            </span>
+          </div>
+
+          {#if !pedimentoCargos.gastos_importacion || !pedimentoCargos.gastos_importacion.otros || pedimentoCargos.gastos_importacion.otros.length === 0}
+            <div class="p-3 text-center text-muted bg-light rounded">
+              <i class="material-icons vertical-align-middle me-1">info</i> No se han registrado cargos ni devoluciones generales adicionales en este pedimento.
+            </div>
+          {:else}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Concepto</th>
+                    <th class="text-center">Tipo</th>
+                    <th class="text-end">Monto (MXN)</th>
+                    <th>Fecha</th>
+                    <th>CFDI / Factura</th>
+                    <th>Proveedor / RFC</th>
+                    <th>Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each pedimentoCargos.gastos_importacion.otros as g, idx}
+                    <tr>
+                      <td class="text-muted font-mono">{idx + 1}</td>
+                      <td><strong>{g.concepto}</strong></td>
+                      <td class="text-center">
+                        {#if g.monto < 0}
+                          <span class="badge bg-danger">Devolución</span>
+                        {:else}
+                          <span class="badge bg-secondary">Gasto Extra</span>
+                        {/if}
+                      </td>
+                      <td class="text-end font-mono font-bold {g.monto < 0 ? 'text-danger' : 'text-dark'}">
+                        {formatMoney(g.monto)}
+                      </td>
+                      <td class="text-small">{g.fecha_gasto ? String(g.fecha_gasto).slice(0, 10) : '-'}</td>
+                      <td class="text-small">
+                        {#if g.uuid_cfdi}
+                          <div class="font-mono text-uppercase" style="font-size: 0.75rem;" title="UUID CFDI">{g.uuid_cfdi}</div>
+                        {/if}
+                        {#if g.factura && g.factura.numero}
+                          <div class="text-muted" style="font-size: 0.75rem;">Factura: {g.factura.numero}</div>
+                        {/if}
+                        {#if !g.uuid_cfdi && (!g.factura || !g.factura.numero)}
+                          <span class="text-muted">-</span>
+                        {/if}
+                      </td>
+                      <td class="text-small">
+                        {#if g.proveedor && (g.proveedor.nombre || g.proveedor.rfc)}
+                          <div>{g.proveedor.nombre || ''}</div>
+                          <div class="text-muted font-mono" style="font-size: 0.72rem;">{g.proveedor.rfc || ''}</div>
+                        {:else}
+                          <span class="text-muted">-</span>
+                        {/if}
+                      </td>
+                      <td class="text-small text-muted">{g.observaciones || '-'}</td>
+                    </tr>
+                  {/each}
+                </tbody>
+                <tfoot class="table-light">
+                  <tr>
+                    <th colspan="3" class="text-end">Total Neto Cargos Generales:</th>
+                    <th class="text-end font-mono font-bold text-primary">
+                      {formatMoney(sumarGastosLista(pedimentoCargos.gastos_importacion.otros))}
+                    </th>
+                    <th colspan="4"></th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          {/if}
+        </div>
+
+        <!-- SECCIÓN 2: CARGOS POR PARTIDA (DIRECTOS) -->
+        <div class="card p-3 shadow-sm border">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <div>
+              <h5 class="font-bold text-dark m-0 d-flex align-items-center gap-2">
+                <i class="material-icons text-warning">inventory_2</i> 2. Cargos Directos por Partida de Producto
+              </h5>
+              <span class="text-muted text-small">Se imputan exclusivamente al costo unitario del producto correspondiente.</span>
+            </div>
+            <span class="badge bg-warning-subtle text-warning border font-mono">
+              {obtenerPartidasConCargos(pedimentoCargos).length} partida(s) con cargos
+            </span>
+          </div>
+
+          {#if obtenerPartidasConCargos(pedimentoCargos).length === 0}
+            <div class="p-3 text-center text-muted bg-light rounded">
+              <i class="material-icons vertical-align-middle me-1">check_circle</i> Este pedimento no tiene cargos directos asignados a partidas individuales.
+            </div>
+          {:else}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Partida / Producto</th>
+                    <th>Concepto</th>
+                    <th class="text-center">Tipo</th>
+                    <th class="text-end">Monto Total</th>
+                    <th class="text-end">Impacto / pza</th>
+                    <th>Fecha</th>
+                    <th>CFDI / Factura</th>
+                    <th>Proveedor / RFC</th>
+                    <th>Notas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each obtenerPartidasConCargos(pedimentoCargos) as prod}
+                    {#each prod.gastos_adicionales as g, gIdx}
+                      <tr>
+                        <td>
+                          {#if gIdx === 0}
+                            <div class="font-bold text-dark">{(prod.producto && prod.producto.nombre) ? prod.producto.nombre : (prod.nombre || 'Producto')}</div>
+                            <div class="text-muted text-small font-mono">{(prod.producto && prod.producto.codigo) ? prod.producto.codigo : (prod.codigo || 'S/C')} • {prod.cantidad} {prod.unidad_medida}</div>
+                          {:else}
+                            <div class="text-muted text-small" style="padding-left: 12px;">↳ mismo producto</div>
+                          {/if}
+                        </td>
+                        <td><strong>{g.concepto}</strong></td>
+                        <td class="text-center">
+                          {#if g.monto < 0}
+                            <span class="badge bg-danger">Devolución</span>
+                          {:else}
+                            <span class="badge bg-warning text-dark">Directo</span>
+                          {/if}
+                        </td>
+                        <td class="text-end font-mono font-bold {g.monto < 0 ? 'text-danger' : 'text-dark'}">
+                          {formatMoney(g.monto)}
+                        </td>
+                        <td class="text-end font-mono text-muted text-small">
+                          {prod.cantidad > 0 ? formatMoney(g.monto / prod.cantidad) : '-'}
+                        </td>
+                        <td class="text-small">{g.fecha_gasto ? String(g.fecha_gasto).slice(0, 10) : '-'}</td>
+                        <td class="text-small">
+                          {#if g.uuid_cfdi}
+                            <div class="font-mono text-uppercase" style="font-size: 0.75rem;">{g.uuid_cfdi}</div>
+                          {/if}
+                          {#if g.factura && g.factura.numero}
+                            <div class="text-muted" style="font-size: 0.75rem;">Factura: {g.factura.numero}</div>
+                          {/if}
+                          {#if !g.uuid_cfdi && (!g.factura || !g.factura.numero)}
+                            <span class="text-muted">-</span>
+                          {/if}
+                        </td>
+                        <td class="text-small">
+                          {#if g.proveedor && (g.proveedor.nombre || g.proveedor.rfc)}
+                            <div>{g.proveedor.nombre || ''}</div>
+                            <div class="text-muted font-mono" style="font-size: 0.72rem;">{g.proveedor.rfc || ''}</div>
+                          {:else}
+                            <span class="text-muted">-</span>
+                          {/if}
+                        </td>
+                        <td class="text-small text-muted">{g.observaciones || '-'}</td>
+                      </tr>
+                    {/each}
+                  {/each}
+                </tbody>
+                <tfoot class="table-light">
+                  <tr>
+                    <th colspan="3" class="text-end">Total Cargos Directos por Partida:</th>
+                    <th class="text-end font-mono font-bold text-warning">
+                      {formatMoney(sumarGastosPartidas(pedimentoCargos))}
+                    </th>
+                    <th colspan="5"></th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <div class="modal-arribo-footer d-flex justify-content-between align-items-center">
+        <button class="btn btn-secondary-custom" on:click={() => showCargosModal = false}>
+          Cerrar
+        </button>
+        <button class="btn btn-action-orange" on:click={() => { showCargosModal = false; abrirModalEditar(pedimentoCargos); }}>
+          <i class="material-icons text-small">edit</i> Editar Pedimento
         </button>
       </div>
     </div>
@@ -2417,24 +2992,44 @@
             </div>
 
             <!-- Gastos indirectos adicionales -->
-            <div class="mt-3">
+            <div class="gastos-adicionales mt-3">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label font-bold text-small mb-0">Gastos indirectos adicionales (se reparten entre todos los productos):</label>
+                <div>
+                  <strong class="text-small">Gastos indirectos adicionales e inesperados</strong>
+                  <div class="text-muted text-small">Maniobras, almacenajes, demoras, licencias o fletes secundarios. Se reparten entre todos los productos.</div>
+                </div>
                 <button class="btn btn-secondary-custom btn-sm" on:click={() => abrirGastoModal("edicion")}>
-                  + Agregar gasto adicional
+                  <i class="material-icons text-small">add</i> Agregar gasto adicional
                 </button>
               </div>
-              {#each pedimentoEditar.gastos_importacion.otros as otro, index}
-                <div class="form-row mb-2 align-items-center">
-                  <div class="form-group fg-large">
-                    <strong>{otro.concepto}</strong>
-                    <span class="text-muted text-small">{otro.fecha_gasto ? String(otro.fecha_gasto).slice(0, 10) : ""} {otro.observaciones || ""}</span>
-                  </div>
-                  <div class="form-group fg-medium font-mono">{formatMoney(otro.monto)}</div>
-                  <button class="btn btn-sm" on:click={() => abrirGastoModal("edicion", null, index)} title="Editar"><i class="material-icons text-small">edit</i></button>
-                  <button class="btn-remove-row mt-1" on:click={() => quitarGasto("edicion", null, index)} title="Eliminar">&times;</button>
+              {#if !pedimentoEditar.gastos_importacion.otros || pedimentoEditar.gastos_importacion.otros.length === 0}
+                <div class="text-muted text-small p-2 bg-light rounded border text-center">No hay gastos adicionales registrados.</div>
+              {:else}
+                <table class="table table-sm">
+                  <thead><tr><th>Concepto</th><th class="text-end">Monto (MXN)</th><th>Fecha</th><th>Notas</th><th class="text-center">Acciones</th></tr></thead>
+                  <tbody>
+                    {#each pedimentoEditar.gastos_importacion.otros as otro, index}
+                      <tr>
+                        <td><strong>{otro.concepto}</strong></td>
+                        <td class="text-end font-mono">{formatMoney(otro.monto)}</td>
+                        <td>{otro.fecha_gasto ? String(otro.fecha_gasto).slice(0, 10) : ""}</td>
+                        <td class="text-muted text-small">{otro.observaciones || ""}</td>
+                        <td class="text-center">
+                          <button class="btn btn-sm" on:click={() => abrirGastoModal("edicion", null, index)} title="Editar"><i class="material-icons text-small">edit</i></button>
+                          <button class="btn btn-danger-icon" on:click={() => quitarGasto("edicion", null, index)} title="Eliminar"><i class="material-icons">delete</i></button>
+                        </td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+                <div class="d-flex justify-content-end align-items-center gap-3 text-small mt-2 pt-2 border-top">
+                  {#if tieneDevolucionesIndirectas(pedimentoEditar)}
+                    <span class="text-muted">Gastos brutos: <strong class="font-mono">{formatMoney(obtenerGastosPositivosIndirectos(pedimentoEditar))}</strong></span>
+                    <span class="text-danger font-bold">(-) Devoluciones: <strong class="font-mono">{formatMoney(obtenerDevolucionesIndirectas(pedimentoEditar))}</strong></span>
+                  {/if}
+                  <span>Subtotal neto adicionales: <strong class="font-mono text-primary">{formatMoney(sumarGastosLista(pedimentoEditar.gastos_importacion.otros))}</strong></span>
                 </div>
-              {/each}
+              {/if}
             </div>
           </div>
 
@@ -2608,81 +3203,95 @@
 <!-- Modal de Información de Fórmulas de Prorrateo -->
 {#if showFormulaModal}
   <div class="modal-arribo-backdrop" on:click={() => (showFormulaModal = false)}>
-    <div class="modal-arribo-container" style="max-width: 850px;" on:click|stopPropagation>
+    <div class="modal-arribo-container" style="max-width: 900px;" on:click|stopPropagation>
       <div class="modal-arribo-header" style="background: #0f172a; color: white;">
         <div class="modal-arribo-title-container">
           <div class="modal-arribo-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
             <i class="material-icons">functions</i>
           </div>
           <div>
-            <h3 style="color: white; margin: 0;">Fórmulas y Metodologías de Prorrateo Fiscal</h3>
-            <span class="pedimento-numero-badge" style="background: #0284c7;">Explicación Matemática de Costos</span>
+            <h3 style="color: white; margin: 0;">Fórmulas y Fundamentos Fiscales de Prorrateo</h3>
+            <span class="pedimento-numero-badge" style="background: #0284c7;">Lineamientos SAT • LISR • LIVA • NIF C-4</span>
           </div>
         </div>
         <button class="btn-close-modal" style="color: white;" on:click={() => (showFormulaModal = false)} aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-arribo-body" style="max-height: 75vh; overflow-y: auto; padding: 24px;">
-        <p class="text-small text-muted mb-4">
-          El objetivo del prorrateo es distribuir los <strong>Gastos Indirectos Totales (Flete + Seguros + Impuesto Aduanal + Agente + Seguridad + Otros indirectos)</strong> entre cada producto para determinar su <strong>Costo Fiscal Unitario Real en Pesos (MXN)</strong>.
-        </p>
+        
+        <!-- Alerta Crítica: Exclusión de IVA y PEPS -->
+        <div class="card p-3 mb-4" style="background: #ecfdf5; border: 1.5px solid #86efac; border-radius: 8px;">
+          <div class="d-flex align-items-start">
+            <i class="material-icons text-success me-2 mt-1">verified_user</i>
+            <div>
+              <h5 class="font-bold text-success m-0 mb-1">Reglas Fiscales Obligatorias (Validación Contable)</h5>
+              <ul class="mb-0 text-small text-dark ps-3" style="line-height: 1.6;">
+                <li>
+                  <strong>IVA de Importación 100% Acreditable (Art. 4 y 5 LIVA / NIF C-4):</strong> El IVA pagado al SAT en aduana <u>NO se suma al costo de inventario</u>. Se recupera al 100% contra el IVA trasladado de clientes. Sumarlo al costo inflaría artificialmente el costo unitario y generaría duplicidad contable.
+                </li>
+                <li>
+                  <strong>Método de Valuación PEPS (Art. 41 LISR):</strong> Para el control de inventarios de importación se aplica obligatoriamente <em>Primeras Entradas, Primeras Salidas</em> (PEPS).
+                </li>
+                <li>
+                  <strong>Soporte Fiscal de Gastos (Art. 27 LISR):</strong> Los honorarios de la agencia aduanal, maniobras, fletes y almacenajes complementarios deben estar respaldados con su CFDI (UUID) para ser deducibles e integrables.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
 
+        <div class="card p-3 mb-4" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h5 class="font-bold text-dark mb-2">Composición del Costo Total de Inventario</h5>
+          <div class="p-3 bg-white rounded font-mono text-small border" style="color: #0f172a; line-height: 1.8;">
+            <div><strong>Costo Total Inventario</strong> = Valor Comercial en MXN (Valor en Aduana SAT)</div>
+            <div class="ps-3">+ Fletes Internacionales y Terrestres (Incrementables SAT)</div>
+            <div class="ps-3">+ Seguros de Transporte (Incrementables SAT)</div>
+            <div class="ps-3">+ Impuestos Aduanales Deducibles (DTA + PRV + IGI + CNT)</div>
+            <div class="ps-3">+ Honorarios y Maniobras de Agencia Aduanal (con CFDI)</div>
+            <div class="ps-3">+ Otros Gastos Indirectos Comprobados</div>
+            <div class="ps-3">+ Gastos Adicionales Directos por Partida</div>
+            <div class="text-danger ps-3"><strong>&minus; EXCLUIDO:</strong> IVA de Importación (100% Acreditable)</div>
+          </div>
+        </div>
+
+        <!-- Gastos adicionales por partida -->
         <div class="card p-3 mb-3 border-start border-4 border-danger" style="background: #fffbeb;">
-          <h5 class="font-bold mb-2" style="color: #b45309;">Gastos adicionales por partida (aplican a cualquier opción)</h5>
+          <h5 class="font-bold mb-2" style="color: #b45309;">Gastos Adicionales Específicos por Partida</h5>
           <p class="text-small text-secondary mb-2">
-            Los gastos registrados en un producto específico (por ejemplo, re-etiquetado) no se reparten entre las demás partidas. Se dividen entre las piezas de esa partida y se suman a su costo ya prorrateado. Los gastos generales ("Otros indirectos") sí entran al prorrateo de la opción elegida.
+            Los gastos registrados en una partida particular (ej. etiquetado, pruebas NOM, permisos exclusivos) <strong>no se prorratean</strong> a los demás productos. Se dividen únicamente entre las piezas de esa partida y se suman a su costo unitario final.
           </p>
           <div class="p-2 bg-white rounded font-mono text-small border">
-            <div><strong>Gasto Adicional por Pieza</strong> = Suma de gastos de la partida / Cantidad de la partida</div>
-            <div><strong>Costo Fiscal Unitario Final</strong> = Costo Fiscal Unitario (opción A, B, C o D) + Gasto Adicional por Pieza</div>
+            <div><strong>Gasto Partida / Pieza</strong> = &sum; Gastos Partida / Cantidad de Piezas de la Partida</div>
+            <div><strong>Costo Fiscal Unitario Final</strong> = Costo Prorrateado (A o B) + Gasto Partida / Pieza</div>
           </div>
         </div>
 
-        <!-- Fórmula A -->
+        <!-- Metodología A -->
         <div class="card p-3 mb-3 border-start border-4 border-primary" style="background: #f8fafc;">
-          <h5 class="font-bold text-primary mb-2">1. Opción A: Prorrateo Ad-Valorem (Por Valor Comercial - SAT)</h5>
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <h5 class="font-bold text-primary m-0">1. Opción A: Prorrateo Ad-Valorem (Por Valor Comercial en MXN - Método SAT / NIF C-4)</h5>
+            <span class="badge bg-primary">Recomendado</span>
+          </div>
           <p class="text-small text-secondary mb-2">
-            Distribuye los gastos indirectos en proporción al valor económico de cada producto. Los artículos de mayor precio asumen una fracción mayor del flete y los aranceles.
+            Distribuye los gastos indirectos en proporción al valor económico de adquisición de cada producto tomado directamente en pesos (MXN) del pedimento. Los artículos de mayor precio asumen una fracción mayor de los fletes, seguros y aranceles. Es el criterio estándar según la NIF C-4.
           </p>
           <div class="p-2 bg-white rounded font-mono text-small border">
-            <div><strong>Factor Proporcional</strong> = Gastos Indirectos Totales / Total Compra Mercancías MXN</div>
-            <div><strong>Costo Fiscal Unitario MXN</strong> = Precio Base MXN × (1 + Factor Proporcional)</div>
+            <div><strong>Total Compra Comercial MXN</strong> = &sum; (Valor Aduana Partida MXN del Pedimento SAT)</div>
+            <div><strong>Factor Proporcional</strong> = Gastos Indirectos Totales (sin IVA) / Total Compra Comercial MXN</div>
+            <div><strong>Costo Fiscal Unitario Base MXN</strong> = (Valor Aduana Partida MXN / Cantidad) &times; (1 + Factor Proporcional)</div>
           </div>
         </div>
 
-        <!-- Fórmula B -->
+        <!-- Metodología B -->
         <div class="card p-3 mb-3 border-start border-4 border-success" style="background: #f8fafc;">
-          <h5 class="font-bold text-success mb-2">2. Opción B: Prorrateo Unitario (Equitativo por Piezas)</h5>
+          <h5 class="font-bold text-success mb-2">2. Opción B: Prorrateo Unitario (Equitativo por Cantidad de Piezas)</h5>
           <p class="text-small text-secondary mb-2">
-            Divide el monto total de gastos indirectos en partes iguales entre la cantidad total de piezas físicas importadas, independientemente del costo de cada una.
+            Divide la totalidad de los gastos indirectos en partes exactamente iguales entre el número total de unidades físicas importadas en el pedimento, sin importar su precio unitario. Recomendado para contenedores con productos homogéneos.
           </p>
           <div class="p-2 bg-white rounded font-mono text-small border">
-            <div><strong>Gasto por Pieza MXN</strong> = Gastos Indirectos Totales / Total Piezas del Pedimento</div>
-            <div><strong>Costo Fiscal Unitario MXN</strong> = Precio Base MXN + Gasto por Pieza MXN</div>
-          </div>
-        </div>
-
-        <!-- Fórmula C -->
-        <div class="card p-3 mb-3 border-start border-4 border-warning" style="background: #f8fafc;">
-          <h5 class="font-bold text-warning mb-2">3. Opción C: Prorrateo Mixto (Impuestos por Valor + Fletes por Pieza)</h5>
-          <p class="text-small text-secondary mb-2">
-            Aplica Ad-Valorem a los Impuestos Aduanales y Agente Aduanal, y reparte los Fletes y Seguridad de forma equitativa por unidad física.
-          </p>
-          <div class="p-2 bg-white rounded font-mono text-small border">
-            <div><strong>Factor Valor</strong> = (Impuesto Aduanal + Agente Aduanal) / Total Compra Mercancías MXN</div>
-            <div><strong>Gasto Flete por Pieza</strong> = (Flete + Seguridad + Otros) / Total Piezas</div>
-            <div><strong>Costo Fiscal Unitario MXN</strong> = [Precio Base MXN × (1 + Factor Valor)] + Gasto Flete por Pieza</div>
-          </div>
-        </div>
-
-        <!-- Fórmula D -->
-        <div class="card p-3 mb-3 border-start border-4 border-secondary" style="background: #f8fafc;">
-          <h5 class="font-bold text-dark mb-2">4. Opción D: Porcentaje Fijo de Incremento Manual</h5>
-          <p class="text-small text-secondary mb-2">
-            Aplica un porcentaje o coeficiente fijo directo sobre el valor base en pesos de cada producto.
-          </p>
-          <div class="p-2 bg-white rounded font-mono text-small border">
-            <div><strong>Costo Fiscal Unitario MXN</strong> = Precio Base MXN × [1 + (% Factor Fijo / 100)]</div>
+            <div><strong>Total Piezas</strong> = &sum; Cantidades de todos los productos del pedimento</div>
+            <div><strong>Gasto Indirecto por Pieza MXN</strong> = Gastos Indirectos Totales (sin IVA) / Total Piezas</div>
+            <div><strong>Costo Fiscal Unitario Base MXN</strong> = (Valor Aduana Partida MXN / Cantidad) + Gasto Indirecto por Pieza MXN</div>
           </div>
         </div>
       </div>
@@ -2965,6 +3574,16 @@
 
   .btn-action-blue:hover {
     background-color: #2980b9;
+    color: white;
+  }
+
+  .btn-action-purple {
+    background-color: #eef2ff;
+    color: #4f46e5;
+  }
+
+  .btn-action-purple:hover {
+    background-color: #4f46e5;
     color: white;
   }
 
@@ -3846,4 +4465,5 @@
   .menu-acciones button:hover { background: #f1f5f9; }
   .menu-acciones button.peligro { color: #dc2626; }
   .menu-acciones .material-icons { font-size: 20px; }
+  .menu-acciones.menu-acciones-pedimento { width: 260px; }
 </style>

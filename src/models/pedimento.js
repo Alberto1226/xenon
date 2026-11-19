@@ -1,4 +1,4 @@
-var mongoose = require('mongoose');
+import mongoose from 'mongoose';
 var Schema = mongoose.Schema;
 
 var schema = new Schema({
@@ -29,24 +29,87 @@ var schema = new Schema({
         seguros: { type: Number, default: 0 },
         otros: { type: Number, default: 0 }
     },
+    
+    // Impuestos deducibles (DTA, PRV, IGI, CNT)
+    impuestos: {
+        dta: { type: Number, default: 0 },
+        prv: { type: Number, default: 0 },
+        igi: { type: Number, default: 0 },
+        cnt: { type: Number, default: 0 },
+        iva: {
+            monto: { type: Number, default: 0 },
+            porcentaje_acreditable: { type: Number, default: 100 },  // HARDCODED 100% para XENON
+            monto_acreditable: { type: Number, default: 0 },
+            monto_no_acreditable: { type: Number, default: 0 }
+        }
+    },
+    
+    // DEPRECATED: contribuciones_sat (mantener para compatibilidad)
     contribuciones_sat: {
         dta: { type: Number, default: 0 },
         prv: { type: Number, default: 0 },
         igi: { type: Number, default: 0 },
         iva: { type: Number, default: 0 },
-        total_efectivo: { type: Number, default: 0 }
+        total_efectivo: { type: Number, default: 0 },
+        iva_acreditable: {
+            porcentaje: { type: Number, default: 100 },
+            monto_acreditable: { type: Number, default: 0 },
+            monto_no_acreditable: { type: Number, default: 0 }
+        }
     },
-    // ----------------------------
-
+    
+    metodo_valuacion: { type: String, default: 'PEPS', enum: ['PEPS'] },  // HARDCODED PEPS
+    
+    // --- NUEVA ESTRUCTURA: Gastos separados en 2 categorías ---
     gastos_importacion: {
+        // Categoría 1: Gastos de Costo (SAT M3: Seguros, Fletes, Otros)
+        gastos_costo: [{
+            tipo: { type: String, enum: ['SEGUROS', 'FLETE', 'OTRO_COSTO'], default: 'OTRO_COSTO' },
+            importe: { type: Number, default: 0 },
+            uuid_cfdi: { type: String, default: '' },
+            numero_factura: { type: String, default: '' },
+            rfc_proveedor: { type: String, default: '' },
+            fecha_factura: { type: Date, default: null },
+            fuente: { type: String, enum: ['SAT_M3', 'CFDI_MANUAL'], default: 'SAT_M3' }
+        }],
+        
+        // Categoría 2: Honorarios Agente Aduanal (OBLIGATORIO con UUID CFDI)
+        honorarios_agente: [{
+            uuid_cfdi: { type: String, required: true },  // ✅ OBLIGATORIO (Ley Aduanera Art. 159/160)
+            numero_factura: { type: String, default: '' },
+            rfc_agente: { type: String, default: '' },
+            importe: { type: Number, default: 0 },
+            iva_factura: { type: Number, default: 0 },
+            fecha_factura: { type: Date, default: null },
+            fuente: { type: String, default: 'CFDI_MANUAL' }
+        }],
+        
+        // Resumen totales
+        total_gastos_costo: { type: Number, default: 0 },
+        total_honorarios: { type: Number, default: 0 },
+        total_general: { type: Number, default: 0 },
+        cantidad_facturas: { type: Number, default: 0 },
+        
+        // DEPRECATED: campos antiguos (mantener para compatibilidad)
         Impuesto_Aduanal: { type: Number, default: 0 },
         Flete: { type: Number, default: 0 },
         Agente_Aduanal: { type: Number, default: 0 },
         Seguridad: { type: Number, default: 0 },
+        Seguro: { type: Number, default: 0 },
         otros: [{
             concepto: { type: String, default: '' },
             monto: { type: Number, default: 0 },
             fecha_gasto: { type: Date, default: null },
+            uuid_cfdi: { type: String, default: '' },
+            proveedor: {
+                nombre: { type: String, default: '' },
+                rfc: { type: String, default: '' }
+            },
+            factura: {
+                numero: { type: String, default: '' },
+                uuid: { type: String, default: '' },
+                fecha_emision: { type: Date, default: null }
+            },
             observaciones: { type: String, default: '' }
         }]
     },
@@ -70,6 +133,16 @@ var schema = new Schema({
             concepto: { type: String, default: '' },
             monto: { type: Number, default: 0 },
             fecha_gasto: { type: Date, default: null },
+            uuid_cfdi: { type: String, default: '' },
+            proveedor: {
+                nombre: { type: String, default: '' },
+                rfc: { type: String, default: '' }
+            },
+            factura: {
+                numero: { type: String, default: '' },
+                uuid: { type: String, default: '' },
+                fecha_emision: { type: Date, default: null }
+            },
             observaciones: { type: String, default: '' }
         }],
         folios: [{ type: String }] // Lista de folios o números de serie recibidos

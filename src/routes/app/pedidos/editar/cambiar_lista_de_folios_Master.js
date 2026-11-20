@@ -3,6 +3,7 @@ import { Inyeccion } from "../../../../models/inyeccion";
 import { Carrito } from "../../../../models/carrito";
 import { Pedido } from "../../../../models/pedido";
 import * as accesos from "../../accesos"
+import mongoose from 'mongoose';
 
 function normalizarCodigoProducto(texto) {
     return String(texto || '').toUpperCase().replace(/[\s-]+/g, '');
@@ -104,6 +105,10 @@ export async function post(req, res, next) {
                 let lista = resultado.lista;
                 console.log({ lista });
                 let registro_tmp = lista.find(element => element.producto._id == registro.producto_id);
+                if (!registro_tmp) {
+                    res.send({ ok: false, error: 'El producto ya no está en el pedido' });
+                    return;
+                }
                 console.log({ registro_tmp });
                 console.log("producto id = " + registro.producto_id);
 
@@ -123,8 +128,17 @@ export async function post(req, res, next) {
 
 
 
-                const folios_previos = JSON.parse(JSON.stringify(registro_tmp.folios));
+                const folios_previos = JSON.parse(JSON.stringify(registro_tmp.folios || []));
                 registro_tmp.folios = foliosNormalizados;
+
+                // Datos históricos: id_promocion "" no se puede convertir a ObjectId
+                lista.forEach((item) => {
+                    const promo = item && item.producto && item.producto.promo;
+                    if (promo && promo.id_promocion !== undefined && promo.id_promocion !== null
+                        && !mongoose.Types.ObjectId.isValid(String(promo.id_promocion))) {
+                        promo.id_promocion = null;
+                    }
+                });
 
                 const folios_nuevos = JSON.parse(JSON.stringify(foliosNormalizados));
                 console.log({ lista })
@@ -154,17 +168,17 @@ export async function post(req, res, next) {
                     lista: foliosNormalizados
                 })
 
-                inyeccion_nueva.save()
+                inyeccion_nueva.save().catch(console.error);
 
                 Carrito.findByIdAndUpdate(id, { lista })
                     .then(() => {
-                        accesos.logActividad('pedidos/cambiar_folios', req.user, { folios_previos, folios_nuevos, registro: registro_tmp }, req);
+                        accesos.logActividad('pedidos/cambiar_folios', req.user, { folios_previos, folios_nuevos, registro: registro_tmp }, req).catch(console.error);
                         res.send({ ok: true })
                         return;
                     })
                     .catch((err) => {
                         console.log(err);
-                        res.send({ ok: false });
+                        res.send({ ok: false, error: err.message });
                         return;
                     })
 
@@ -173,7 +187,7 @@ export async function post(req, res, next) {
             })
             .catch((err) => {
                 console.log(err);
-                res.send({ ok: false });
+                res.send({ ok: false, error: err.message });
                 return;
             })
     }

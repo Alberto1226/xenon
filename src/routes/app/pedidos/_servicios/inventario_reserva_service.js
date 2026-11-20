@@ -416,8 +416,7 @@ export async function liberar_apartados_de_carrito(carrito_o_id, segundo_param =
  *
  * @param {Object} carrito - Objeto Mongoose del carrito (con lista, folio, cliente, _id).
  * @param {Object} req - Request de Express (para obtener req.user en logs).
- * @returns {{ ok: true, errores: Array, id_log_previo: string }}
- *   Siempre retorna ok:true. Los errores parciales se incluyen en `errores[]`.
+ * @returns {{ ok: boolean, errores: Array, id_log_previo?: string }}
  */
 export async function descontar_fisico_inventario(carrito, req) {
     const { lista, folio, cliente, _id } = carrito;
@@ -438,7 +437,8 @@ export async function descontar_fisico_inventario(carrito, req) {
             const producto_db = await Producto.findById(registro.producto._id);
             if (!producto_db) {
                 console.warn(`descontar_fisico_inventario: producto no encontrado (${nombre_prod} / ${registro.producto._id})`);
-                continue;
+                errores_log.push({ producto: nombre_prod, id: registro.producto._id, etapa: 'producto', error: 'Producto no encontrado' });
+                break;
             }
 
             const producto_constante = JSON.parse(JSON.stringify(producto_db));
@@ -466,12 +466,13 @@ export async function descontar_fisico_inventario(carrito, req) {
                 if (registro.folios && registro.folios.length > 0) {
                     inc_op.$pullAll = { "existencia.folios": registro.folios };
                 }
-                await Producto.updateOne({ _id: producto_db._id }, inc_op);
+                const resultado = await Producto.updateOne({ _id: producto_db._id }, inc_op);
+                const encontrados = resultado.matchedCount !== undefined ? resultado.matchedCount : resultado.n;
+                if (encontrados !== 1) throw new Error('El producto ya no existe.');
             } catch (eInc) {
                 console.error(`descontar_fisico_inventario: Error en $inc para ${nombre_prod}:`, eInc);
                 errores_log.push({ producto: nombre_prod, id: producto_db._id, etapa: '$inc', error: eInc.message });
-                // No continuamos con el pull si el $inc falló, pero seguimos con el siguiente producto
-                continue;
+                break;
             }
 
             // ── PASO 2: Limpiar reserva en producto.carritos ─────────────────────────
@@ -532,24 +533,27 @@ export async function descontar_fisico_inventario(carrito, req) {
             // ── PASO 3: Snaplog de auditoría ─────────────────────────────────────────
             try {
                 const usuario_req = (req && req.user) ? req.user : { nombre: 'Sistema', _id: null };
-                await snap_por_cambio_en_pedido(
+                const resultado_snap = await snap_por_cambio_en_pedido(
                     { nombre: producto_constante.nombre, id: producto_constante._id },
                     { nombre: usuario_req.nombre, id: usuario_req._id },
                     registro.cantidad,
                     registro.cantidad,
                     "2", // Acción 2: Descontar de inventario
-                    { folio, cliente: { nombre: cliente ? cliente.nombre : 'Cliente', id: cliente ? (cliente.id || cliente._id) : null } },
+                    { id: _id, folio, cliente: { nombre: cliente ? cliente.nombre : 'Cliente', id: cliente ? (cliente.id || cliente._id) : null } },
                     producto_constante,
                     registro.folios
                 );
+                if (!resultado_snap.ok) throw new Error(resultado_snap.mensaje || resultado_snap.error || 'No se pudo guardar el snaplog.');
             } catch (eSnap) {
                 console.error(`descontar_fisico_inventario: Error en snaplog para ${nombre_prod}:`, eSnap);
+                errores_log.push({ producto: nombre_prod, id: producto_db._id, etapa: 'snaplog', error: eSnap.message });
             }
+            if (errores_log.length) break;
 
         } catch (eProducto) {
-            // Error inesperado al procesar este producto — se registra pero NO detiene los demás
             console.error(`descontar_fisico_inventario: Error inesperado en ${nombre_prod}:`, eProducto);
             errores_log.push({ producto: nombre_prod, id: (registro.producto && registro.producto._id) ? registro.producto._id : null, etapa: 'general', error: eProducto.message });
+            break;
         }
     }
 
@@ -561,10 +565,10 @@ export async function descontar_fisico_inventario(carrito, req) {
             { folio, preproceso: existencias_log, errores: errores_log, fn: "descontar_fisico_inventario" },
             req
         );
-        return { ok: true, id_log_previo, errores: errores_log };
+        return { ok: errores_log.length === 0, id_log_previo, errores: errores_log };
     } catch (eLog) {
         console.error("descontar_fisico_inventario: Error al registrar log de actividad:", eLog);
-        return { ok: true, errores: errores_log };
+        return { ok: errores_log.length === 0, errores: errores_log };
     }
 }
 

@@ -185,7 +185,7 @@ export async function post(req, res, next) {
                     solucion: "Es necesario desapartar el producto"
                 }
                 accesos.logActividad('carrito/cambiar_cantidad_v2.1/', req.user, log, req);
-                return res.send({ ok: false, mensaje: "Error al actualizar carrito del cliente" });
+                return res.send({ ok: false, mensaje: "Error al actualizar carrito del cliente", error: proceso_cambiar_carrito_de_cliente.error, detalle: proceso_cambiar_carrito_de_cliente.detalle });
             }
         }
 
@@ -257,6 +257,15 @@ export async function post(req, res, next) {
 async function cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, producto_id) {
     //console.log("id-ar", id, "lista-ar", isEmpty(lista), "*--*", lista, "total", isEmpty(total_dinero), "*--*", total_dinero, "req", isEmpty(req), "producto_id", isEmpty(producto_id), "*--*", producto_id);
     try {
+        // Datos históricos: id_promocion puede venir como "" o string inválido y Mongoose lo rechaza como ObjectId
+        (lista || []).forEach((item) => {
+            const promo = item && item.producto && item.producto.promo;
+            if (promo && promo.id_promocion !== undefined && promo.id_promocion !== null
+                && !mongoose.Types.ObjectId.isValid(String(promo.id_promocion))) {
+                promo.id_promocion = null;
+            }
+        });
+
         const updateResult = await Carrito.findByIdAndUpdate(id, {
             lista,
             total_pedido: total_dinero,
@@ -293,9 +302,11 @@ async function cambiar_carrito_de_cliente(id, lista, total_dinero, log, req, pro
         console.error("Error en cambiar_carrito_de_cliente:", error);
 
         // Registrar el error en el log
-        await accesos.logActividad('carrito/cambiar_carrito_de_cliente/error', req, { error, id, lista, total_dinero, producto_id });
+        // Firma correcta: (ruta, usuario, body, req). Un fallo al loguear no debe ocultar el error real.
+        await accesos.logActividad('carrito/cambiar_carrito_de_cliente/error', req.user, { error: error.message, id, total_dinero, producto_id }, req, true)
+            .catch(console.error);
 
-        return { ok: false, error: error.message };
+        return { ok: false, error: error.message, detalle: error.reason ? String(error.reason.message || error.reason) : (error.errors ? Object.keys(error.errors).map(k => k + ': ' + error.errors[k].message) : undefined) };
     }
 }
 
@@ -344,7 +355,7 @@ async function sumar_cantidades_dinero(lista) {
 
     }
     total_dinero = lista.reduce(
-        (a, b) => +a + +b.producto.precio * +b.cantidad,
+        (a, b) => a + ((+b.producto.precio * +b.cantidad) || 0),
         0
     );
     return total_dinero;

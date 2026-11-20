@@ -27,7 +27,7 @@
     <div class="lista">
         {#each $movimientos_del_producto.lista as item, i}
             <!-- content here -->
-            {#if item.accion == "1" || item.accion == "1b"}
+            {#if item.accion == "1" || item.accion == "1b" || item.accion == "1c"}
                 <!-- content here -->
                 <Row_inyectar
                     bind:item

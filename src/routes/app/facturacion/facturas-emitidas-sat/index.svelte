@@ -1,0 +1,465 @@
+<script>
+  // Facturas emitidas a clientes que CoreCFDI descargó del SAT (solo consulta).
+  // No confundir con /app/facturacion/facturas-emitidas, que son las que timbra este sistema.
+  import { onDestroy } from "svelte";
+  import { postData, mensajes_app } from "../../../stores";
+  import SesionCoreCfdi from "../_SesionCoreCfdi.svelte";
+  import BovedaFiscal from "../_BovedaFiscal.svelte";
+  import VerificacionQr, { idValido } from "../_VerificacionQr.svelte";
+
+  // La API permite 60 peticiones por minuto para toda la integración: la búsqueda espera a que se deje de escribir.
+  const ESPERA_BUSQUEDA_MS = 500;
+  // El filtro por tipo es local: `tipo_cfdi` de la API es un id interno distinto en cada empresa.
+  const TIPOS = [
+    { clave: "", titulo: "Todos" },
+    { clave: "I", titulo: "Ingreso" },
+    { clave: "E", titulo: "Egreso" },
+    { clave: "P", titulo: "Pago" },
+    { clave: "N", titulo: "Nómina" },
+    { clave: "T", titulo: "Traslado" }
+  ];
+
+  let sesion_activa = false;
+  let buscar = "";
+  let fecha_inicio = "";
+  let fecha_fin = "";
+  let status = "";
+  let tipo = "";
+
+  let facturas = [];
+  let pagina = 1;
+  let ultima_pagina = 1;
+  let total = 0;
+  let totales = null;
+  let cargando = false;
+  let error = "";
+  let errores = {};
+  let expandidas = {};
+  let temporizador_busqueda = null;
+  let consulta_actual = 0;
+  let boveda_id = null;
+  let qr_factura = null;
+  // Facturas a las que CoreCFDI no les puede armar la verificación (422): se oculta el botón.
+  let sin_verificacion = {};
+  // Menú de acciones abierto: { factura, top, left }. Es fixed para que no lo recorte el scroll de la tabla.
+  let menu = null;
+  const ANCHO_MENU = 190;
+
+  // Nada se consulta hasta que el usuario tiene sesión en CoreCFDI.
+  function al_iniciar_sesion() {
+    facturas = [];
+    totales = null;
+    cargar(1);
+  }
+  onDestroy(() => clearTimeout(temporizador_busqueda));
+
+  async function cargar(page) {
+    const consulta = ++consulta_actual;
+    cargando = true;
+    try {
+      const res = await postData("/app/facturacion/facturas-emitidas-sat", {
+        filtros: { buscar, fecha_inicio, fecha_fin, status },
+        page
+      });
+      // Si mientras tanto se lanzó otra consulta, esta respuesta ya no aplica.
+      if (consulta !== consulta_actual) return;
+      if (res.ok) {
+        facturas = res.items || [];
+        pagina = res.page;
+        ultima_pagina = res.lastPage;
+        total = res.total;
+        totales = res.totales;
+        expandidas = {};
+        error = "";
+        errores = {};
+      } else if (res.tipo === "sesion") {
+        // La sesión de CoreCFDI venció: se vuelve a pedir el inicio de sesión.
+        sesion_activa = false;
+      } else {
+        error = res.mensaje;
+        errores = res.errors || {};
+        if (!res.errors) {
+          $mensajes_app.push({ tipo: "error", mensaje: res.mensaje });
+          $mensajes_app = $mensajes_app;
+        }
+      }
+    } catch (err) {
+      if (consulta === consulta_actual) error = "No se pudieron consultar las facturas emitidas.";
+    } finally {
+      if (consulta === consulta_actual) cargando = false;
+    }
+  }
+
+  function al_buscar() {
+    clearTimeout(temporizador_busqueda);
+    temporizador_busqueda = setTimeout(() => cargar(1), ESPERA_BUSQUEDA_MS);
+  }
+
+  function limpiar_filtros() {
+    buscar = "";
+    fecha_inicio = "";
+    fecha_fin = "";
+    status = "";
+    tipo = "";
+    cargar(1);
+  }
+
+  function ver_qr(factura) {
+    if (!idValido(factura.id) || (qr_factura && qr_factura.id === factura.id)) return;
+    qr_factura = { id: factura.id, moneda: factura.moneda };
+  }
+
+  function al_invalidar_qr(evento) {
+    sin_verificacion[evento.detail.id] = true;
+    sin_verificacion = sin_verificacion;
+  }
+
+  function abrir_menu(evento, factura) {
+    if (menu && menu.factura.id === factura.id) {
+      menu = null;
+      return;
+    }
+    const caja = evento.currentTarget.getBoundingClientRect();
+    const alto = 44 * 4;
+    const abajo = caja.bottom + 4 + alto <= window.innerHeight;
+    menu = {
+      factura,
+      top: abajo ? caja.bottom + 4 : Math.max(8, caja.top - 4 - alto),
+      left: Math.max(8, Math.min(caja.right - ANCHO_MENU, window.innerWidth - ANCHO_MENU - 8))
+    };
+  }
+
+  function cerrar_menu() {
+    menu = null;
+  }
+
+  function accion(fn) {
+    const factura = menu.factura;
+    menu = null;
+    fn(factura);
+  }
+
+  function al_teclear(evento) {
+    if (evento.key === "Escape") cerrar_menu();
+  }
+
+  function alternar_pagos(factura) {
+    expandidas[factura.id] = !expandidas[factura.id];
+    expandidas = expandidas;
+  }
+
+  // fecha y hora vienen en hora de México, sin zona horaria: se muestran tal cual.
+  function fecha_legible(fecha, hora) {
+    const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(fecha || "");
+    const dia = partes ? `${partes[3]}/${partes[2]}/${partes[1]}` : fecha || "—";
+    return hora ? `${dia} ${hora}` : dia;
+  }
+
+  function numero(valor) {
+    return (Math.round((Number(valor) || 0) * 100) / 100).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function monto(valor, moneda) {
+    return moneda ? `${moneda} ${numero(valor)}` : numero(valor);
+  }
+
+  function clase_estado(estado) {
+    if (estado === "vigente") return "estado_vigente";
+    if (estado === "cancelado") return "estado_cancelado";
+    return "estado_desconocido";
+  }
+
+  $: visibles = tipo ? facturas.filter((f) => f.tipo === tipo) : facturas;
+  $: hay_efos = visibles.some((f) => f.esEfo);
+</script>
+
+<svelte:window on:keydown={al_teclear} on:resize={cerrar_menu} on:scroll={cerrar_menu} />
+
+<svelte:head>
+  <title>Facturas Emitidas (SAT) - Xenon</title>
+</svelte:head>
+
+<div class="contenedor">
+  <header class="encabezado">
+    <div class="titulo">
+      <i class="material-icons icono">outbox</i>
+      <div>
+        <h1>Facturas Emitidas</h1>
+        <p>CFDI emitidos a clientes, descargados del SAT a través de CoreCFDI</p>
+      </div>
+    </div>
+  </header>
+
+  <SesionCoreCfdi bind:activa={sesion_activa} on:activa={al_iniciar_sesion}>
+  {#if totales}
+    <div class="tarjetas">
+      <div class="tarjeta"><small>Registros</small><strong>{totales.total_registros}</strong></div>
+      <div class="tarjeta"><small>Subtotal</small><strong>{numero(totales.suma_subtotal)}</strong></div>
+      <div class="tarjeta"><small>IVA (aprox.)</small><strong>{numero(totales.suma_iva)}</strong></div>
+      <div class="tarjeta"><small>Total</small><strong>{numero(totales.suma_total)}</strong></div>
+      <div class="tarjeta"><small>Cobrado</small><strong>{numero(totales.suma_cobrado)}</strong></div>
+      <div class="tarjeta"><small>Por cobrar</small><strong>{numero(totales.suma_por_cobrar)}</strong></div>
+      <div class="tarjeta"><small>Vigentes</small><strong>{totales.vigentes_count}</strong></div>
+      <div class="tarjeta"><small>Canceladas</small><strong>{totales.canceladas_count}</strong></div>
+    </div>
+    <p class="nota">
+      Totales de todo el filtro (no solo esta página){status ? "" : "; las sumas solo cuentan facturas vigentes"}.
+      Mezclan tipos de comprobante y monedas.
+    </p>
+  {/if}
+
+  <div class="card">
+    <div class="filtros">
+      <div class="campo campo_buscar">
+        <label>Buscar</label>
+        <input type="text" maxlength="100" placeholder="Folio, UUID, cliente o RFC del cliente" bind:value={buscar} on:input={al_buscar} />
+        {#if errores.buscar}<small class="error_campo">{errores.buscar[0]}</small>{/if}
+      </div>
+      <div class="campo">
+        <label>Desde</label>
+        <input type="date" bind:value={fecha_inicio} on:change={() => cargar(1)} />
+        {#if errores.fecha_inicio}<small class="error_campo">{errores.fecha_inicio[0]}</small>{/if}
+      </div>
+      <div class="campo">
+        <label>Hasta</label>
+        <input type="date" bind:value={fecha_fin} on:change={() => cargar(1)} />
+        {#if errores.fecha_fin}<small class="error_campo">{errores.fecha_fin[0]}</small>{/if}
+      </div>
+      <div class="campo">
+        <label>Estado</label>
+        <select bind:value={status} on:change={() => cargar(1)}>
+          <option value="">Todos</option>
+          <option value="vigente">Vigente</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Tipo (esta página)</label>
+        <select bind:value={tipo}>
+          {#each TIPOS as t}
+            <option value={t.clave}>{t.titulo}</option>
+          {/each}
+        </select>
+      </div>
+      <button class="btn btn_secundario" on:click={limpiar_filtros}>Limpiar</button>
+    </div>
+
+    {#if error}
+      <div class="alerta alerta_error">
+        <i class="material-icons">error_outline</i>
+        <span>{error}</span>
+      </div>
+    {/if}
+
+    {#if hay_efos}
+      <div class="alerta alerta_error">
+        <i class="material-icons">report</i>
+        <span>Hay clientes en la lista 69-B del SAT (EFOS) en esta página. Revise las facturas marcadas.</span>
+      </div>
+    {/if}
+
+    {#if cargando && facturas.length === 0}
+      <p class="estado">Consultando facturas emitidas...</p>
+    {:else if visibles.length === 0}
+      <div class="vacio">
+        <i class="material-icons icono_vacio">find_in_page</i>
+        <p>{facturas.length > 0 ? "No hay facturas de este tipo en esta página." : "No hay facturas emitidas con estos filtros."}</p>
+      </div>
+    {:else}
+      <div class="tabla_scroll" class:atenuada={cargando}>
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Folio</th>
+              <th>UUID</th>
+              <th>Cliente</th>
+              <th>RFC</th>
+              <th>Tipo</th>
+              <th>Pago</th>
+              <th>Total</th>
+              <th>Saldo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each visibles as factura (factura.id)}
+              <tr class:fila_efos={factura.esEfo}>
+                <td>{fecha_legible(factura.fecha, factura.hora)}</td>
+                <td>{factura.folio || "—"}</td>
+                <td class="uuid" title={factura.uuid}>{factura.uuid}</td>
+                <td class="cliente">
+                  {factura.cliente.nombre || "—"}
+                  {#if factura.esEfo}
+                    <span class="badge badge_efos" title="RFC del cliente listado en el artículo 69-B del SAT">EFOS</span>
+                  {/if}
+                </td>
+                <td>{factura.cliente.rfc || "—"}</td>
+                <td title={factura.tipoDescripcion}>{factura.tipo || "—"}</td>
+                <td>
+                  {factura.metodoPago.clave || "—"}
+                  <small>Forma {factura.formaPago.clave || "—"}</small>
+                </td>
+                <td>{monto(factura.total, factura.moneda)}</td>
+                <td>
+                  {factura.saldo > 0 ? monto(factura.saldo, factura.moneda) : "—"}
+                  {#if factura.saldo > 0 && factura.fechaLimite}<small>Límite {fecha_legible(factura.fechaLimite)}</small>{/if}
+                </td>
+                <td><span class={"badge " + clase_estado(factura.estado)}>{factura.estado || "—"}</span></td>
+                <td class="acciones">
+                  <button
+                    class="boton_menu"
+                    class:abierto={menu && menu.factura.id === factura.id}
+                    on:click={(e) => abrir_menu(e, factura)}
+                    aria-haspopup="menu"
+                    aria-expanded={!!(menu && menu.factura.id === factura.id)}
+                    title="Acciones"
+                  >
+                    Acciones <i class="material-icons">expand_more</i>
+                  </button>
+                </td>
+              </tr>
+              {#if expandidas[factura.id]}
+                <tr class="fila_pagos">
+                  <td colspan="11">
+                    <table class="tabla_pagos">
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Parcialidad</th>
+                          <th>Saldo anterior</th>
+                          <th>Monto pagado</th>
+                          <th>Nuevo saldo</th>
+                          <th>UUID del pago</th>
+                          <th>Estado</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {#each factura.pagos as pago}
+                          <tr>
+                            <td>{fecha_legible(pago.fecha || pago.fechaCfdi)}</td>
+                            <td>{pago.parcialidad}</td>
+                            <td>{monto(pago.saldoAnterior, factura.moneda)}</td>
+                            <td>{monto(pago.monto, factura.moneda)}</td>
+                            <td>{monto(pago.nuevoSaldo, factura.moneda)}</td>
+                            <td class="uuid" title={pago.uuid}>{pago.uuid || "—"}</td>
+                            <td>{pago.estado || "—"}</td>
+                            <td>
+                              {#if pago.satUrl}
+                                <a href={pago.satUrl} target="_blank" rel="noopener noreferrer">Verificar en SAT</a>
+                              {/if}
+                            </td>
+                          </tr>
+                        {/each}
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              {/if}
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {/if}
+    {#if facturas.length > 0}
+      <div class="paginacion">
+        <button class="btn btn_secundario" on:click={() => cargar(pagina - 1)} disabled={pagina <= 1 || cargando}>Anterior</button>
+        <span>Página {pagina} de {ultima_pagina} · {total} facturas</span>
+        <button class="btn btn_secundario" on:click={() => cargar(pagina + 1)} disabled={pagina >= ultima_pagina || cargando}>Siguiente</button>
+      </div>
+    {/if}
+  </div>
+  {#if menu}
+    <div class="menu_fondo" on:click={cerrar_menu} on:wheel={cerrar_menu}></div>
+    <div class="menu" role="menu" style="top: {menu.top}px; left: {menu.left}px; width: {ANCHO_MENU}px;">
+      <button role="menuitem" on:click={() => accion((f) => (boveda_id = f.id))}>
+        <i class="material-icons">folder_open</i> Bóveda Fiscal
+      </button>
+      {#if menu.factura.satUrl && !sin_verificacion[menu.factura.id]}
+        <a role="menuitem" href={menu.factura.satUrl} target="_blank" rel="noopener noreferrer" on:click={cerrar_menu}>
+          <i class="material-icons">verified</i> Verificar en SAT
+        </a>
+        {#if idValido(menu.factura.id)}
+          <button role="menuitem" on:click={() => accion(ver_qr)}>
+            <i class="material-icons">qr_code_2</i> Ver QR
+          </button>
+        {/if}
+      {/if}
+      {#if menu.factura.pagos.length > 0}
+        <button role="menuitem" on:click={() => accion(alternar_pagos)}>
+          <i class="material-icons">payments</i>
+          {expandidas[menu.factura.id] ? "Ocultar pagos" : `Pagos (${menu.factura.pagos.length})`}
+        </button>
+      {/if}
+    </div>
+  {/if}
+  <!-- Keyed each: al cambiar de factura el panel se vuelve a crear. -->
+  {#each boveda_id === null ? [] : [boveda_id] as id (id)}
+    <BovedaFiscal {id} origen="emitida" on:cerrar={() => (boveda_id = null)} on:sesion={() => { boveda_id = null; sesion_activa = false; }} />
+  {/each}
+  {#each qr_factura === null ? [] : [qr_factura] as qr (qr.id)}
+    <VerificacionQr
+      id={qr.id}
+      moneda={qr.moneda}
+      on:cerrar={() => (qr_factura = null)}
+      on:invalida={al_invalidar_qr}
+      on:sesion={() => { qr_factura = null; sesion_activa = false; }}
+    />
+  {/each}
+  </SesionCoreCfdi>
+</div>
+
+<style>
+  .contenedor { padding: 24px; max-width: 1400px; margin: 0 auto; font-family: system-ui, sans-serif; }
+  .encabezado { display: flex; align-items: center; background: #1e293b; color: #fff; padding: 20px 24px; border-radius: 12px; margin-bottom: 24px; }
+  .titulo { display: flex; align-items: center; gap: 16px; }
+  .icono { font-size: 36px; color: #34d399; }
+  h1 { margin: 0; font-size: 22px; font-weight: 700; }
+  .encabezado p { margin: 4px 0 0 0; font-size: 13px; color: #94a3b8; }
+  .tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 8px; }
+  .tarjeta { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; }
+  .tarjeta small { display: block; color: #64748b; font-size: 12px; }
+  .tarjeta strong { font-size: 18px; color: #0f172a; }
+  .nota { font-size: 12px; color: #64748b; margin: 0 0 16px; }
+  .card { background: #fff; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0; }
+  .filtros { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 16px; }
+  .campo label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+  .campo input, .campo select { padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; box-sizing: border-box; }
+  .campo_buscar { flex: 1; min-width: 220px; }
+  .campo_buscar input { width: 100%; }
+  .campo small.error_campo { display: block; margin-top: 4px; font-size: 12px; color: #b91c1c; }
+  .btn { background: #1d4ed8; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn_secundario { background: #e2e8f0; color: #334155; }
+  .alerta { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin: 12px 0; }
+  .alerta_error { background: #fee2e2; color: #991b1b; }
+  .icono_vacio { font-size: 48px; color: #94a3b8; }
+  .vacio, .estado { color: #64748b; font-size: 14px; text-align: center; padding: 36px; }
+  .tabla_scroll { overflow-x: auto; }
+  .tabla_scroll.atenuada { opacity: 0.6; }
+  table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+  th, td { padding: 11px 9px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+  th { background: #f8fafc; color: #475569; }
+  td small { display: block; color: #64748b; margin-top: 4px; }
+  td.uuid { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+  td.cliente { max-width: 260px; white-space: normal; }
+  tr.fila_efos { background: #fef2f2; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .badge_efos { background: #b91c1c; color: #fff; margin-left: 6px; }
+  .estado_vigente { background: #dcfce7; color: #166534; }
+  .estado_cancelado { background: #fee2e2; color: #991b1b; }
+  .estado_desconocido { background: #f1f5f9; color: #334155; }
+  .boton_menu { display: inline-flex; align-items: center; gap: 2px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 6px 5px 10px; font-size: 13px; color: #334155; cursor: pointer; }
+  .boton_menu:hover, .boton_menu.abierto { background: #f1f5f9; border-color: #94a3b8; }
+  .boton_menu .material-icons { font-size: 18px; }
+  .menu_fondo { position: fixed; inset: 0; z-index: 900; }
+  .menu { position: fixed; z-index: 901; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); padding: 6px; box-sizing: border-box; }
+  .menu button, .menu a { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; padding: 9px 10px; border-radius: 6px; font-size: 13px; color: #0f172a; text-decoration: none; cursor: pointer; text-align: left; box-sizing: border-box; }
+  .menu button:hover, .menu a:hover { background: #f1f5f9; }
+  .menu .material-icons { font-size: 18px; color: #475569; }
+  .fila_pagos > td { background: #f8fafc; padding: 12px 20px; }
+  .tabla_pagos th { background: #eef2f7; }
+  .paginacion { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; font-size: 13px; color: #475569; }
+</style>

@@ -255,6 +255,12 @@
           roles: ["administrador", "gerente"],
         },
         {
+          titulo: "Facturas Emitidas",
+          url: "/app/facturacion/facturas-emitidas-sat",
+          icono: "outbox",
+          roles: ["administrador", "gerente"],
+        },
+        {
           titulo: "Balanza de Ingresos y Egresos",
           url: "/app/facturacion/balanza",
           icono: "balance",
@@ -490,6 +496,10 @@
           break;
         case "/app/facturacion/facturas-recibidas":
           $ui.ventana_visible = "Facturas Recibidas";
+          menu_actual = "corecfdi";
+          break;
+        case "/app/facturacion/facturas-emitidas-sat":
+          $ui.ventana_visible = "Facturas Emitidas (SAT)";
           menu_actual = "corecfdi";
           break;
         case "/app/facturacion/cuentas-por-cobrar":

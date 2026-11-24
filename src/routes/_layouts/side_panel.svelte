@@ -52,6 +52,21 @@
         "ComercioExterior",
       ],
     },
+    /*{
+      url: "/app/reportes",
+      titulo: "Reportes",
+      icono: "assessment",
+      roles: [
+        "administrador",
+        "gerente",
+        "almacen",
+        "vendedor",
+        "ComercioExterior",
+      ],
+      subitems: [
+                
+      ],
+    },*/
     {
       url: "/app/clientes/analisis_comercial",
       titulo: "Análisis",
@@ -64,6 +79,12 @@
         "ComercioExterior",
       ],
       subitems: [
+        {
+          url: "/app/reportes",
+          titulo: "Centro de Reportes",
+          icono: "dashboard",
+          roles: ["administrador", "gerente", "almacen", "vendedor", "ComercioExterior"],
+        },
         {
           url: "/app/reportes/utilidades",
           titulo: "Utilidades",

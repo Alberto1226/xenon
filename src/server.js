@@ -4,7 +4,7 @@ import express from 'express';
 import compression from 'compression';
 import * as sapper from '@sapper/server';
 import { llaves, devolver_nombre_db } from "./config/llaves";
-import { inicializacion_completa } from "./servicio_nuevo"
+import { inicializacion_completa } from "./servicio_nuevo";
 const fs = require('fs')
 var passConf = require("passport");
 var path = require('path');

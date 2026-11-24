@@ -3,6 +3,7 @@
   import { postData, mensajes_app } from "../../../stores";
   import SesionCoreCfdi from "../_SesionCoreCfdi.svelte";
   import BovedaFiscal from "../_BovedaFiscal.svelte";
+  import VerificacionQr, { idValido } from "../_VerificacionQr.svelte";
 
   // La API permite 60 peticiones por minuto para toda la integración: la búsqueda espera a que se deje de escribir.
   const ESPERA_BUSQUEDA_MS = 500;
@@ -32,6 +33,13 @@
   let temporizador_busqueda = null;
   let consulta_actual = 0;
   let boveda_id = null;
+  let qr_factura = null;
+  // Facturas a las que CoreCFDI no les puede armar la verificación (422): se oculta el botón.
+  let sin_verificacion = {};
+  // Menú de acciones abierto: { factura, top, left }. Es fixed para que no lo recorte el scroll de la tabla.
+  let menu = null;
+  const ANCHO_MENU = 190;
+
 
   // Nada se consulta hasta que el usuario tiene sesión en CoreCFDI.
   function al_iniciar_sesion() {
@@ -98,6 +106,45 @@
     cargar(1);
   }
 
+  function ver_qr(factura) {
+    if (!idValido(factura.id) || (qr_factura && qr_factura.id === factura.id)) return;
+    qr_factura = { id: factura.id, moneda: factura.moneda };
+  }
+
+  function al_invalidar_qr(evento) {
+    sin_verificacion[evento.detail.id] = true;
+    sin_verificacion = sin_verificacion;
+  }
+
+  function abrir_menu(evento, factura) {
+    if (menu && menu.factura.id === factura.id) {
+      menu = null;
+      return;
+    }
+    const caja = evento.currentTarget.getBoundingClientRect();
+    const alto = 44 * 4;
+    const abajo = caja.bottom + 4 + alto <= window.innerHeight;
+    menu = {
+      factura,
+      top: abajo ? caja.bottom + 4 : Math.max(8, caja.top - 4 - alto),
+      left: Math.max(8, Math.min(caja.right - ANCHO_MENU, window.innerWidth - ANCHO_MENU - 8))
+    };
+  }
+
+  function cerrar_menu() {
+    menu = null;
+  }
+
+  function accion(fn) {
+    const factura = menu.factura;
+    menu = null;
+    fn(factura);
+  }
+
+  function al_teclear(evento) {
+    if (evento.key === "Escape") cerrar_menu();
+  }
+
   function alternar_pagos(factura) {
     expandidas[factura.id] = !expandidas[factura.id];
     expandidas = expandidas;
@@ -126,6 +173,8 @@
 
   $: hay_efos = facturas.some((f) => f.esEfo);
 </script>
+
+<svelte:window on:keydown={al_teclear} on:resize={cerrar_menu} on:scroll={cerrar_menu} />
 
 <svelte:head>
   <title>Facturas Recibidas - Xenon</title>
@@ -255,15 +304,16 @@
                 </td>
                 <td><span class={"badge " + clase_estado(factura.estado)}>{factura.estado}</span></td>
                 <td class="acciones">
-                  <button class="enlace" on:click={() => (boveda_id = factura.id)}>Bóveda Fiscal</button>
-                  {#if factura.satUrl}
-                    <a href={factura.satUrl} target="_blank" rel="noopener noreferrer">Verificar en SAT</a>
-                  {/if}
-                  {#if factura.pagos.length > 0}
-                    <button class="enlace" on:click={() => alternar_pagos(factura)}>
-                      {expandidas[factura.id] ? "Ocultar pagos" : `Pagos (${factura.pagos.length})`}
-                    </button>
-                  {/if}
+                  <button
+                    class="boton_menu"
+                    class:abierto={menu && menu.factura.id === factura.id}
+                    on:click={(e) => abrir_menu(e, factura)}
+                    aria-haspopup="menu"
+                    aria-expanded={!!(menu && menu.factura.id === factura.id)}
+                    title="Acciones"
+                  >
+                    Acciones <i class="material-icons">expand_more</i>
+                  </button>
                 </td>
               </tr>
               {#if expandidas[factura.id]}
@@ -315,9 +365,42 @@
       </div>
     {/if}
   </div>
+  {#if menu}
+    <div class="menu_fondo" on:click={cerrar_menu} on:wheel={cerrar_menu}></div>
+    <div class="menu" role="menu" style="top: {menu.top}px; left: {menu.left}px; width: {ANCHO_MENU}px;">
+      <button role="menuitem" on:click={() => accion((f) => (boveda_id = f.id))}>
+        <i class="material-icons">folder_open</i> Bóveda Fiscal
+      </button>
+      {#if menu.factura.satUrl && !sin_verificacion[menu.factura.id]}
+        <a role="menuitem" href={menu.factura.satUrl} target="_blank" rel="noopener noreferrer" on:click={cerrar_menu}>
+          <i class="material-icons">verified</i> Verificar en SAT
+        </a>
+        {#if idValido(menu.factura.id)}
+          <button role="menuitem" on:click={() => accion(ver_qr)}>
+            <i class="material-icons">qr_code_2</i> Ver QR
+          </button>
+        {/if}
+      {/if}
+      {#if menu.factura.pagos.length > 0}
+        <button role="menuitem" on:click={() => accion(alternar_pagos)}>
+          <i class="material-icons">payments</i>
+          {expandidas[menu.factura.id] ? "Ocultar pagos" : `Pagos (${menu.factura.pagos.length})`}
+        </button>
+      {/if}
+    </div>
+  {/if}
   <!-- Keyed each: al cambiar de factura el panel se vuelve a crear. -->
   {#each boveda_id === null ? [] : [boveda_id] as id (id)}
     <BovedaFiscal {id} origen="recibida" on:cerrar={() => (boveda_id = null)} on:sesion={() => { boveda_id = null; sesion_activa = false; }} />
+  {/each}
+  {#each qr_factura === null ? [] : [qr_factura] as qr (qr.id)}
+    <VerificacionQr
+      id={qr.id}
+      moneda={qr.moneda}
+      on:cerrar={() => (qr_factura = null)}
+      on:invalida={al_invalidar_qr}
+      on:sesion={() => { qr_factura = null; sesion_activa = false; }}
+    />
   {/each}
   </SesionCoreCfdi>
 </div>
@@ -365,7 +448,14 @@
   .estado_vigente { background: #dcfce7; color: #166534; }
   .estado_cancelado { background: #fee2e2; color: #991b1b; }
   .estado_desconocido { background: #f1f5f9; color: #334155; }
-  .acciones a, .enlace { color: #1d4ed8; text-decoration: none; background: none; border: none; padding: 0; font-size: 13px; cursor: pointer; margin-right: 10px; }
+  .boton_menu { display: inline-flex; align-items: center; gap: 2px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 6px 5px 10px; font-size: 13px; color: #334155; cursor: pointer; }
+  .boton_menu:hover, .boton_menu.abierto { background: #f1f5f9; border-color: #94a3b8; }
+  .boton_menu .material-icons { font-size: 18px; }
+  .menu_fondo { position: fixed; inset: 0; z-index: 900; }
+  .menu { position: fixed; z-index: 901; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); padding: 6px; box-sizing: border-box; }
+  .menu button, .menu a { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; padding: 9px 10px; border-radius: 6px; font-size: 13px; color: #0f172a; text-decoration: none; cursor: pointer; text-align: left; box-sizing: border-box; }
+  .menu button:hover, .menu a:hover { background: #f1f5f9; }
+  .menu .material-icons { font-size: 18px; color: #475569; }
   .fila_pagos > td { background: #f8fafc; padding: 12px 20px; }
   .tabla_pagos th { background: #eef2f7; }
   .paginacion { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; font-size: 13px; color: #475569; }

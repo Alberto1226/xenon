@@ -27,6 +27,30 @@
   };
   let muestra = [];
 
+  // --- Estado del Modal de Reporte de Pedimentos SAT ---
+  let showModalPedimentos = false;
+  let loadingPreviewPedimentos = false;
+  let descargandoExcelPedimentos = false;
+  let descargandoPdfPedimentos = false;
+
+  let fechaInicioPed = "";
+  let fechaFinPed = "";
+  let estatusPed = "todos"; // 'todos' | 'arribado' | 'transito'
+  let buscarPed = "";
+
+  let kpisPed = {
+    total_pedimentos: 0,
+    total_partidas: 0,
+    total_piezas: 0,
+    total_valor_comercial_usd: 0,
+    total_valor_aduana_mxn: 0,
+    total_impuestos_deducibles: 0,
+    total_gastos_indirectos_netos: 0,
+    total_devoluciones: 0,
+    total_costo_fiscal: 0
+  };
+  let muestraPed = [];
+
   onMount(() => {
     establecerRangoEsteMes();
   });
@@ -157,6 +181,132 @@
     }
   }
 
+  // --- Funciones del Modal de Pedimentos SAT ---
+  function abrirModalPedimentos() {
+    showModalPedimentos = true;
+    if (!fechaInicioPed || !fechaFinPed) {
+      establecerRangoAnoEnCursoPed();
+    } else {
+      cargarPreviewPedimentos();
+    }
+  }
+
+  function cerrarModalPedimentos() {
+    showModalPedimentos = false;
+  }
+
+  function establecerHoyPed() {
+    const hoy = new Date();
+    fechaInicioPed = hoy.toISOString().slice(0, 10);
+    fechaFinPed = hoy.toISOString().slice(0, 10);
+    cargarPreviewPedimentos();
+  }
+
+  function establecerUltimos7DiasPed() {
+    const fin = new Date();
+    const inicio = new Date();
+    inicio.setDate(inicio.getDate() - 7);
+    fechaInicioPed = inicio.toISOString().slice(0, 10);
+    fechaFinPed = fin.toISOString().slice(0, 10);
+    cargarPreviewPedimentos();
+  }
+
+  function establecerRangoEsteMesPed() {
+    const ahora = new Date();
+    const inicio = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+    fechaInicioPed = inicio.toISOString().slice(0, 10);
+    fechaFinPed = ahora.toISOString().slice(0, 10);
+    cargarPreviewPedimentos();
+  }
+
+  function establecerMesAnteriorPed() {
+    const ahora = new Date();
+    const inicio = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+    const fin = new Date(ahora.getFullYear(), ahora.getMonth(), 0);
+    fechaInicioPed = inicio.toISOString().slice(0, 10);
+    fechaFinPed = fin.toISOString().slice(0, 10);
+    cargarPreviewPedimentos();
+  }
+
+  function establecerRangoAnoEnCursoPed() {
+    const ahora = new Date();
+    const inicio = new Date(ahora.getFullYear(), 0, 1);
+    fechaInicioPed = inicio.toISOString().slice(0, 10);
+    fechaFinPed = ahora.toISOString().slice(0, 10);
+    cargarPreviewPedimentos();
+  }
+
+  async function cargarPreviewPedimentos() {
+    loadingPreviewPedimentos = true;
+    try {
+      const res = await postData("app/reportes/pedimentos/preview", {
+        fecha_inicio: fechaInicioPed,
+        fecha_fin: fechaFinPed,
+        estatus: estatusPed,
+        buscar: buscarPed
+      });
+
+      if (res && res.ok) {
+        kpisPed = res.kpis || kpisPed;
+        muestraPed = res.muestra || [];
+      } else {
+        mensaje_error((res && res.mensaje) ? res.mensaje : "Error al consultar la muestra de pedimentos.");
+      }
+    } catch (err) {
+      console.error(err);
+      mensaje_error("Error de conexión al cargar la vista previa de pedimentos.");
+    } finally {
+      loadingPreviewPedimentos = false;
+    }
+  }
+
+  async function descargarArchivoPedimentos(tipo) {
+    if (tipo === "excel") descargandoExcelPedimentos = true;
+    if (tipo === "pdf") descargandoPdfPedimentos = true;
+
+    try {
+      const endpoint = tipo === "excel" 
+        ? "/app/reportes/pedimentos/excel" 
+        : "/app/reportes/pedimentos/pdf";
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          fecha_inicio: fechaInicioPed,
+          fecha_fin: fechaFinPed,
+          estatus: estatusPed,
+          buscar: buscarPed
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Respuesta no satisfactoria del servidor");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const extension = tipo === "excel" ? "xlsx" : "pdf";
+      a.download = `Reporte_Costeo_Pedimentos_SAT_${fechaInicioPed}_al_${fechaFinPed}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      mensaje_bueno(`Reporte de Pedimentos ${tipo.toUpperCase()} descargado con éxito.`);
+    } catch (err) {
+      console.error(err);
+      mensaje_error(`No se pudo descargar el reporte de pedimentos en formato ${tipo.toUpperCase()}.`);
+    } finally {
+      if (tipo === "excel") descargandoExcelPedimentos = false;
+      if (tipo === "pdf") descargandoPdfPedimentos = false;
+    }
+  }
+
   function formatMoney(num) {
     return Number(num || 0).toLocaleString("es-MX", { style: "currency", currency: "MXN" });
   }
@@ -265,9 +415,9 @@
       </div>
     {/if}
 
-    <!-- Card 3: Pedimentos y Costeo Fiscal (Próximamente) -->
+    <!-- Card 3: Pedimentos y Costeo Fiscal -->
     {#if filtroCategoria === 'todos' || filtroCategoria === 'inventario'}
-      <div class="reporte-card disabled">
+      <div class="reporte-card">
         <div class="card-top">
           <div class="card-icon-circle purple">
             <i class="material-icons">sailing</i>
@@ -281,12 +431,13 @@
         </p>
 
         <div class="card-formats">
-          <span class="format-badge muted">Próximamente</span>
+          <span class="format-badge xlsx"><i class="material-icons inline-icon">table_view</i> Excel (.xlsx)</span>
+          <span class="format-badge pdf"><i class="material-icons inline-icon">picture_as_pdf</i> PDF (.pdf)</span>
         </div>
 
         <div class="card-footer-action">
-          <button class="btn btn-secondary w-100" disabled>
-            En preparación
+          <button class="btn btn-primary-custom w-100" on:click={abrirModalPedimentos}>
+            <i class="material-icons me-1">tune</i> Configurar y Exportar
           </button>
         </div>
       </div>
@@ -570,6 +721,257 @@
             title="Descargar listado completo en documento PDF membretado"
           >
             {#if descargandoPdf}
+              <span class="spinner-border spinner-border-sm me-1"></span>
+              Generando PDF...
+            {:else}
+              <i class="material-icons me-1">picture_as_pdf</i>
+              Descargar PDF (.pdf)
+            {/if}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+{/if}
+
+<!-- ========================================================= -->
+<!-- MODAL DE CONFIGURACIÓN Y PREVIEW: PEDIMENTOS SAT          -->
+<!-- ========================================================= -->
+{#if showModalPedimentos}
+  <div class="modal-backdrop-custom" on:click={cerrarModalPedimentos}>
+    <div class="modal-card-custom" on:click|stopPropagation>
+      
+      <!-- Modal Header -->
+      <div class="modal-header-custom">
+        <div class="d-flex align-items-center gap-2">
+          <div class="modal-header-icon purple">
+            <i class="material-icons">sailing</i>
+          </div>
+          <div>
+            <h3 class="m-0 font-bold text-dark">Historial y Costeo de Pedimentos SAT</h3>
+            <span class="text-secondary text-small">Auditoría fiscal consolidada de cargamentos arribados, prorrateo y desglose de gastos</span>
+          </div>
+        </div>
+        <button class="btn-close-custom" on:click={cerrarModalPedimentos} aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body-custom">
+        
+        <!-- SECCIÓN 1: PARÁMETROS -->
+        <div class="filtro-panel">
+          <div class="filtro-grid-fila">
+            <div class="filtro-col">
+              <label class="form-label font-bold text-small">Fecha Inicio:</label>
+              <input 
+                type="date" 
+                class="form-control form-control-sm input-fecha" 
+                bind:value={fechaInicioPed} 
+                on:change={cargarPreviewPedimentos}
+              />
+            </div>
+            <div class="filtro-col">
+              <label class="form-label font-bold text-small">Fecha Fin:</label>
+              <input 
+                type="date" 
+                class="form-control form-control-sm input-fecha" 
+                bind:value={fechaFinPed} 
+                on:change={cargarPreviewPedimentos}
+              />
+            </div>
+            <div class="filtro-col" style="width: 140px;">
+              <label class="form-label font-bold text-small">Estatus:</label>
+              <select 
+                class="form-control form-control-sm input-fecha" 
+                bind:value={estatusPed} 
+                on:change={cargarPreviewPedimentos}
+              >
+                <option value="todos">Todos</option>
+                <option value="arribado">Arribados</option>
+                <option value="transito">En Tránsito</option>
+              </select>
+            </div>
+            <div class="filtro-col flex-grow">
+              <label class="form-label font-bold text-small">Buscar Pedimento (Opcional):</label>
+              <div class="input-buscar-wrapper">
+                <i class="material-icons text-muted search-icon">search</i>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm input-con-icono" 
+                  placeholder="No. Pedimento, Proveedor, COVE o Patente..." 
+                  bind:value={buscarPed}
+                  on:keydown={(e) => e.key === 'Enter' && cargarPreviewPedimentos()}
+                />
+                {#if buscarPed}
+                  <button class="btn-clear-search" on:click={() => { buscarPed = ""; cargarPreviewPedimentos(); }}>&times;</button>
+                {/if}
+              </div>
+            </div>
+            <div class="filtro-col col-boton">
+              <button class="btn btn-primary-custom w-100 btn-actualizar" on:click={cargarPreviewPedimentos} disabled={loadingPreviewPedimentos}>
+                {#if loadingPreviewPedimentos}
+                  <span class="spinner-border spinner-border-sm me-1"></span>
+                {:else}
+                  <i class="material-icons text-small me-1">refresh</i>
+                {/if}
+                Actualizar
+              </button>
+            </div>
+          </div>
+
+          <!-- Accesos rápidos de fecha -->
+          <div class="filtro-sub-barra">
+            <div class="quick-dates-group">
+              <span class="text-muted text-small fw-bold">Rango rápido:</span>
+              <button class="btn-quick-date" on:click={establecerHoyPed}>Hoy</button>
+              <button class="btn-quick-date" on:click={establecerUltimos7DiasPed}>7 días</button>
+              <button class="btn-quick-date" on:click={establecerRangoEsteMesPed}>Este Mes</button>
+              <button class="btn-quick-date" on:click={establecerMesAnteriorPed}>Mes Anterior</button>
+              <button class="btn-quick-date" on:click={establecerRangoAnoEnCursoPed}>Año en Curso</button>
+            </div>
+            <span class="text-muted text-small">
+              Valuación fiscal obligatoria: <strong>PEPS (Art. 41 LISR)</strong>
+            </span>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: CARDS KPI RESUMEN -->
+        <div class="kpi-grid mb-3">
+          <div class="kpi-card">
+            <span class="kpi-label">Total Pedimentos</span>
+            <span class="kpi-val text-dark">{formatNum(kpisPed.total_pedimentos)} Ped</span>
+            <span class="kpi-sub">en el período filtrado</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Piezas Importadas</span>
+            <span class="kpi-val text-primary">{formatNum(kpisPed.total_piezas)} pza</span>
+            <span class="kpi-sub">{formatNum(kpisPed.total_partidas)} partidas totales</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Valor Aduana (MXN)</span>
+            <span class="kpi-val text-dark">{formatMoney(kpisPed.total_valor_aduana_mxn)}</span>
+            <span class="kpi-sub">comercial: {formatMoney(kpisPed.total_valor_comercial_usd)} USD</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Gastos Indirectos Netos</span>
+            <span class="kpi-val text-amber">{formatMoney(kpisPed.total_gastos_indirectos_netos)}</span>
+            <span class="kpi-sub">inc. fletes, seguros y agente</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Costo Fiscal Consolidado</span>
+            <span class="kpi-val text-success">{formatMoney(kpisPed.total_costo_fiscal)}</span>
+            <span class="kpi-sub">aduana + indirectos netos</span>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 3: TABLA DE MUESTRA (5 REGISTROS) -->
+        <div class="preview-box">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <strong class="text-dark">Vista previa de datos (5 pedimentos muestra):</strong>
+              <span class="text-muted text-small ms-1">Verifica la información general antes de exportar el listado completo.</span>
+            </div>
+            <span class="badge bg-light text-dark border">
+              Total a exportar: <strong>{formatNum(kpisPed.total_pedimentos)}</strong> pedimento(s)
+            </span>
+          </div>
+
+          {#if loadingPreviewPedimentos}
+            <div class="text-center p-4 text-muted">
+              <div class="spinner-border text-primary mb-2" role="status"></div>
+              <div>Consultando historial de pedimentos e indirectos...</div>
+            </div>
+          {:else if muestraPed.length === 0}
+            <div class="text-center p-4 text-muted bg-light rounded border">
+              No se encontraron pedimentos con los criterios de búsqueda seleccionados.
+            </div>
+          {:else}
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered align-middle m-0 preview-table">
+                <thead>
+                  <tr>
+                    <th class="text-center" style="width: 35px;">#</th>
+                    <th style="width: 170px;">No. Pedimento</th>
+                    <th class="text-center" style="width: 50px;">Clave</th>
+                    <th class="text-center" style="width: 90px;">Fecha</th>
+                    <th>Proveedor</th>
+                    <th class="text-end" style="width: 90px;">T.C.</th>
+                    <th class="text-end" style="width: 120px;">Valor Aduana</th>
+                    <th class="text-end" style="width: 125px;">Gastos Indirectos</th>
+                    <th class="text-end" style="width: 130px;">Costo Fiscal Total</th>
+                    <th class="text-center" style="width: 90px;">Estatus</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each muestraPed as item}
+                    <tr>
+                      <td class="text-center font-mono text-muted">{item.indice}</td>
+                      <td class="font-mono font-bold text-dark">{item.numero_pedimento}</td>
+                      <td class="text-center"><span class="badge-tag blue">{item.clave_pedimento}</span></td>
+                      <td class="text-center font-mono text-small">
+                        {item.fecha_pedimento ? new Date(item.fecha_pedimento).toLocaleDateString('es-MX') : 'N/A'}
+                      </td>
+                      <td>
+                        <div class="font-bold">{item.proveedor_nombre}</div>
+                        <div class="text-muted text-small">{item.total_partidas} partida(s) | {formatNum(item.total_piezas)} piezas</div>
+                      </td>
+                      <td class="text-end font-mono font-bold">{item.tipo_cambio.toFixed(4)}</td>
+                      <td class="text-end font-mono">{formatMoney(item.valor_aduana_mxn)}</td>
+                      <td class="text-end font-mono text-amber font-bold">{formatMoney(item.total_indirectos_netos)}</td>
+                      <td class="text-end font-mono text-success font-bold">{formatMoney(item.costo_fiscal_total)}</td>
+                      <td class="text-center">
+                        {#if item.status === 'arribado'}
+                          <span class="badge-status-activo">Arribado</span>
+                        {:else}
+                          <span class="badge-status-inactivo">En Tránsito</span>
+                        {/if}
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+            <div class="mt-2 text-muted text-small d-flex justify-content-between align-items-center">
+              <span>* Mostrando los 5 pedimentos más recientes para verificación rápida.</span>
+              <span class="text-success font-bold">✓ El reporte descargado incluirá todas las partidas, facturas y devoluciones registradas.</span>
+            </div>
+          {/if}
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer-custom">
+        <button class="btn btn-secondary-custom btn-cancelar-modal" on:click={cerrarModalPedimentos}>
+          <i class="material-icons text-small me-1">close</i> Cancelar
+        </button>
+
+        <div class="acciones-descarga-grupo">
+          <!-- Botón Excel -->
+          <button 
+            class="btn btn-export excel" 
+            on:click={() => descargarArchivoPedimentos("excel")}
+            disabled={descargandoExcelPedimentos || loadingPreviewPedimentos || kpisPed.total_pedimentos === 0}
+            title="Descargar libro Excel multi-pestaña con pedimentos, partidas y bitácora de gastos"
+          >
+            {#if descargandoExcelPedimentos}
+              <span class="spinner-border spinner-border-sm me-1"></span>
+              Generando Excel...
+            {:else}
+              <i class="material-icons me-1">table_view</i>
+              Descargar Excel (.xlsx)
+            {/if}
+          </button>
+
+          <!-- Botón PDF -->
+          <button 
+            class="btn btn-export pdf" 
+            on:click={() => descargarArchivoPedimentos("pdf")}
+            disabled={descargandoPdfPedimentos || loadingPreviewPedimentos || kpisPed.total_pedimentos === 0}
+            title="Descargar cédula fiscal completa de pedimentos en formato PDF membretado"
+          >
+            {#if descargandoPdfPedimentos}
               <span class="spinner-border spinner-border-sm me-1"></span>
               Generando PDF...
             {:else}

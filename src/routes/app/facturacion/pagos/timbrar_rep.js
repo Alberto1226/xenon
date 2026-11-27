@@ -55,7 +55,8 @@ export async function post(req, res, next) {
         }
         const cuentaDestino = pago.cuenta_destino_id ? await CuentaBancaria.findById(pago.cuenta_destino_id).lean().exec() : null;
 
-        const serie = "P";
+        const serieSolicitada = String(req.body.serie || "").trim().toUpperCase();
+        const serie = serieSolicitada || "P";
         const folio = await reservarFolioFiscal(serie);
         rep = construirREP20({
             pago,

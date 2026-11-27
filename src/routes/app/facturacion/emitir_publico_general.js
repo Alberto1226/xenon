@@ -47,7 +47,8 @@ export async function post(req, res) {
             return res.send({ ok: false, mensaje: "Ninguno de los pedidos seleccionados está pendiente de facturar." });
         }
 
-        const serie = "F";
+        const serieSolicitada = String(req.body.serie || "").trim().toUpperCase();
+        const serie = serieSolicitada || "F";
         const folio = await reservarFolioFiscal(serie);
         // Por regla fiscal del SAT, las facturas a Público en General son siempre PUE (contado)
         const metodoPago = "PUE";

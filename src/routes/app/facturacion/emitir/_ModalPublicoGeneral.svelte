@@ -44,6 +44,9 @@
   let emitiendo = false;
   let resultado = null;
   let error_mensaje = "";
+  let series_disponibles = [];
+  let serie_seleccionada = "F";
+  $: folio_siguiente_serie = (series_disponibles.find(s => s.serie === serie_seleccionada) || {}).folio_siguiente || 1;
 
   $: if (visible && !cargado_para_visible) {
     cargado_para_visible = true;
@@ -80,7 +83,18 @@
         preparacion: filtro_preparacion,
         todos: true
       };
-      const res = await postData("/app/facturacion/pedidos_pendientes", payload);
+      const [res, resFolios] = await Promise.all([
+        postData("/app/facturacion/pedidos_pendientes", payload),
+        postData("/app/facturacion/perfil-fiscal/obtener", {})
+      ]);
+      if (resFolios && resFolios.ok && Array.isArray(resFolios.folios)) {
+        series_disponibles = resFolios.folios;
+        if (!series_disponibles.some(s => s.serie === serie_seleccionada)) {
+          if (series_disponibles.some(s => s.serie === "F")) serie_seleccionada = "F";
+          else if (series_disponibles.some(s => s.serie === "A")) serie_seleccionada = "A";
+          else if (series_disponibles.length > 0) serie_seleccionada = series_disponibles[0].serie;
+        }
+      }
       if (!res.ok) throw new Error(res.mensaje || "Error al obtener pedidos pendientes del período.");
       pedidos = res.pedidos || [];
       // Por defecto seleccionar todos los pedidos del período
@@ -170,6 +184,7 @@
     try {
       const payload = {
         pedidos_ids: listaSeleccionados.map(p => p._id),
+        serie: serie_seleccionada,
         metodo_pago: "PUE",
         forma_pago,
         periodicidad,
@@ -317,6 +332,18 @@
 
           <!-- Opciones de Pago (Siempre PUE por Regla SAT) -->
           <div class="opciones-pago-grid">
+            <div class="campo-opc">
+              <label for="pg_serie">Serie Fiscal (Folio #{folio_siguiente_serie})</label>
+              <select id="pg_serie" bind:value={serie_seleccionada}>
+                {#if series_disponibles.length === 0}
+                  <option value="F">Serie F (Folio #1)</option>
+                {:else}
+                  {#each series_disponibles as s}
+                    <option value={s.serie}>Serie {s.serie} (#{s.folio_siguiente})</option>
+                  {/each}
+                {/if}
+              </select>
+            </div>
             <div class="campo-opc">
               <label for="pg_metodo_pago">Método de Pago SAT</label>
               <input
@@ -668,7 +695,7 @@
   /* Opciones de Pago */
   .opciones-pago-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 12px;
   }
   .campo-opc { display: flex; flex-direction: column; gap: 4px; }

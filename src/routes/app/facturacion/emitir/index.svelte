@@ -139,7 +139,7 @@
 </script>
 
 <svelte:head>
-  <title>Emitir Factura PPD - Xenon</title>
+  <title>Emitir Factura - Xenon</title>
 </svelte:head>
 
 <div class="contenedor">
@@ -150,8 +150,8 @@
         <i class="material-icons">post_add</i>
       </div>
       <div>
-        <h1>Emitir Factura PPD</h1>
-        <p>Pedidos enviados sin factura. Las ventas de contado (PUE) se facturan desde Pedidos → Preparar factura.</p>
+        <h1>Emitir Factura</h1>
+        <p>Pedidos enviados sin factura. Emite comprobantes fiscales seleccionando el método de pago (PUE o PPD) y forma de pago.</p>
       </div>
     </div>
     <div class="header-acciones">
@@ -253,7 +253,7 @@
         <div class="select-wrapper">
           <select id="select-filtro-preparacion" bind:value={filtro_preparacion} on:change={aplicar_filtros}>
             <option value="Todos">Todas las preparaciones</option>
-            <option value="pendiente">Pendiente (PPD)</option>
+            <option value="pendiente">Con preparación previa</option>
             <option value="sin_preparar">Sin preparar</option>
           </select>
           <i class="material-icons chevron-naranja">expand_more</i>
@@ -338,7 +338,7 @@
                 <td class="der font-mono font-bold">{dinero(pedido.total_pedido)}</td>
                 <td>
                   {#if pedido.preparacion_factura && pedido.preparacion_factura.estado}
-                    <span class="badge-prep">{pedido.preparacion_factura.estado} ({pedido.preparacion_factura.tipo || "PPD"})</span>
+                    <span class="badge-prep">{pedido.preparacion_factura.estado} ({pedido.preparacion_factura.tipo || "CFDI"})</span>
                   {:else}
                     <span class="text-gris">—</span>
                   {/if}
@@ -346,7 +346,7 @@
                 <td class="der">
                   <button class="btn-facturar-ppd" on:click={() => facturar(pedido)}>
                     <i class="material-icons">receipt</i>
-                    Facturar PPD
+                    Facturar
                   </button>
                 </td>
               </tr>
@@ -361,7 +361,7 @@
   </div>
 </div>
 
-<PrepararFacturaModal bind:visible={visible_modal} pedido={pedido_seleccionado} tipo="PPD" />
+<PrepararFacturaModal bind:visible={visible_modal} pedido={pedido_seleccionado} />
 
 <ModalPublicoGeneral
   bind:visible={modal_pg_visible}

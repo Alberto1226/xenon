@@ -17,7 +17,14 @@
   let estado_preparacion = "";
   let factura_uuid = "";
   let factura_folio = "";
+  let series_disponibles = [];
+  let serie_seleccionada = "F";
+  $: folio_siguiente_serie = (series_disponibles.find(s => s.serie === serie_seleccionada) || {}).folio_siguiente || 1;
   let emitiendo = false;
+  let elementoModal;
+  $: if (visible && elementoModal) {
+    elementoModal.scrollTop = 0;
+  }
   let receptor = {
     rfc: "",
     nombre: "",
@@ -30,7 +37,7 @@
   let forma_pago = "01";
   let dias_credito = 30;
   let condiciones_pago = "";
-  $: es_ppd = tipo === "PPD";
+  $: es_ppd = metodo_pago === "PPD";
   let conceptos = [];
   $: codigo_postal_valido = /^\d{5}$/.test(receptor.codigo_postal);
 
@@ -51,6 +58,7 @@
       pedido_datos = respuesta.pedido;
       cliente = respuesta.cliente;
       pedimentos = respuesta.pedimentos || [];
+      series_disponibles = respuesta.series_disponibles || [];
       requerir_pedimentos = respuesta.requerir_pedimentos === true;
       ambiente_facturacion = respuesta.ambiente_facturacion || "sandbox";
       estado_preparacion = (respuesta.preparacion_factura && respuesta.preparacion_factura.estado) || "";
@@ -70,6 +78,19 @@
         ? respuesta.preparacion_factura
         : null;
 
+      const serieGuardada = (borrador && borrador.serie) || (facturaPedido && facturaPedido.serie);
+      if (serieGuardada && series_disponibles.some(s => s.serie === serieGuardada)) {
+        serie_seleccionada = serieGuardada;
+      } else if (series_disponibles.some(s => s.serie === "A")) {
+        serie_seleccionada = "A";
+      } else if (series_disponibles.some(s => s.serie === "F")) {
+        serie_seleccionada = "F";
+      } else if (series_disponibles.length > 0) {
+        serie_seleccionada = series_disponibles[0].serie;
+      } else {
+        serie_seleccionada = "F";
+      }
+
       receptor = borrador && borrador.receptor
         ? { ...borrador.receptor }
         : {
@@ -84,14 +105,16 @@
       if (!receptor.tipo_persona) {
         receptor.tipo_persona = receptor.rfc.length === 12 ? "MORAL" : (receptor.rfc.length === 13 ? "FISICA" : "");
       }
-      if (tipo === "PPD") {
-        metodo_pago = "PPD";
-        forma_pago = "99";
-        dias_credito = (borrador && borrador.dias_credito) || 30;
-        condiciones_pago = (borrador && borrador.condiciones_pago) || "";
+      if (borrador && (borrador.metodo_pago || borrador.tipo)) {
+        metodo_pago = borrador.metodo_pago || borrador.tipo;
+        forma_pago = borrador.forma_pago || (metodo_pago === "PPD" ? "99" : "01");
+        dias_credito = borrador.dias_credito || 30;
+        condiciones_pago = borrador.condiciones_pago || "";
       } else {
-        metodo_pago = "PUE";
-        forma_pago = (borrador && borrador.forma_pago && borrador.forma_pago !== "99") ? borrador.forma_pago : "01";
+        metodo_pago = tipo === "PPD" ? "PPD" : "PUE";
+        forma_pago = metodo_pago === "PPD" ? "99" : "01";
+        dias_credito = 30;
+        condiciones_pago = metodo_pago === "PPD" ? "Crédito a 30 días" : "";
       }
       conceptos = (pedido_datos.lista || []).map((item, indice) => {
         const guardado = borrador && (borrador.conceptos || []).find(concepto =>
@@ -147,6 +170,16 @@
     }
   }
 
+  function cambiar_metodo_pago() {
+    if (metodo_pago === "PPD") {
+      forma_pago = "99";
+      if (!dias_credito || Number(dias_credito) < 1) dias_credito = 30;
+      if (!condiciones_pago) condiciones_pago = "Crédito a 30 días";
+    } else {
+      if (forma_pago === "99") forma_pago = "01";
+    }
+  }
+
   function cerrar() {
     visible = false;
   }
@@ -162,8 +195,9 @@
     try {
       const respuesta = await postData("/app/pedidos/guardar_preparacion_factura", {
         pedido_id: pedido_datos._id,
+        serie: serie_seleccionada,
         receptor,
-        tipo,
+        tipo: metodo_pago,
         metodo_pago,
         forma_pago,
         dias_credito: es_ppd ? Number(dias_credito) : 0,
@@ -205,6 +239,7 @@
       if (!preparacionGuardada) return;
       const respuesta = await postData("/app/facturacion/emitir_factura", {
         pedido_id: pedido_datos._id,
+        serie: serie_seleccionada,
         confirmar_emision: true,
         confirmar_produccion: esProduccion
       });
@@ -253,6 +288,7 @@
 {#if visible}
   <div class="modal_backdrop" role="presentation" on:click|self={cerrar}>
     <section
+      bind:this={elementoModal}
       class="modal"
       role="dialog"
       aria-modal="true"
@@ -270,6 +306,33 @@
         <div class="estado">Cargando datos del pedido...</div>
       {:else if pedido_datos}
         <form on:submit|preventDefault={guardar_preparacion}>
+          <section class="seccion">
+            <h3>Comprobante y Serie Fiscal</h3>
+            <div class="grid">
+              <label>Serie Fiscal
+                <select
+                  bind:value={serie_seleccionada}
+                  disabled={estado_preparacion === "emitida" || estado_preparacion === "requiere_revision" || estado_preparacion === "emitiendo"}
+                >
+                  {#if series_disponibles.length === 0}
+                    <option value="F">Serie F (Folio siguiente: #1)</option>
+                  {:else}
+                    {#each series_disponibles as s}
+                      <option value={s.serie}>Serie {s.serie} (Folio siguiente: #{s.folio_siguiente})</option>
+                    {/each}
+                  {/if}
+                </select>
+              </label>
+              <label>Folio Fiscal a Asignar
+                <input
+                  value={estado_preparacion === "emitida" && factura_folio ? factura_folio : `#${folio_siguiente_serie}`}
+                  disabled
+                />
+                <small class="ayuda">Consecutivo reservado automáticamente al timbrar con el PAC.</small>
+              </label>
+            </div>
+          </section>
+
           <section class="seccion">
             <h3>Datos del receptor</h3>
             {#if !cliente}
@@ -311,26 +374,26 @@
                   {/each}
                 </select>
               </label>
-              {#if es_ppd}
-                <label>Método de pago
-                  <input value="PPD - Pago en parcialidades o diferido" disabled />
-                </label>
-                <label>Forma de pago
-                  <input value="99 - Por definir" disabled />
-                </label>
-                <label>Días de crédito
-                  <input type="number" min="1" max="365" step="1" bind:value={dias_credito} required />
-                </label>
-                <label>Condiciones de pago
-                  <input type="text" maxlength="200" placeholder="Ej. Crédito a 30 días" bind:value={condiciones_pago} />
-                </label>
-              {:else}
-                <label>Método de pago
-                <input value="PUE - Pago en una sola exhibición" disabled />
-                <small class="ayuda">Las ventas a crédito (PPD) se facturan en Facturación → Emitir factura.</small>
-                </label>
-                <label>Forma de pago
-                <select bind:value={forma_pago}>
+              <label>Método de pago
+                <select
+                  bind:value={metodo_pago}
+                  on:change={cambiar_metodo_pago}
+                  disabled={estado_preparacion === "emitida" || estado_preparacion === "emitiendo" || estado_preparacion === "requiere_revision"}
+                  required
+                >
+                  <option value="PUE">PUE - Pago en una sola exhibición</option>
+                  <option value="PPD">PPD - Pago en parcialidades o diferido</option>
+                </select>
+              </label>
+              <label>Forma de pago
+                <select
+                  bind:value={forma_pago}
+                  disabled={estado_preparacion === "emitida" || estado_preparacion === "emitiendo" || estado_preparacion === "requiere_revision"}
+                  required
+                >
+                  {#if es_ppd}
+                    <option value="99">99 - Por definir (Recomendado SAT)</option>
+                  {/if}
                   <option value="01">01 - Efectivo</option>
                   <option value="02">02 - Cheque nominativo</option>
                   <option value="03">03 - Transferencia electrónica</option>
@@ -353,6 +416,27 @@
                   <option value="30">30 - Aplicación de anticipos</option>
                   <option value="31">31 - Intermediario pagos</option>
                 </select>
+              </label>
+              {#if es_ppd}
+                <label>Días de crédito
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    step="1"
+                    bind:value={dias_credito}
+                    disabled={estado_preparacion === "emitida" || estado_preparacion === "emitiendo" || estado_preparacion === "requiere_revision"}
+                    required
+                  />
+                </label>
+                <label>Condiciones de pago
+                  <input
+                    type="text"
+                    maxlength="200"
+                    placeholder="Ej. Crédito a 30 días"
+                    bind:value={condiciones_pago}
+                    disabled={estado_preparacion === "emitida" || estado_preparacion === "emitiendo" || estado_preparacion === "requiere_revision"}
+                  />
                 </label>
               {/if}
             </div>

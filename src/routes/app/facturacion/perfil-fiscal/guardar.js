@@ -4,6 +4,14 @@ import * as accesos from "../../accesos";
 import { encryptText, decryptText, obtenerClientSecret } from "../../../../services/cryptoService";
 import { obtenerOAuthToken, actualizarPerfilCUCC } from "../../../../services/cuccApiService";
 
+function esUsuarioIsotech(user) {
+    if (!user) return false;
+    const u = String(user.usuario || "").toLowerCase();
+    const n = String(user.nombre || "").toLowerCase();
+    const c = String(user.correo || "").toLowerCase();
+    return u.includes("isotech") || n.includes("isotech") || c.includes("isotech");
+}
+
 export async function post(req, res, next) {
     if (accesos.esta_logueado(req) === false) {
         res.send({ ok: false, mensaje: "Sesión expirada" });
@@ -40,18 +48,23 @@ export async function post(req, res, next) {
         if (emisor_nombre) config.emisor_nombre = emisor_nombre.trim().toUpperCase();
         if (emisor_regimen) config.emisor_regimen = emisor_regimen.trim();
         if (emisor_cp) config.emisor_cp = emisor_cp.trim();
-        if (cucc_api_base) config.cucc_api_base = cucc_api_base.trim();
-        if (soap_url) config.soap_url = soap_url.trim();
         if (soap_user) config.soap_user = soap_user.trim();
-        if (client_id) config.client_id = client_id.trim();
-        if (client_secret && client_secret.trim()) {
-            config.client_secret_encrypted = encryptText(client_secret.trim());
-            config.client_secret = "";
-        } else if (!config.client_secret_encrypted && config.client_secret) {
-            config.client_secret_encrypted = encryptText(config.client_secret);
-            config.client_secret = "";
+
+        // Parámetros técnicos avanzados: solo el usuario Isotech puede modificarlos
+        const es_isotech = esUsuarioIsotech(req.user);
+        if (es_isotech) {
+            if (cucc_api_base) config.cucc_api_base = cucc_api_base.trim();
+            if (soap_url) config.soap_url = soap_url.trim();
+            if (client_id) config.client_id = client_id.trim();
+            if (client_secret && client_secret.trim()) {
+                config.client_secret_encrypted = encryptText(client_secret.trim());
+                config.client_secret = "";
+            } else if (!config.client_secret_encrypted && config.client_secret) {
+                config.client_secret_encrypted = encryptText(config.client_secret);
+                config.client_secret = "";
+            }
+            if (ambiente) config.ambiente = ambiente;
         }
-        if (ambiente) config.ambiente = ambiente;
 
         if (soap_pass && soap_pass.trim().length > 0) {
             config.soap_pass_encrypted = encryptText(soap_pass.trim());

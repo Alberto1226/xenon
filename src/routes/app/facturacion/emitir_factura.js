@@ -119,7 +119,8 @@ export async function post(req, res, next) {
         }
 
         const preparacion = await agregarNumerosPedimento(pedido, pedido.preparacion_factura, requerirPedimentos);
-        const serie = "F";
+        const serieSolicitada = String(req.body.serie || (pedido.preparacion_factura && pedido.preparacion_factura.serie) || "").trim().toUpperCase();
+        const serie = serieSolicitada || "F";
         const folio = await reservarFolioFiscal(serie);
         const comprobante = construirCFDI40({
             pedido,

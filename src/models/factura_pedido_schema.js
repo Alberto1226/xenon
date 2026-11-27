@@ -6,6 +6,7 @@ var Schema = mongoose.Schema;
 export const preparacionFacturaDef = {
     estado: { type: String, default: "" },
     tipo: { type: String, enum: ["PUE", "PPD", ""], default: "" },
+    serie: { type: String, default: "" },
     receptor: {
         rfc: { type: String, default: "" },
         nombre: { type: String, default: "" },

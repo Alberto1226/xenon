@@ -2,6 +2,7 @@ import { Pedido } from "../../../models/pedido";
 import { Cliente } from "../../../models/cliente";
 import { Pedimento } from "../../../models/pedimento";
 import { ConfiguracionFiscal } from "../../../models/configuracion_fiscal";
+import { FolioConfig } from "../../../models/folio_config";
 import { Producto } from "../../../models/producto";
 import { obtenerDatosFiscalesProducto } from "../../../services/validarConfiguracionFiscalProducto";
 import { ConfiguracionFacturacion } from "../../../models/configuracion_facturacion";
@@ -25,6 +26,7 @@ export async function post(req, res, next) {
             ? await Cliente.findById(pedido.cliente.id).lean().exec()
             : null;
         const configuracion = await ConfiguracionFiscal.findOne().select("ambiente").lean().exec();
+        const folios = await FolioConfig.find().sort({ serie: 1 }).lean().exec();
         const configFacturacion = await ConfiguracionFacturacion.findOne().select("requerir_pedimentos").lean().exec();
         const requerirPedimentos = true; // Origen y pedimento siempre se solicitan; InformacionAduanera solo aplica a productos importados.
         const productoIds = (pedido.lista || [])
@@ -85,6 +87,10 @@ export async function post(req, res, next) {
                 tipo_persona: direccionFiscal.tipo_persona || (cliente.datos_fiscales && cliente.datos_fiscales.tipo_persona) || ""
             } : null,
             preparacion_factura: pedido.preparacion_factura || null,
+            series_disponibles: folios.map(f => ({
+                serie: f.serie,
+                folio_siguiente: f.folio_siguiente
+            })),
             requerir_pedimentos: requerirPedimentos,
             ambiente_facturacion: (configuracion && configuracion.ambiente) || "sandbox",
             pedimentos: pedimentos.map(pedimento => ({

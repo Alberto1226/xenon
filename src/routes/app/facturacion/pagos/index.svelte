@@ -30,6 +30,8 @@
   let facturas_pendientes = [];
   let cuentas_empresa = [];
   let temporizador_cliente;
+  let series_disponibles = [];
+  let serie_rep = "P";
 
   // Información del Pago (replica InformacionPago.jsx de CUCC)
   let fecha_pago = obtenerFechaHoraLocal();
@@ -105,7 +107,24 @@
     }
     await buscar_clientes();
     await cargar_cuentas_bancarias();
+    await cargar_series_fiscales();
   });
+
+  async function cargar_series_fiscales() {
+    try {
+      const r = await postData("/app/facturacion/perfil-fiscal/obtener", {});
+      if (r && r.ok && Array.isArray(r.folios)) {
+        series_disponibles = r.folios;
+        if (!series_disponibles.some(s => s.serie === serie_rep)) {
+          if (series_disponibles.some(s => s.serie === "P")) serie_rep = "P";
+          else if (series_disponibles.some(s => s.serie === "PAGO")) serie_rep = "PAGO";
+          else if (series_disponibles.length > 0) serie_rep = series_disponibles[0].serie;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   function nueva_clave() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
@@ -391,6 +410,7 @@
   async function ejecutar_timbrado(pago_id) {
     let r = await postData("/app/facturacion/pagos/timbrar_rep", {
       pago_id,
+      serie: serie_rep,
       confirmar_emision: true,
       confirmar_produccion: false
     });
@@ -399,6 +419,7 @@
       if (confirm("El ambiente configurado en CUCC es PRODUCCIÓN. ¿Autorizas el timbrado fiscal real ante el SAT?")) {
         r = await postData("/app/facturacion/pagos/timbrar_rep", {
           pago_id,
+          serie: serie_rep,
           confirmar_emision: true,
           confirmar_produccion: true
         });
@@ -407,6 +428,7 @@
 
     if (r.ok) {
       avisar("exito", `¡Complemento de Pago (REP) timbrado con éxito! UUID: ${r.uuid || ""}`);
+      await cargar_series_fiscales();
     } else {
       avisar("error", r.mensaje || "No se pudo timbrar el complemento ante el PAC.");
     }
@@ -619,6 +641,19 @@
           </div>
 
           <div class="form-vertical">
+            <div class="campo">
+              <label for="select-serie-rep">Serie Fiscal (REP)</label>
+              <select id="select-serie-rep" bind:value={serie_rep}>
+                {#if series_disponibles.length === 0}
+                  <option value="P">Serie P (Folio siguiente: #1)</option>
+                {:else}
+                  {#each series_disponibles as s}
+                    <option value={s.serie}>Serie {s.serie} (Folio siguiente: #{s.folio_siguiente})</option>
+                  {/each}
+                {/if}
+              </select>
+            </div>
+
             <div class="campo">
               <label for="input-fecha-pago">Fecha y Hora de Pago</label>
               <input

@@ -28,19 +28,17 @@ export async function post(req, res, next) {
 
     try {
         const { pedido_id, receptor, metodo_pago, forma_pago, conceptos } = req.body;
-        // El tipo determina el flujo: PUE desde Pedidos y PPD (crédito) desde Facturación → Emitir factura.
-        const tipo = req.body.tipo === "PPD" ? "PPD" : "PUE";
-        if (metodo_pago !== tipo) {
-            return res.send({ ok: false, mensaje: tipo === "PUE"
-                ? "Las facturas PPD se emiten desde Facturación → Emitir factura."
-                : "Este flujo solo emite facturas PPD." });
+        const serie = String(req.body.serie || "").trim().toUpperCase().slice(0, 25);
+        if (!metodosPago.has(metodo_pago)) {
+            return res.send({ ok: false, mensaje: "Selecciona un método de pago válido (PUE o PPD)." });
         }
+        const tipo = metodo_pago;
         const diasCredito = Math.floor(Number(req.body.dias_credito));
         if (tipo === "PPD" && (!Number.isFinite(diasCredito) || diasCredito < 1 || diasCredito > MAX_DIAS_CREDITO)) {
             return res.send({ ok: false, mensaje: `Indica los días de crédito (1 a ${MAX_DIAS_CREDITO}).` });
         }
-        const formaPagoValida = tipo === "PPD" ? forma_pago === "99" : formasPagoPue.has(forma_pago);
-        if (!receptor || !Array.isArray(conceptos) || !metodosPago.has(metodo_pago) || !formaPagoValida) {
+        const formaPagoValida = tipo === "PPD" ? formasPago.has(forma_pago) : formasPagoPue.has(forma_pago);
+        if (!receptor || !Array.isArray(conceptos) || !formaPagoValida) {
             return res.send({ ok: false, mensaje: "Completa los datos fiscales y de pago requeridos" });
         }
         if (
@@ -140,6 +138,7 @@ export async function post(req, res, next) {
 
         pedido.preparacion_factura = {
             estado: "pendiente",
+            serie,
             receptor: {
                 rfc: receptor.rfc.trim().toUpperCase(),
                 nombre: receptor.nombre.trim().toUpperCase(),

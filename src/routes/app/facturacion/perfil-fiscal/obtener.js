@@ -3,6 +3,14 @@ import { FolioConfig } from "../../../../models/folio_config";
 import * as accesos from "../../accesos";
 import { decryptText } from "../../../../services/cryptoService";
 
+function esUsuarioIsotech(user) {
+    if (!user) return false;
+    const u = String(user.usuario || "").toLowerCase();
+    const n = String(user.nombre || "").toLowerCase();
+    const c = String(user.correo || "").toLowerCase();
+    return u.includes("isotech") || n.includes("isotech") || c.includes("isotech");
+}
+
 export async function get(req, res, next) {
     if (accesos.esta_logueado(req) === false) {
         res.send({ ok: false, mensaje: "Sesión expirada" });
@@ -26,7 +34,17 @@ export async function get(req, res, next) {
         delete configObj.client_secret_encrypted;
         delete configObj.client_secret;
 
-        res.send({ ok: true, config: configObj, folios });
+        const es_isotech = esUsuarioIsotech(req.user);
+
+        // Si no es el usuario Isotech, ocultar URLs, Client ID y Ambiente por seguridad
+        if (!es_isotech) {
+            delete configObj.cucc_api_base;
+            delete configObj.soap_url;
+            delete configObj.client_id;
+            delete configObj.ambiente;
+        }
+
+        res.send({ ok: true, config: configObj, folios, es_isotech });
     } catch (err) {
         console.error("Error al obtener perfil fiscal:", err);
         res.send({ ok: false, mensaje: "Error al consultar la configuración fiscal" });

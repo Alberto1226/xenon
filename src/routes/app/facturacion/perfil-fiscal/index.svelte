@@ -7,6 +7,7 @@
   let guardando = false;
   let probando = false;
   let subiendo_csd = false;
+  let es_isotech = false;
 
   let tab_activa = "datos"; // datos | csd | folios
 
@@ -56,6 +57,7 @@
     try {
       const res = await postData("/app/facturacion/perfil-fiscal/obtener", {});
       if (res.ok && res.config) {
+        es_isotech = !!res.es_isotech;
         config = { ...config, ...res.config };
         if (res.folios && res.folios.length > 0) {
           folios = res.folios.map(f => ({
@@ -215,12 +217,14 @@
         <p class="subtitulo">Configuración de datos fiscales SAT, Certificados CSD y credenciales PAC CUCC</p>
       </div>
     </div>
-    <div class="badge_ambiente" class:badge_prod={config.ambiente === 'produccion'}>
-      <i class="material-icons" style="font-size:16px; margin-right:4px;">
-        {config.ambiente === 'produccion' ? 'cloud_done' : 'developer_mode'}
-      </i>
-      {config.ambiente === 'produccion' ? 'Ambiente Producción' : 'Ambiente Sandbox / Pruebas'}
-    </div>
+    {#if es_isotech}
+      <div class="badge_ambiente" class:badge_prod={config.ambiente === 'produccion'}>
+        <i class="material-icons" style="font-size:16px; margin-right:4px;">
+          {config.ambiente === 'produccion' ? 'cloud_done' : 'developer_mode'}
+        </i>
+        {config.ambiente === 'produccion' ? 'Ambiente Producción' : 'Ambiente Sandbox / Pruebas'}
+      </div>
+    {/if}
   </header>
 
   {#if cargando}
@@ -284,15 +288,17 @@
 
         <h2 class="titulo_seccion"><i class="material-icons">api</i> Credenciales PAC CUCC (Servicio de Timbrado)</h2>
         <div class="grid_formulario">
-          <div class="campo_group col_2">
-            <label for="cucc_base">URL Base API CUCC REST</label>
-            <input type="text" id="cucc_base" bind:value={config.cucc_api_base} placeholder="https://cucc.com.mx/v2/api-cucc/public" class="input_text" />
-          </div>
+          {#if es_isotech}
+            <div class="campo_group col_2">
+              <label for="cucc_base">URL Base API CUCC REST</label>
+              <input type="text" id="cucc_base" bind:value={config.cucc_api_base} placeholder="https://cucc.com.mx/v2/api-cucc/public" class="input_text" />
+            </div>
 
-          <div class="campo_group col_2">
-            <label for="soap_url">URL Servicio SOAP WSDL</label>
-            <input type="text" id="soap_url" bind:value={config.soap_url} placeholder="https://cucc.com.mx/v2/api-cucc/public/soap/facturas" class="input_text" />
-          </div>
+            <div class="campo_group col_2">
+              <label for="soap_url">URL Servicio SOAP WSDL</label>
+              <input type="text" id="soap_url" bind:value={config.soap_url} placeholder="https://cucc.com.mx/v2/api-cucc/public/soap/facturas" class="input_text" />
+            </div>
+          {/if}
 
           <div class="campo_group">
             <label for="soap_user">Usuario SOAP PAC *</label>
@@ -309,23 +315,25 @@
             <input type="password" id="soap_pass" bind:value={config.soap_pass} placeholder={config.has_soap_pass ? '••••••••••••' : 'Ingresa contraseña PAC'} class="input_text" />
           </div>
 
-          <div class="campo_group">
-            <label for="client_id">Client ID (OAuth2)</label>
-            <input type="text" id="client_id" bind:value={config.client_id} placeholder="41" class="input_text" />
-          </div>
+          {#if es_isotech}
+            <div class="campo_group">
+              <label for="client_id">Client ID (OAuth2)</label>
+              <input type="text" id="client_id" bind:value={config.client_id} placeholder="41" class="input_text" />
+            </div>
 
-          <div class="campo_group col_2">
-            <label for="client_secret">Client Secret (OAuth2)</label>
-            <input type="password" id="client_secret" bind:value={config.client_secret} placeholder={config.has_client_secret ? '••••••••••••' : 'Ingresa el secreto OAuth2'} class="input_text" />
-          </div>
+            <div class="campo_group col_2">
+              <label for="client_secret">Client Secret (OAuth2)</label>
+              <input type="password" id="client_secret" bind:value={config.client_secret} placeholder={config.has_client_secret ? '••••••••••••' : 'Ingresa el secreto OAuth2'} class="input_text" />
+            </div>
 
-          <div class="campo_group">
-            <label for="ambiente">Ambiente de Operación</label>
-            <select id="ambiente" bind:value={config.ambiente} class="input_text">
-              <option value="sandbox">Sandbox / Pruebas (RFC EKU9003173C9)</option>
-              <option value="produccion">Producción (Timbres Reales SAT)</option>
-            </select>
-          </div>
+            <div class="campo_group">
+              <label for="ambiente">Ambiente de Operación</label>
+              <select id="ambiente" bind:value={config.ambiente} class="input_text">
+                <option value="sandbox">Sandbox / Pruebas (RFC EKU9003173C9)</option>
+                <option value="produccion">Producción (Timbres Reales SAT)</option>
+              </select>
+            </div>
+          {/if}
         </div>
 
         <div class="acciones_footer">
